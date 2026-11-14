@@ -44,7 +44,7 @@ export const TopNav: React.FC = () => {
       visible: true,
     },
     {
-      label: 'Audit',
+      label: 'Audit trail',
       path: '/audit',
       visible: hasRole(['company_admin', 'reviewer', 'agent_developer']),
     },
