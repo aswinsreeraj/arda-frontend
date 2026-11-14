@@ -9,6 +9,7 @@ import { AgentRegistryPage } from '@/features/agents/AgentRegistryPage';
 import { RunsPage } from '@/features/runs/RunsPage';
 import { AuditTrailPage } from '@/features/audit/AuditTrailPage';
 import { OrgPage } from '@/features/organization/OrgPage';
+import { PlatformPage } from '@/features/platform/PlatformPage';
 import { ForbiddenPage } from '@/features/resilience/ForbiddenPage';
 import { NotFoundPage } from '@/features/resilience/NotFoundPage';
 import { ServerErrorPage } from '@/features/resilience/ServerErrorPage';
@@ -92,6 +93,22 @@ export const router = createBrowserRouter([
         element: (
           <RoleGuard allowedRoles={['company_admin']}>
             <OrgPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: '/platform',
+        element: (
+          <RoleGuard allowedRoles={['company_admin', 'super_admin']}>
+            <PlatformPage />
+          </RoleGuard>
+        ),
+      },
+      {
+        path: '/super-admin',
+        element: (
+          <RoleGuard allowedRoles={['company_admin', 'super_admin']}>
+            <PlatformPage />
           </RoleGuard>
         ),
       },

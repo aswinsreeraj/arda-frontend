@@ -53,6 +53,11 @@ export const TopNav: React.FC = () => {
       path: '/org',
       visible: hasRole(['company_admin']),
     },
+    {
+      label: 'Platform',
+      path: '/platform',
+      visible: hasRole(['company_admin', 'super_admin']),
+    },
   ];
 
   return (
