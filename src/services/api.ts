@@ -1,0 +1,54 @@
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import type { ApiErrorResponse } from '@/types/common';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  timeout: 15000,
+});
+
+// Storage keys
+export const AUTH_TOKEN_KEY = 'arda_auth_token';
+export const AUTH_TENANT_KEY = 'arda_tenant_id';
+
+// Request interceptor to attach bearer token and tenant scope
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    const tenantId = localStorage.getItem(AUTH_TENANT_KEY);
+    if (tenantId && config.headers && !config.headers['X-Tenant-ID']) {
+      config.headers['X-Tenant-ID'] = tenantId;
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Response interceptor to format errors and handle session expiration
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ApiErrorResponse>) => {
+    if (error.response?.status === 401) {
+      // Clear token if unauthorized, and redirect to login if not already there
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      }
+    }
+
+    // Format error message from backend error schema
+    const backendMessage = error.response?.data?.error?.message;
+    const fallbackMessage = error.message || 'An unexpected error occurred';
+
+    return Promise.reject(new Error(backendMessage || fallbackMessage));
+  }
+);
