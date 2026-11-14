@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,7 +23,7 @@ type InviteFormData = z.infer<typeof inviteSchema>;
 
 interface AcceptInviteFormProps {
   onSwitchToLogin: () => void;
-  onSuccess: () => void;
+  onSuccess: (role?: UserRole) => void;
   selectedRole?: UserRole;
 }
 
@@ -31,9 +32,23 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
   onSuccess,
   selectedRole = 'agent_developer',
 }) => {
+  const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
+
+  // Dynamic invitation details from query params or realistic defaults
+  const inviteEmail = searchParams.get('email') || 'morgan.lee@acmefinancial.com';
+  const orgName = searchParams.get('org') || 'Acme Financial';
+  const invitedBy = searchParams.get('invitedBy') || 'alex.chen@acmefinancial.com';
+  const effectiveRole = (searchParams.get('role') as UserRole) || selectedRole;
+
+  const orgInitials = orgName
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'AF';
 
   const {
     register,
@@ -52,17 +67,19 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
   const onSubmit = async (data: InviteFormData) => {
     setIsLoading(true);
     try {
-      // Simulate/trigger invite acceptance
+      // Complete invitation acceptance and establish active session
+      const userId = typeof crypto !== 'undefined' && crypto.randomUUID ? `usr_${crypto.randomUUID().slice(0, 8)}` : 'usr_invite_7712';
       setAuth('invited-user-session-token', {
-        id: 'usr_invite_7712',
-        email: 'morgan.lee@acmefinancial.com',
+        id: userId,
+        email: inviteEmail,
         full_name: data.fullName,
-        tenant_id: 'tenant_acme_corp',
-        tenant_name: 'acme-corp',
-        role: selectedRole,
+        tenant_id: 'tenant_acme_core',
+        tenant_name: orgName,
+        role: effectiveRole,
         initials: data.fullName.slice(0, 2).toUpperCase(),
+        queue: effectiveRole === 'reviewer' ? 'fraud-l2' : undefined,
       });
-      onSuccess();
+      onSuccess(effectiveRole);
     } finally {
       setIsLoading(false);
     }
@@ -81,16 +98,14 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
       <div className="bg-[#141414] border border-[#282828] rounded-lg p-3 text-xs space-y-3">
         <div className="flex items-start space-x-3">
           <div className="w-8 h-8 rounded bg-[#1e2a4a] border border-[#2b3e75] text-[#b4c5ff] font-bold text-xs flex items-center justify-center shrink-0">
-            AF
+            {orgInitials}
           </div>
           <div className="space-y-0.5">
             <p className="text-xs text-[#e5e2e1] font-normal leading-snug">
-              <strong className="text-white font-semibold">Acme Financial</strong> has invited
-              you to ARDA
+              <strong className="text-white font-semibold">{orgName}</strong> has invited you to
+              ARDA
             </p>
-            <p className="text-[10px] font-mono text-[#777777]">
-              Invited by alex.chen@acmefinancial.com
-            </p>
+            <p className="text-[10px] font-mono text-[#777777]">Invited by {invitedBy}</p>
           </div>
         </div>
 
@@ -100,14 +115,12 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
             <span className="text-[#888888]">Your role</span>
             <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-[#16233d] text-[#b4c5ff] border border-[#263b6b]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb] mr-1.5" />
-              {roleNameMap[selectedRole]}
+              {roleNameMap[effectiveRole]}
             </span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[#888888]">Email</span>
-            <span className="font-mono text-[#aaaaaa] text-[10px]">
-              morgan.lee@acmefinancial.com
-            </span>
+            <span className="font-mono text-[#aaaaaa] text-[10px]">{inviteEmail}</span>
           </div>
         </div>
       </div>
@@ -231,3 +244,4 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
     </div>
   );
 };
+

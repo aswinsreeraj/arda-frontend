@@ -44,9 +44,49 @@ export const router = createBrowserRouter([
     element: <DocsPage />,
   },
 
-  // Authentication Flow (Sign In & Accept Invite)
+  // Authentication Flow (Sign In, Accept Invite & Org Registration)
   {
     path: '/login',
+    element: <AuthLayout />,
+    children: [
+      {
+        index: true,
+        element: <AuthPage />,
+      },
+    ],
+  },
+  {
+    path: '/accept-invite',
+    element: <AuthLayout />,
+    children: [
+      {
+        index: true,
+        element: <AuthPage />,
+      },
+    ],
+  },
+  {
+    path: '/invite',
+    element: <AuthLayout />,
+    children: [
+      {
+        index: true,
+        element: <AuthPage />,
+      },
+    ],
+  },
+  {
+    path: '/signup',
+    element: <AuthLayout />,
+    children: [
+      {
+        index: true,
+        element: <AuthPage />,
+      },
+    ],
+  },
+  {
+    path: '/register',
     element: <AuthLayout />,
     children: [
       {
