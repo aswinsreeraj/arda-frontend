@@ -1,54 +1,72 @@
-import React from 'react';
-import { Search, Plus } from 'lucide-react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { agentApi } from './agentApi';
+import type { AgentDetail } from './types';
+import { AgentsTable } from './components/AgentsTable';
+import { ConfigInspector } from './components/ConfigInspector';
+import { RegisterAgentModal } from './components/RegisterAgentModal';
+import { McpServersTab } from './components/McpServersTab';
+import { LlmKeysTab } from './components/LlmKeysTab';
+
+type TabType = 'agents' | 'mcp' | 'llm';
+type ScreenViewType = 'table' | 'inspector';
 
 export const AgentRegistryPage: React.FC = () => {
-  const agents = [
-    {
-      name: 'Fraud review',
-      id: 'fraud-review',
-      mode: 'durable',
-      version: 'v3.2.1',
-      tau: '0.80',
-      status: 'published',
-      updated: '3 hours ago',
-    },
-    {
-      name: 'Support triage',
-      id: 'support-triage',
-      mode: 'realtime',
-      version: 'v1.9.0',
-      tau: '0.70',
-      status: 'published',
-      updated: '3 days ago',
-    },
-    {
-      name: 'Procurement approval',
-      id: 'procurement-approval',
-      mode: 'durable',
-      version: 'v2.0.4',
-      tau: '0.85',
-      status: 'published',
-      updated: '12 days ago',
-    },
-    {
-      name: 'KYC onboarding',
-      id: 'kyc-onboarding',
-      mode: 'durable',
-      version: '—',
-      tau: '0.90',
-      status: 'draft',
-      updated: '20 hours ago',
-    },
-    {
-      name: 'Refund assistant',
-      id: 'refund-assistant',
-      mode: 'realtime',
-      version: '—',
-      tau: '0.80',
-      status: 'draft',
-      updated: '5 days ago',
-    },
-  ];
+  const [activeTab, setActiveTab] = useState<TabType>('agents');
+  const [screenView, setScreenView] = useState<ScreenViewType>('table');
+  const [selectedAgent, setSelectedAgent] = useState<AgentDetail | null>(null);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+
+  // Query agents
+  const {
+    data: agentsData,
+    isLoading: isLoadingAgents,
+    error: agentsError,
+    refetch: refetchAgents,
+  } = useQuery({
+    queryKey: ['agents'],
+    queryFn: ({ signal }) => agentApi.listAgents(undefined, signal),
+  });
+
+  // Query tools (for count badge)
+  const { data: toolsData = [] } = useQuery({
+    queryKey: ['tools'],
+    queryFn: ({ signal }) => agentApi.listTools(signal),
+  });
+
+  // Query credentials (for count badge)
+  const { data: credentialsData = [] } = useQuery({
+    queryKey: ['credentials'],
+    queryFn: ({ signal }) => agentApi.listCredentials(signal),
+  });
+
+  const agents = agentsData?.agents || [];
+  const llmKeys = credentialsData.filter((c) => c.category === 'llm');
+
+  // Handle agent selection
+  const handleSelectAgent = (agent: AgentDetail) => {
+    setSelectedAgent(agent);
+    setScreenView('inspector');
+  };
+
+  // Switch to inspector view directly
+  const handleSwitchToInspector = () => {
+    if (!selectedAgent && agents.length > 0) {
+      setSelectedAgent(agents[0]);
+    }
+    setScreenView('inspector');
+  };
+
+  // Agent registered successfully callback
+  const handleAgentRegistered = (newAgent: AgentDetail) => {
+    setSelectedAgent(newAgent);
+    setScreenView('inspector');
+  };
+
+  // Keep selectedAgent updated if cache refreshes
+  const currentSelectedAgent = selectedAgent
+    ? agents.find((a) => a.agent.id === selectedAgent.agent.id) || selectedAgent
+    : agents[0] || null;
 
   return (
     <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-6 flex flex-col gap-6 overflow-y-auto">
@@ -58,10 +76,26 @@ export const AgentRegistryPage: React.FC = () => {
           <h1 className="text-xl font-bold tracking-tight text-white">Agent Registry</h1>
           <div className="flex items-center bg-[#1c1c1c] p-1 rounded-lg border border-[#2e2e2e] text-xs">
             <span className="text-[#9ca3af] px-2">Screen View:</span>
-            <button className="px-2.5 py-1 rounded bg-[#2c2c2c] text-white font-medium shadow-sm">
+            <button
+              type="button"
+              onClick={() => setScreenView('table')}
+              className={`px-2.5 py-1 rounded font-medium transition ${
+                screenView === 'table'
+                  ? 'bg-[#2c2c2c] text-white shadow-sm'
+                  : 'text-[#9ca3af] hover:text-white'
+              }`}
+            >
               Registry Table
             </button>
-            <button className="px-2.5 py-1 rounded text-[#9ca3af] hover:text-white transition">
+            <button
+              type="button"
+              onClick={handleSwitchToInspector}
+              className={`px-2.5 py-1 rounded font-medium transition ${
+                screenView === 'inspector'
+                  ? 'bg-[#2c2c2c] text-white shadow-sm'
+                  : 'text-[#9ca3af] hover:text-white'
+              }`}
+            >
               Config Inspector
             </button>
           </div>
@@ -69,82 +103,106 @@ export const AgentRegistryPage: React.FC = () => {
 
         {/* Navigation Tabs */}
         <div className="flex items-center border-b border-[#282828] space-x-6">
-          <button className="pb-3 text-sm font-medium border-b-2 border-white text-white flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('agents')}
+            className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
+              activeTab === 'agents'
+                ? 'border-white text-white'
+                : 'border-transparent text-[#8e8e93] hover:text-white'
+            }`}
+          >
             <span>Agents</span>
-            <span className="text-[11px] font-mono bg-[#282828] text-gray-300 px-1.5 py-0.5 rounded">
-              5
+            <span
+              className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${
+                activeTab === 'agents'
+                  ? 'bg-[#282828] text-gray-200'
+                  : 'bg-[#222222] text-gray-500'
+              }`}
+            >
+              {agents.length}
             </span>
           </button>
-          <button className="pb-3 text-sm font-medium border-b-2 border-transparent text-[#8e8e93] hover:text-white flex items-center space-x-2">
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('mcp')}
+            className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
+              activeTab === 'mcp'
+                ? 'border-white text-white'
+                : 'border-transparent text-[#8e8e93] hover:text-white'
+            }`}
+          >
             <span>MCP Servers</span>
-            <span className="text-[11px] font-mono bg-[#282828] text-gray-400 px-1.5 py-0.5 rounded">
-              5
+            <span
+              className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${
+                activeTab === 'mcp'
+                  ? 'bg-[#282828] text-gray-200'
+                  : 'bg-[#222222] text-gray-500'
+              }`}
+            >
+              {toolsData.length}
             </span>
           </button>
-          <button className="pb-3 text-sm font-medium border-b-2 border-transparent text-[#8e8e93] hover:text-white flex items-center space-x-2">
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('llm')}
+            className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
+              activeTab === 'llm'
+                ? 'border-white text-white'
+                : 'border-transparent text-[#8e8e93] hover:text-white'
+            }`}
+          >
             <span>LLM Keys</span>
-            <span className="text-[11px] font-mono bg-[#282828] text-gray-400 px-1.5 py-0.5 rounded">
-              3
+            <span
+              className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${
+                activeTab === 'llm'
+                  ? 'bg-[#282828] text-gray-200'
+                  : 'bg-[#222222] text-gray-500'
+              }`}
+            >
+              {llmKeys.length}
             </span>
           </button>
         </div>
       </div>
 
-      {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Filter by name or ID"
-            className="w-full pl-9 pr-3 py-1.5 bg-[#181818] border border-[#2e2e2e] rounded-md text-xs text-white placeholder-gray-500 focus:border-blue-500 transition"
-          />
-        </div>
-        <button className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 rounded-md bg-[#2563EB] hover:bg-[#1d4ed8] text-white text-xs font-medium transition shadow-sm">
-          <Plus className="w-3.5 h-3.5" />
-          <span>Register agent</span>
-        </button>
-      </div>
+      {/* Tab 1: Agents Content */}
+      {activeTab === 'agents' && (
+        <>
+          {screenView === 'inspector' && currentSelectedAgent ? (
+            <ConfigInspector
+              key={currentSelectedAgent.agent.id}
+              agentDetail={currentSelectedAgent}
+              onBackToList={() => setScreenView('table')}
+            />
+          ) : (
+            <AgentsTable
+              agents={agents}
+              isLoading={isLoadingAgents}
+              error={agentsError as Error | null}
+              onRefresh={() => refetchAgents()}
+              onSelectAgent={handleSelectAgent}
+              onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
+              selectedAgentId={currentSelectedAgent?.agent.id}
+            />
+          )}
+        </>
+      )}
 
-      {/* Table Container */}
-      <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#181818]">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-[#262626] text-[11px] uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
-              <th className="py-3 px-4">Agent</th>
-              <th className="py-3 px-4">Execution</th>
-              <th className="py-3 px-4">Active version</th>
-              <th className="py-3 px-4 font-mono">Threshold τ</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4">Updated</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#242424] text-xs">
-            {agents.map((agent) => (
-              <tr key={agent.id} className="hover:bg-[#1d1d1d] cursor-pointer transition">
-                <td className="py-3.5 px-4">
-                  <div className="font-medium text-white text-sm">{agent.name}</div>
-                  <div className="font-mono text-[11px] text-[#71717a]">{agent.id}</div>
-                </td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono bg-[#1e293b] text-[#93c5fd] border border-[#2563eb]/30">
-                    {agent.mode}
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 font-mono text-gray-300">{agent.version}</td>
-                <td className="py-3.5 px-4 font-mono font-medium text-gray-200">{agent.tau}</td>
-                <td className="py-3.5 px-4">
-                  <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[11px] bg-[#064e3b]/30 text-[#34d399] border border-[#059669]/40 font-mono">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
-                    <span>{agent.status}</span>
-                  </span>
-                </td>
-                <td className="py-3.5 px-4 text-gray-400">{agent.updated}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Tab 2: MCP Servers Content */}
+      {activeTab === 'mcp' && <McpServersTab />}
+
+      {/* Tab 3: LLM Keys Content */}
+      {activeTab === 'llm' && <LlmKeysTab />}
+
+      {/* Register Agent Modal */}
+      <RegisterAgentModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+        onSuccess={handleAgentRegistered}
+      />
     </main>
   );
 };
