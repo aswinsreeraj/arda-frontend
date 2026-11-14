@@ -37,6 +37,19 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #3a3a3a;
   }
+
+  /* Code snippet syntax token highlighting */
+  code, pre {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .hl-kw { color: #f47067; }
+  .hl-cmd { color: #8ddb8c; }
+  .hl-str { color: #96d0ff; }
+  .hl-key { color: #7ee787; }
+  .hl-num { color: #ff9b5e; }
+  .hl-flag { color: #79c0ff; }
+  .hl-punct { color: #d2a8ff; }
 }
 
 @layer components {

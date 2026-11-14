@@ -4,6 +4,7 @@ import { AuthLayout } from '@/app/layouts/AuthLayout';
 import { ProtectedRoute, RoleGuard } from './guards';
 import { LandingPage } from '@/pages/landing/LandingPage';
 import { GuidePage } from '@/pages/guide/GuidePage';
+import { DocsPage } from '@/pages/docs/DocsPage';
 import { AuthPage } from '@/pages/auth/AuthPage';
 import { ReviewQueuePage } from '@/features/reviews/ReviewQueuePage';
 import { AgentRegistryPage } from '@/features/agents/AgentRegistryPage';
@@ -31,6 +32,16 @@ export const router = createBrowserRouter([
   {
     path: '/getting-started',
     element: <GuidePage />,
+  },
+
+  // API Reference & Documentation
+  {
+    path: '/docs',
+    element: <DocsPage />,
+  },
+  {
+    path: '/api-reference',
+    element: <DocsPage />,
   },
 
   // Authentication Flow (Sign In & Accept Invite)

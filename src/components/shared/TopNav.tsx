@@ -49,6 +49,11 @@ export const TopNav: React.FC = () => {
       visible: hasRole(['company_admin', 'reviewer', 'agent_developer']),
     },
     {
+      label: 'API Docs',
+      path: '/docs',
+      visible: true,
+    },
+    {
       label: 'Organization',
       path: '/org',
       visible: hasRole(['company_admin']),
