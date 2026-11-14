@@ -42,6 +42,25 @@ export interface AcceptInviteRequest {
   token?: string;
 }
 
+export interface RegisterTenantRequest {
+  company_name: string;
+  admin_email: string;
+  password: string;
+  display_name: string;
+}
+
+export interface RegisterTenantResponse {
+  tenant: {
+    id: string;
+    name: string;
+    status: string;
+  };
+  user: BackendSafeUser;
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+}
+
 export interface InvitationMetadata {
   token: string;
   organization_name: string;

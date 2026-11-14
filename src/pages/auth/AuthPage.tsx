@@ -2,14 +2,21 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { LoginForm } from '@/features/auth/LoginForm';
 import { AcceptInviteForm } from '@/features/auth/AcceptInviteForm';
+import { RegisterOrgForm } from '@/features/auth/RegisterOrgForm';
 import { Card } from '@/components/ui/Card';
 import type { UserRole } from '@/types/common';
 import clsx from 'clsx';
 
 export const AuthPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const initialMode = searchParams.get('mode') === 'invite' ? 'invite' : 'login';
-  const [mode, setMode] = useState<'login' | 'invite'>(initialMode);
+  const initialMode =
+    searchParams.get('mode') === 'invite'
+      ? 'invite'
+      : searchParams.get('mode') === 'register'
+      ? 'register'
+      : 'login';
+
+  const [mode, setMode] = useState<'login' | 'invite' | 'register'>(initialMode);
   const [previewRole, setPreviewRole] = useState<UserRole>('agent_developer');
   const navigate = useNavigate();
 
@@ -28,18 +35,24 @@ export const AuthPage: React.FC = () => {
         {mode === 'login' ? (
           <LoginForm
             onSwitchToInvite={() => setMode('invite')}
+            onSwitchToRegister={() => setMode('register')}
             onSuccess={handleSuccess}
           />
-        ) : (
+        ) : mode === 'invite' ? (
           <AcceptInviteForm
             onSwitchToLogin={() => setMode('login')}
             onSuccess={handleSuccess}
             selectedRole={previewRole}
           />
+        ) : (
+          <RegisterOrgForm
+            onSwitchToLogin={() => setMode('login')}
+            onSuccess={handleSuccess}
+          />
         )}
       </Card>
 
-      {/* Floating Prototype State Switcher (from Stitch Auth & Invitation Screen) */}
+      {/* Floating State Switcher (from Stitch Auth & Invitation Screen) */}
       <div className="fixed bottom-4 z-50 flex flex-col items-center gap-2 select-none">
         <div className="bg-[#1b1b1b] border border-[#282828] rounded-full p-1 flex items-center space-x-1 shadow-2xl backdrop-blur-md">
           <button
@@ -65,6 +78,18 @@ export const AuthPage: React.FC = () => {
             )}
           >
             invite
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('register')}
+            className={clsx(
+              'px-3 py-1 rounded-full text-[11px] font-mono transition-all font-medium',
+              mode === 'register'
+                ? 'bg-[#2563eb] text-white shadow-sm'
+                : 'text-[#777777] hover:text-white hover:bg-[#252525]'
+            )}
+          >
+            register
           </button>
         </div>
 
