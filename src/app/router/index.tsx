@@ -1,7 +1,8 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '@/app/layouts/AppLayout';
 import { AuthLayout } from '@/app/layouts/AuthLayout';
-import { ProtectedRoute, PublicOnlyRoute, RoleGuard } from './guards';
+import { ProtectedRoute, RoleGuard } from './guards';
+import { LandingPage } from '@/pages/landing/LandingPage';
 import { AuthPage } from '@/pages/auth/AuthPage';
 import { ReviewQueuePage } from '@/features/reviews/ReviewQueuePage';
 import { AgentRegistryPage } from '@/features/agents/AgentRegistryPage';
@@ -14,13 +15,16 @@ import { ServerErrorPage } from '@/features/resilience/ServerErrorPage';
 import { ErrorBoundary } from '@/features/resilience/ErrorBoundary';
 
 export const router = createBrowserRouter([
+  // Public Landing Page as Root Route
+  {
+    path: '/',
+    element: <LandingPage />,
+  },
+
+  // Authentication Flow (Sign In & Accept Invite)
   {
     path: '/login',
-    element: (
-      <PublicOnlyRoute>
-        <AuthLayout />
-      </PublicOnlyRoute>
-    ),
+    element: <AuthLayout />,
     children: [
       {
         index: true,
@@ -28,8 +32,9 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
+  // Governance App Console Routes
   {
-    path: '/',
     element: (
       <ProtectedRoute>
         <ErrorBoundary>
@@ -39,11 +44,7 @@ export const router = createBrowserRouter([
     ),
     children: [
       {
-        index: true,
-        element: <Navigate to="/reviews" replace />,
-      },
-      {
-        path: 'reviews',
+        path: '/reviews',
         element: (
           <RoleGuard allowedRoles={['reviewer', 'company_admin', 'super_admin']}>
             <ReviewQueuePage />
@@ -51,7 +52,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'reviews/:caseId',
+        path: '/reviews/:caseId',
         element: (
           <RoleGuard allowedRoles={['reviewer', 'company_admin', 'super_admin']}>
             <ReviewQueuePage />
@@ -59,7 +60,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'agents',
+        path: '/agents',
         element: (
           <RoleGuard allowedRoles={['agent_developer', 'company_admin', 'super_admin']}>
             <AgentRegistryPage />
@@ -67,11 +68,11 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'runs',
+        path: '/runs',
         element: <RunsPage />,
       },
       {
-        path: 'audit',
+        path: '/audit',
         element: (
           <RoleGuard allowedRoles={['company_admin', 'super_admin']}>
             <AuditTrailPage />
@@ -79,7 +80,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'org',
+        path: '/org',
         element: (
           <RoleGuard allowedRoles={['company_admin', 'super_admin']}>
             <OrgPage />
@@ -88,6 +89,8 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
+  // Resilience & Error Routes
   {
     path: '/403',
     element: <ForbiddenPage />,

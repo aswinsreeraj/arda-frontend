@@ -34,10 +34,10 @@ export const getInitials = (name?: string, email?: string): string => {
   if (email) {
     return email.slice(0, 2).toUpperCase();
   }
-  return 'MK';
+  return 'AC';
 };
 
-// Initial state restored from localStorage or default demo user
+// Initial state restored from localStorage or default demo admin user
 const loadInitialState = (): { token: string | null; user: AuthUser | null } => {
   try {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -50,16 +50,16 @@ const loadInitialState = (): { token: string | null; user: AuthUser | null } => 
     console.error('Failed to parse cached auth state:', err);
   }
 
-  // Fallback demo state matching Stitch Obsidian Telemetry prototype
+  // Fallback demo admin state with access across all platform modules
   const demoUser: AuthUser = {
     id: 'usr_01j7abc',
-    email: 'm.reyes@acmefinancial.com',
-    full_name: 'Maya Reyes',
+    email: 'alex.chen@acmefinancial.com',
+    full_name: 'Alex Chen',
     tenant_id: 'tenant_acme_corp',
     tenant_name: 'acme-corp',
-    role: 'reviewer',
+    role: 'company_admin',
     queue: 'fraud-l2',
-    initials: 'MK',
+    initials: 'AC',
   };
 
   return {
@@ -122,7 +122,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   hasRole: (roles: UserRole | UserRole[]) => {
     const userRole = get().user?.role;
     if (!userRole) return false;
-    if (userRole === 'super_admin') return true;
+    // Admins have access across all views
+    if (userRole === 'super_admin' || userRole === 'company_admin') return true;
     if (Array.isArray(roles)) {
       return roles.includes(userRole);
     }
