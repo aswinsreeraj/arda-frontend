@@ -87,6 +87,14 @@ export const router = createBrowserRouter([
           </RoleGuard>
         ),
       },
+      {
+        path: '/admin',
+        element: (
+          <RoleGuard allowedRoles={['company_admin']}>
+            <OrgPage />
+          </RoleGuard>
+        ),
+      },
     ],
   },
 
