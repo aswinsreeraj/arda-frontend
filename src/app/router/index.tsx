@@ -3,6 +3,7 @@ import { AppLayout } from '@/app/layouts/AppLayout';
 import { AuthLayout } from '@/app/layouts/AuthLayout';
 import { ProtectedRoute, RoleGuard } from './guards';
 import { LandingPage } from '@/pages/landing/LandingPage';
+import { GuidePage } from '@/pages/guide/GuidePage';
 import { AuthPage } from '@/pages/auth/AuthPage';
 import { ReviewQueuePage } from '@/features/reviews/ReviewQueuePage';
 import { AgentRegistryPage } from '@/features/agents/AgentRegistryPage';
@@ -20,6 +21,16 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <LandingPage />,
+  },
+
+  // Documentation & Getting Started Guide
+  {
+    path: '/guide',
+    element: <GuidePage />,
+  },
+  {
+    path: '/getting-started',
+    element: <GuidePage />,
   },
 
   // Authentication Flow (Sign In & Accept Invite)
