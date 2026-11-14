@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from './authStore';
 import { authApi } from './authApi';
-import { ArrowRight, Eye, EyeOff, Building2 } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, ShieldCheck, UserCheck } from 'lucide-react';
 import type { LoginRequest } from './types';
 
 const loginSchema = z.object({
@@ -26,12 +26,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToInvite, onSucces
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginRequest>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: 'reviewer@acme.com',
+      password: 'ReviewerPass123!',
     },
   });
 
@@ -39,36 +40,29 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToInvite, onSucces
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      // Attempt backend API call
       const res = await authApi.login(data);
-      setAuth(res.token, {
-        id: res.user_id,
-        email: data.email,
-        full_name: res.user?.full_name || 'Maya Reyes',
-        tenant_id: res.tenant_id,
-        tenant_name: 'acme-corp',
+      setAuth(res.access_token, {
+        id: res.user.id,
+        email: res.user.email,
+        full_name: res.user.display_name,
+        tenant_id: res.active_tenant_id,
+        tenant_name: 'Acme Robotics',
         role: res.role,
         queue: res.role === 'reviewer' ? 'fraud-l2' : undefined,
-        initials: 'MK',
       });
       onSuccess();
     } catch (err: unknown) {
-      // In development / demo mode, fallback gracefully if backend is not currently running
-      console.warn('Backend login endpoint unavailable, applying mock session:', err);
-      setAuth('mock-token-session-active', {
-        id: 'usr_demo123',
-        email: data.email || 'reviewer@acmefinancial.com',
-        full_name: 'Maya Reyes',
-        tenant_id: 'tenant_acme_corp',
-        tenant_name: 'acme-corp',
-        role: 'reviewer',
-        queue: 'fraud-l2',
-        initials: 'MK',
-      });
-      onSuccess();
+      const msg = err instanceof Error ? err.message : 'Invalid email or password';
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleQuickFill = (email: string, pass: string) => {
+    setValue('email', email);
+    setValue('password', pass);
+    setErrorMsg(null);
   };
 
   return (
@@ -76,7 +70,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToInvite, onSucces
       <div>
         <h1 className="text-lg font-semibold text-white tracking-tight">Sign in</h1>
         <p className="text-xs text-[#8d90a0] mt-0.5">
-          Access your organization's agent platform.
+          Access your organization's agent governance platform.
         </p>
       </div>
 
@@ -86,58 +80,48 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToInvite, onSucces
         </div>
       )}
 
-      {/* Enterprise SSO Card */}
-      <button
-        type="button"
-        onClick={() => {
-          setAuth('sso-enterprise-token', {
-            id: 'usr_sso_enterprise',
-            email: 'sso.admin@acmefinancial.com',
-            full_name: 'Alex Chen',
-            tenant_id: 'tenant_acme_corp',
-            tenant_name: 'acme-corp',
-            role: 'company_admin',
-            initials: 'AC',
-          });
-          onSuccess();
-        }}
-        className="w-full flex items-center justify-between p-3 rounded-lg bg-[#141414] border border-[#282828] hover:border-[#383838] hover:bg-[#181818] transition-all text-left group"
-      >
-        <div className="flex items-center space-x-3">
-          <div className="w-7 h-7 rounded bg-[#202020] border border-[#2d2d2d] flex items-center justify-center text-[#8d90a0] group-hover:text-white transition-colors">
-            <Building2 className="w-3.5 h-3.5" />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-white">Sign in with SSO</p>
-            <p className="text-[10px] font-mono text-[#777777]">
-              Recommended for enterprise accounts
-            </p>
-          </div>
-        </div>
-        <ArrowRight className="w-3.5 h-3.5 text-[#555555] group-hover:text-white group-hover:translate-x-0.5 transition-all" />
-      </button>
-
-      {/* Divider */}
-      <div className="relative flex items-center justify-center my-3">
-        <div className="border-t border-[#262626] w-full" />
-        <span className="bg-[#1b1b1b] px-2 text-[9px] font-mono text-[#666666] uppercase tracking-wider text-center">
-          or continue with email
+      {/* Quick Test Credential Switchers */}
+      <div className="p-2.5 rounded bg-[#181818] border border-[#262626] space-y-2">
+        <span className="text-[10px] uppercase font-mono text-neutral-400 font-semibold tracking-wider">
+          Quick Sign In (Verified Accounts)
         </span>
-        <div className="border-t border-[#262626] w-full" />
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => handleQuickFill('reviewer@acme.com', 'ReviewerPass123!')}
+            className="flex items-center space-x-1.5 p-2 rounded bg-[#202020] hover:bg-[#282828] border border-[#333] text-left text-xs transition-colors"
+          >
+            <UserCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <div>
+              <div className="font-medium text-white text-[11px]">Rachel (Reviewer)</div>
+              <div className="text-[10px] text-neutral-400 font-mono">reviewer@acme.com</div>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleQuickFill('admin@acme.com', 'AdminPass123!')}
+            className="flex items-center space-x-1.5 p-2 rounded bg-[#202020] hover:bg-[#282828] border border-[#333] text-left text-xs transition-colors"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+            <div>
+              <div className="font-medium text-white text-[11px]">Alice (Admin)</div>
+              <div className="text-[10px] text-neutral-400 font-mono">admin@acme.com</div>
+            </div>
+          </button>
+        </div>
       </div>
 
-      {/* Email / Password Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
         <div>
-          <label className="block text-xs font-medium text-[#8d90a0] mb-1" htmlFor="login-email">
-            Email address
+          <label className="block text-xs font-medium text-neutral-300 mb-1">
+            Work email address
           </label>
           <input
             {...register('email')}
-            id="login-email"
             type="email"
-            placeholder="you@company.com"
-            className="input-telemetry w-full px-3 py-2 text-xs rounded bg-[#141414] border-[#282828] text-[#f3f4f6]"
+            placeholder="reviewer@organization.com"
+            autoComplete="email"
+            className="w-full bg-[#181818] border border-[#2c2c2c] rounded px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
           {errors.email && (
             <p className="text-[11px] text-red-400 mt-1">{errors.email.message}</p>
@@ -145,36 +129,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToInvite, onSucces
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1">
-            <label
-              className="block text-xs font-medium text-[#8d90a0]"
-              htmlFor="login-password"
-            >
-              Password
-            </label>
-            <a
-              href="#forgot"
-              onClick={(e) => {
-                e.preventDefault();
-                alert('Password reset link sent to registered email.');
-              }}
-              className="text-xs text-[#2563eb] hover:text-[#3b82f6] transition-colors"
-            >
-              Forgot password
-            </a>
-          </div>
+          <label className="block text-xs font-medium text-neutral-300 mb-1">
+            Password
+          </label>
           <div className="relative">
             <input
               {...register('password')}
-              id="login-password"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••••••"
-              className="input-telemetry w-full px-3 py-2 text-xs rounded pr-9 bg-[#141414] border-[#282828] text-[#f3f4f6]"
+              autoComplete="current-password"
+              className="w-full bg-[#181818] border border-[#2c2c2c] rounded pl-3 pr-8 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#666666] hover:text-[#999999]"
+              className="absolute right-2.5 top-2 text-neutral-400 hover:text-white"
             >
               {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
@@ -184,26 +153,30 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToInvite, onSucces
           )}
         </div>
 
-        {/* Submit button */}
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex items-center justify-center space-x-1.5 bg-[#2563eb] hover:bg-blue-600 text-white text-xs font-medium py-2.5 px-4 rounded shadow-sm transition-all active:scale-[0.99] mt-3"
+          className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-medium py-2 rounded text-xs transition-colors flex items-center justify-center space-x-1.5 shadow"
         >
-          <span>{isLoading ? 'Signing in...' : 'Sign in'}</span>
-          <ArrowRight className="w-3.5 h-3.5" />
+          {isLoading ? (
+            <span className="inline-block w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+          ) : (
+            <>
+              <span>Sign in with password</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </>
+          )}
         </button>
       </form>
 
-      {/* Toggle to Invite State */}
-      <div className="text-center pt-2">
+      <div className="pt-2 text-center text-xs text-neutral-400 border-t border-[#222222]">
+        <span>Have an invite token? </span>
         <button
           type="button"
           onClick={onSwitchToInvite}
-          className="text-xs text-[#8d90a0] hover:text-white transition-colors"
+          className="text-blue-400 hover:text-blue-300 underline font-medium"
         >
-          Have an invite?{' '}
-          <span className="text-[#2563eb] hover:underline">Accept invitation →</span>
+          Accept organization invitation
         </button>
       </div>
     </div>

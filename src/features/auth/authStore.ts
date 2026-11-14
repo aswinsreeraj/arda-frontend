@@ -12,12 +12,11 @@ interface AuthState {
 
   // Actions
   setAuth: (token: string, user: AuthUser) => void;
-  setRole: (role: UserRole) => void;
   setTenant: (tenantId: string, tenantName?: string) => void;
   logout: () => void;
 
-  // Role verification helpers
-  hasRole: (role: UserRole | UserRole[]) => boolean;
+  // Role verification helpers strictly matching backend policy.go
+  hasRole: (roles: UserRole | UserRole[]) => boolean;
   isReviewer: () => boolean;
   isDeveloper: () => boolean;
   isAdmin: () => boolean;
@@ -34,10 +33,10 @@ export const getInitials = (name?: string, email?: string): string => {
   if (email) {
     return email.slice(0, 2).toUpperCase();
   }
-  return 'AC';
+  return 'RR';
 };
 
-// Initial state restored from localStorage or default demo admin user
+// Initial state restored from localStorage
 const loadInitialState = (): { token: string | null; user: AuthUser | null } => {
   try {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -50,21 +49,9 @@ const loadInitialState = (): { token: string | null; user: AuthUser | null } => 
     console.error('Failed to parse cached auth state:', err);
   }
 
-  // Fallback demo admin state with access across all platform modules
-  const demoUser: AuthUser = {
-    id: 'usr_01j7abc',
-    email: 'alex.chen@acmefinancial.com',
-    full_name: 'Alex Chen',
-    tenant_id: 'tenant_acme_corp',
-    tenant_name: 'acme-corp',
-    role: 'company_admin',
-    queue: 'fraud-l2',
-    initials: 'AC',
-  };
-
   return {
-    token: 'mock-jwt-token-obsidian',
-    user: demoUser,
+    token: null,
+    user: null,
   };
 };
 
@@ -87,18 +74,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token, user: userWithInitials, isAuthenticated: true, isLoading: false });
   },
 
-  setRole: (role: UserRole) => {
-    const current = get().user;
-    if (!current) return;
-    const updated: AuthUser = {
-      ...current,
-      role,
-      queue: role === 'reviewer' ? 'fraud-l2' : undefined,
-    };
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updated));
-    set({ user: updated });
-  },
-
   setTenant: (tenantId: string, tenantName?: string) => {
     const current = get().user;
     if (!current) return;
@@ -119,11 +94,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ token: null, user: null, isAuthenticated: false });
   },
 
+  /**
+   * Evaluates role authorization against backend policy.
+   * Note: super_admin does NOT have review:read or review:resolve in backend policy.go.
+   */
   hasRole: (roles: UserRole | UserRole[]) => {
     const userRole = get().user?.role;
     if (!userRole) return false;
-    // Admins have access across all views
-    if (userRole === 'super_admin' || userRole === 'company_admin') return true;
     if (Array.isArray(roles)) {
       return roles.includes(userRole);
     }
@@ -132,12 +109,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   isReviewer: () => {
     const role = get().user?.role;
-    return role === 'reviewer' || role === 'company_admin' || role === 'super_admin';
+    // In backend policy: only RoleReviewer and RoleCompanyAdmin possess review permissions
+    return role === 'reviewer' || role === 'company_admin';
   },
 
   isDeveloper: () => {
     const role = get().user?.role;
-    return role === 'agent_developer' || role === 'company_admin' || role === 'super_admin';
+    return role === 'agent_developer' || role === 'company_admin';
   },
 
   isAdmin: () => {

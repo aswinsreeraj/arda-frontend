@@ -1,5 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
-import type { ApiErrorResponse } from '@/types/common';
+import { ApiError, type ApiErrorResponse } from '@/types/common';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -37,7 +37,9 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorResponse>) => {
-    if (error.response?.status === 401) {
+    const status = error.response?.status || 500;
+
+    if (status === 401) {
       // Clear token if unauthorized, and redirect to login if not already there
       localStorage.removeItem(AUTH_TOKEN_KEY);
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
@@ -45,10 +47,11 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Format error message from backend error schema
-    const backendMessage = error.response?.data?.error?.message;
-    const fallbackMessage = error.message || 'An unexpected error occurred';
+    const errData = error.response?.data?.error;
+    const code = errData?.code || (status === 409 ? 'CONFLICT' : 'INTERNAL_ERROR');
+    const message = errData?.message || error.message || 'An unexpected error occurred';
+    const details = errData?.details;
 
-    return Promise.reject(new Error(backendMessage || fallbackMessage));
+    return Promise.reject(new ApiError(status, code, message, details));
   }
 );

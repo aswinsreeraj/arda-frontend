@@ -15,18 +15,25 @@ export interface AuthUser {
 export interface LoginRequest {
   email: string;
   password: string;
+  tenant_id?: string;
+}
+
+export interface BackendSafeUser {
+  id: string;
+  email: string;
+  display_name: string;
+  status: string;
+  is_super_admin: boolean;
+  created_at: string;
 }
 
 export interface LoginResponse {
-  token: string;
-  user_id: string;
-  tenant_id: string;
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  user: BackendSafeUser;
+  active_tenant_id: string;
   role: UserRole;
-  expires_at: string;
-  user?: {
-    email: string;
-    full_name?: string;
-  };
 }
 
 export interface AcceptInviteRequest {

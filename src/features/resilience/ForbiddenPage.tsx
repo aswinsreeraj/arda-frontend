@@ -1,15 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShieldAlert, RefreshCw } from 'lucide-react';
+import { ShieldAlert, LogIn } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/authStore';
 
 export const ForbiddenPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, setRole } = useAuthStore();
-
-  const handleElevate = () => {
-    setRole('company_admin');
-  };
+  const { user } = useAuthStore();
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-[#131313] select-none">
@@ -21,28 +17,28 @@ export const ForbiddenPage: React.FC = () => {
         <span className="text-gray-500 font-mono text-[11px] font-semibold">403</span>
         <h3 className="text-sm font-medium text-white tracking-tight mt-1">Access restricted</h3>
         <p className="text-xs text-gray-400 mt-1 max-w-[280px] leading-relaxed">
-          Your current role (<span className="text-amber-400 font-mono">{user?.role}</span>) does not have authorization to view this resource.
+          Your current role (<span className="text-amber-400 font-mono">{user?.role || 'unassigned'}</span>) does not have authorization to view this resource under backend policy.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <button
             onClick={() => navigate(-1)}
-            className="px-3.5 py-1.5 rounded-md bg-[#202020] hover:bg-[#282828] border border-[#333333] text-gray-300 text-xs font-medium transition-colors"
+            className="px-3.5 py-1.5 rounded-md bg-[#202020] hover:bg-[#282828] border border-[#333333] text-gray-300 text-xs font-medium transition-colors cursor-pointer"
           >
             Go back
           </button>
           <button
             onClick={() => navigate('/reviews')}
-            className="px-3.5 py-1.5 rounded-md bg-[#202020] hover:bg-[#282828] border border-[#333333] text-gray-300 text-xs font-medium transition-colors"
+            className="px-3.5 py-1.5 rounded-md bg-[#202020] hover:bg-[#282828] border border-[#333333] text-gray-300 text-xs font-medium transition-colors cursor-pointer"
           >
             Review Queue
           </button>
           <button
-            onClick={handleElevate}
-            className="px-3.5 py-1.5 rounded-md bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-medium shadow transition-colors inline-flex items-center space-x-1"
+            onClick={() => navigate('/login')}
+            className="px-3.5 py-1.5 rounded-md bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium shadow transition-colors inline-flex items-center space-x-1 cursor-pointer"
           >
-            <RefreshCw className="w-3 h-3 mr-1" />
-            <span>Elevate to Admin</span>
+            <LogIn className="w-3 h-3 mr-1" />
+            <span>Switch Account</span>
           </button>
         </div>
       </div>
