@@ -134,13 +134,13 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
                         aria-label={`Role for ${member.display_name || member.email}`}
                         value={member.role}
                         onChange={(e) => onUpdateRole(member, e.target.value as TenantRole)}
-                        className="w-36 px-2 py-1 bg-white dark:bg-[#1a1a1a] border border-slate-300 dark:border-[#2d2d2d] rounded text-[12px] text-slate-800 dark:text-[#e5e5e5] cursor-pointer hover:border-slate-400 dark:hover:border-[#404040] focus:outline-none appearance-none pr-7"
+                        className="w-40 px-2.5 py-1.5 bg-white dark:bg-[#1a1a1a] border border-slate-300 dark:border-[#2d2d2d] rounded text-xs text-slate-800 dark:text-[#e5e5e5] cursor-pointer hover:border-slate-400 dark:hover:border-[#404040] focus:outline-none appearance-none pr-7"
                       >
                         <option value="company_admin">Company admin</option>
                         <option value="agent_developer">Agent developer</option>
                         <option value="reviewer">Reviewer</option>
                       </select>
-                      <ChevronDown className="w-3 h-3 text-slate-400 dark:text-[#777777] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-[#777777] absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
                   )}
                 </td>

@@ -264,11 +264,10 @@ export const LlmKeysTab: React.FC = () => {
                       <div className="flex items-center gap-2">
                         {check ? (
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border ${
-                              check.verified
-                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/50'
-                                : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800/50'
-                            }`}
+                            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border ${check.verified
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/50'
+                              : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800/50'
+                              }`}
                             title={check.message}
                           >
                             {check.verified ? (

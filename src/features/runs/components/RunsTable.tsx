@@ -239,11 +239,10 @@ export const RunsTable: React.FC<RunsTableProps> = ({
                   <tr
                     key={run.id}
                     onClick={() => onSelectRun(run)}
-                    className={`cursor-pointer transition ${
-                      isSelected
-                        ? 'bg-[#222938] hover:bg-[#273042]'
-                        : 'hover:bg-[#1d1d1d]'
-                    }`}
+                    className={`cursor-pointer transition ${isSelected
+                      ? 'bg-[#222938] hover:bg-[#273042]'
+                      : 'hover:bg-[#1d1d1d]'
+                      }`}
                   >
                     <td className="py-3.5 px-4 font-mono">
                       <div className="text-white font-medium flex items-center gap-1.5 text-xs sm:text-sm">

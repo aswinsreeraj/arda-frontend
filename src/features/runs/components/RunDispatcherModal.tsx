@@ -216,22 +216,20 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setRunMode('durable')}
-                  className={`py-2 px-2 border rounded-md text-center transition font-medium ${
-                    runMode === 'durable'
-                      ? 'border-blue-500 bg-blue-950/30 text-blue-300'
-                      : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
-                  }`}
+                  className={`py-2 px-2 border rounded-md text-center transition font-medium ${runMode === 'durable'
+                    ? 'border-blue-500 bg-blue-950/30 text-blue-300'
+                    : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
+                    }`}
                 >
                   Durable (Temporal)
                 </button>
                 <button
                   type="button"
                   onClick={() => setRunMode('realtime')}
-                  className={`py-2 px-2 border rounded-md text-center transition font-medium ${
-                    runMode === 'realtime'
-                      ? 'border-blue-500 bg-blue-950/30 text-blue-300'
-                      : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
-                  }`}
+                  className={`py-2 px-2 border rounded-md text-center transition font-medium ${runMode === 'realtime'
+                    ? 'border-blue-500 bg-blue-950/30 text-blue-300'
+                    : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
+                    }`}
                 >
                   Realtime (Sync)
                 </button>

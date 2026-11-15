@@ -25,17 +25,24 @@
     background-size: 24px 24px;
   }
 
-  /* Universal Select Reset: Eliminates duplicate background chevron SVG, native OS arrow & DirectWrite shadow text */
+  /* Universal Select Reset: Eliminates duplicate background chevron SVG, native OS arrow, DirectWrite shadow text & text clipping */
   select {
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
     appearance: none !important;
     background-image: none !important;
     text-shadow: none !important;
+    line-height: normal !important;
+    vertical-align: middle;
   }
 
   select::-ms-expand {
     display: none;
+  }
+
+  /* Ensure select line-height is never overridden by micro text utilities */
+  select[class*="text-"] {
+    line-height: normal !important;
   }
 
   /* Micro text safety overrides to prevent eye strain across all pages */

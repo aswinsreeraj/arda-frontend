@@ -356,12 +356,12 @@ export const ReviewQueuePage: React.FC = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search case ID, agent, proposed decision..."
                 type="text"
-                className="w-full bg-white dark:bg-[#1b1b1b] border border-slate-300 dark:border-[#2c2c2c] rounded pl-8 pr-7 py-1 text-xs text-slate-900 dark:text-neutral-200 placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 font-sans"
+                className="w-full bg-white dark:bg-[#1b1b1b] border border-slate-300 dark:border-[#2c2c2c] rounded pl-8 pr-7 py-1.5 text-xs text-slate-900 dark:text-neutral-200 placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 font-sans"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1.5 text-slate-400 hover:text-slate-700 dark:text-neutral-500 dark:hover:text-white"
+                  className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-700 dark:text-neutral-500 dark:hover:text-white"
                 >
                   ✕
                 </button>
@@ -373,7 +373,7 @@ export const ReviewQueuePage: React.FC = () => {
               <select
                 value={selectedAgentId}
                 onChange={(e) => setSelectedAgentId(e.target.value)}
-                className="bg-white dark:bg-[#1b1b1b] border border-slate-300 dark:border-[#2c2c2c] px-2.5 py-1 rounded text-slate-700 dark:text-neutral-300 text-xs hover:bg-slate-50 dark:hover:bg-[#222] focus:outline-none focus:border-blue-500 appearance-none pr-7 cursor-pointer"
+                className="bg-white dark:bg-[#1b1b1b] border border-slate-300 dark:border-[#2c2c2c] px-2.5 py-1.5 rounded text-slate-700 dark:text-neutral-300 text-xs hover:bg-slate-50 dark:hover:bg-[#222] focus:outline-none focus:border-blue-500 appearance-none pr-7 cursor-pointer"
               >
                 <option value="">All agents</option>
                 {availableAgents.map((ag) => (
@@ -382,7 +382,7 @@ export const ReviewQueuePage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3 h-3 text-slate-400 dark:text-neutral-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 dark:text-neutral-500 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
             {/* Refresh Button */}
@@ -705,7 +705,7 @@ export const ReviewQueuePage: React.FC = () => {
                   {activeEvidenceTab === 'tools' && (
                     <div className="divide-y divide-[#222222] text-xs font-mono">
                       {!caseDetail.frozen_evidence?.tool_calls ||
-                      caseDetail.frozen_evidence.tool_calls.length === 0 ? (
+                        caseDetail.frozen_evidence.tool_calls.length === 0 ? (
                         <div className="p-4 text-center text-neutral-500 text-xs font-sans">
                           No external tools were invoked during this execution.
                         </div>
