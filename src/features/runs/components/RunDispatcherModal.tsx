@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, X, AlertCircle, Terminal } from 'lucide-react';
+import { Play, X, AlertCircle, Terminal, ChevronDown } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '@/features/agents/agentApi';
 import { runsApi } from '../runsApi';
@@ -191,18 +191,21 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
           {/* Select Agent */}
           <div className="space-y-1.5">
             <label className="font-medium text-gray-300">Target Agent</label>
-            <select
-              value={effectiveAgentId}
-              onChange={(e) => setSelectedAgentId(e.target.value)}
-              className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
-            >
-              {agents.map((item) => (
-                <option key={item.agent.id} value={item.agent.id}>
-                  {item.agent.name} (v{item.latest_published_version?.version_number || 1} ·{' '}
-                  {item.agent.id.slice(0, 8)})
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={effectiveAgentId}
+                onChange={(e) => setSelectedAgentId(e.target.value)}
+                className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white focus:border-blue-500 focus:outline-none appearance-none pr-8 cursor-pointer"
+              >
+                {agents.map((item) => (
+                  <option key={item.agent.id} value={item.agent.id}>
+                    {item.agent.name} (v{item.latest_published_version?.version_number || 1} ·{' '}
+                    {item.agent.id.slice(0, 8)})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
           </div>
 
           {/* Run Mode & Execution Profile */}
@@ -237,15 +240,18 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
 
             <div className="space-y-1.5">
               <label className="font-medium text-gray-300">Governance Mode</label>
-              <select
-                value={executionMode}
-                onChange={(e) => setExecutionMode(e.target.value as ExecutionMode)}
-                className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
-              >
-                <option value="supervised">Supervised (Escalate on uncertainty)</option>
-                <option value="autonomous">Autonomous</option>
-                <option value="human_in_the_loop">Human-in-the-Loop (Always escalate)</option>
-              </select>
+              <div className="relative">
+                <select
+                  value={executionMode}
+                  onChange={(e) => setExecutionMode(e.target.value as ExecutionMode)}
+                  className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white focus:border-blue-500 focus:outline-none appearance-none pr-8 cursor-pointer"
+                >
+                  <option value="supervised">Supervised (Escalate on uncertainty)</option>
+                  <option value="autonomous">Autonomous</option>
+                  <option value="human_in_the_loop">Human-in-the-Loop (Always escalate)</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
             </div>
           </div>
 

@@ -25,6 +25,19 @@
     background-size: 24px 24px;
   }
 
+  /* Universal Select Reset: Eliminates duplicate background chevron SVG, native OS arrow & DirectWrite shadow text */
+  select {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image: none !important;
+    text-shadow: none !important;
+  }
+
+  select::-ms-expand {
+    display: none;
+  }
+
   /* Micro text safety overrides to prevent eye strain across all pages */
   .text-\[10px\],
   .text-\[11px\],

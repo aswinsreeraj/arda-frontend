@@ -5,6 +5,7 @@ import {
   RefreshCw,
   AlertCircle,
   Activity,
+  ChevronDown,
 } from 'lucide-react';
 import type { RunDetail, RunStatus } from '../types';
 import { Badge } from '@/components/ui/Badge';
@@ -106,27 +107,33 @@ export const RunsTable: React.FC<RunsTableProps> = ({
             />
           </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-[#181818] border border-[#2e2e2e] text-xs text-gray-300 rounded-md px-2.5 py-1.5 focus:border-blue-500 focus:outline-none"
-          >
-            <option value="all">All statuses</option>
-            <option value="running">Running</option>
-            <option value="success">Success</option>
-            <option value="escalated">Escalated</option>
-            <option value="failed">Failed</option>
-          </select>
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-[#181818] border border-[#2e2e2e] text-xs text-gray-300 rounded-md pl-2.5 pr-7 py-1.5 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
+            >
+              <option value="all">All statuses</option>
+              <option value="running">Running</option>
+              <option value="success">Success</option>
+              <option value="escalated">Escalated</option>
+              <option value="failed">Failed</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
 
-          <select
-            value={modeFilter}
-            onChange={(e) => setModeFilter(e.target.value)}
-            className="bg-[#181818] border border-[#2e2e2e] text-xs text-gray-300 rounded-md px-2.5 py-1.5 focus:border-blue-500 focus:outline-none"
-          >
-            <option value="all">All modes</option>
-            <option value="durable">Durable (Temporal)</option>
-            <option value="realtime">Realtime (Sync)</option>
-          </select>
+          <div className="relative">
+            <select
+              value={modeFilter}
+              onChange={(e) => setModeFilter(e.target.value)}
+              className="bg-[#181818] border border-[#2e2e2e] text-xs text-gray-300 rounded-md pl-2.5 pr-7 py-1.5 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
+            >
+              <option value="all">All modes</option>
+              <option value="durable">Durable (Temporal)</option>
+              <option value="realtime">Realtime (Sync)</option>
+            </select>
+            <ChevronDown className="w-3.5 h-3.5 text-neutral-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-auto">

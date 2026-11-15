@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Trash2,
   Sparkles,
+  ChevronDown,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '../agentApi';
@@ -351,26 +352,29 @@ export const LlmKeysTab: React.FC = () => {
 
               <div className="space-y-1.5">
                 <label className="font-medium text-slate-700 dark:text-gray-300">LLM Provider</label>
-                <select
-                  value={selectedProviderId}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setSelectedProviderId(val);
-                    setModalError(null);
-                  }}
-                  className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white font-sans focus:border-blue-500 focus:outline-none"
-                >
-                  <optgroup label="ARDA Runtime Integrated Providers">
-                    {ARDA_LLM_PROVIDERS.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} ({p.id})
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Other">
-                    <option value="custom">Custom Provider Identifier...</option>
-                  </optgroup>
-                </select>
+                <div className="relative">
+                  <select
+                    value={selectedProviderId}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedProviderId(val);
+                      setModalError(null);
+                    }}
+                    className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white font-sans focus:border-blue-500 focus:outline-none appearance-none pr-8 cursor-pointer"
+                  >
+                    <optgroup label="ARDA Runtime Integrated Providers">
+                      {ARDA_LLM_PROVIDERS.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.id})
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Other">
+                      <option value="custom">Custom Provider Identifier...</option>
+                    </optgroup>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
 
                 {isCustom && (
                   <div className="pt-1 space-y-1">

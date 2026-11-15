@@ -17,6 +17,7 @@ import {
   Check,
   Trash2,
   ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '../agentApi';
@@ -575,14 +576,17 @@ export const McpServersTab: React.FC = () => {
 
                 <div className="space-y-1.5">
                   <label className="font-medium text-slate-700 dark:text-gray-300">Classification</label>
-                  <select
-                    value={toolClassification}
-                    onChange={(e) => setToolClassification(e.target.value as ToolClassification)}
-                    className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="read">read (Safe idempotence, side-effect free)</option>
-                    <option value="write">write (Mutating execution, requires guardrail approval)</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={toolClassification}
+                      onChange={(e) => setToolClassification(e.target.value as ToolClassification)}
+                      className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none appearance-none pr-8 cursor-pointer"
+                    >
+                      <option value="read">read (Safe idempotence, side-effect free)</option>
+                      <option value="write">write (Mutating execution, requires guardrail approval)</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -890,15 +894,18 @@ export const McpServersTab: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="font-medium text-slate-700 dark:text-gray-300">Transport Type</label>
-                  <select
-                    value={serverFormTransport}
-                    onChange={(e) => setServerFormTransport(e.target.value as McpTransport)}
-                    className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none"
-                  >
-                    <option value="streamable_http">Streamable HTTP (Standard POST)</option>
-                    <option value="sse">Server-Sent Events (SSE)</option>
-                    <option value="inprocess">In-Process Internal Adapter</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={serverFormTransport}
+                      onChange={(e) => setServerFormTransport(e.target.value as McpTransport)}
+                      className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white focus:border-blue-500 focus:outline-none appearance-none pr-8 cursor-pointer"
+                    >
+                      <option value="streamable_http">Streamable HTTP (Standard POST)</option>
+                      <option value="sse">Server-Sent Events (SSE)</option>
+                      <option value="inprocess">In-Process Internal Adapter</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
