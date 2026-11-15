@@ -1,10 +1,8 @@
 import { apiClient } from '@/services/api';
 import type {
   AddMemberRequest,
-  ApiKeyItem,
   ListMembersResponse,
   MemberStatus,
-  SSOConfiguration,
   TenantMember,
   UpdateMemberRequest,
 } from './types';
@@ -206,65 +204,5 @@ export const orgApi = {
     delete overrides[userId];
     delete overrides[email.toLowerCase()];
     saveLocalOverrides(overrides);
-  },
-
-  /**
-   * Mock / Persisted SSO Configuration
-   */
-  fetchSSOConfig: async (_tenantId: string): Promise<SSOConfiguration> => {
-    return {
-      provider: 'okta',
-      enabled: true,
-      entity_id: 'urn:arda:acme-corp',
-      acs_url: 'https://api.arda.network/api/v1/auth/sso/callback',
-      domains: ['acme-corp.com', 'acme.io'],
-      enforce_sso: false,
-    };
-  },
-
-  saveSSOConfig: async (_tenantId: string, config: Partial<SSOConfiguration>): Promise<void> => {
-    try {
-      localStorage.setItem('arda_sso_config', JSON.stringify(config));
-    } catch {
-      // ignore
-    }
-  },
-
-  /**
-   * Tenant Scoped API Keys
-   */
-  fetchApiKeys: async (_tenantId: string): Promise<ApiKeyItem[]> => {
-    return [
-      {
-        id: 'key_prod_agent_runner',
-        name: 'Production Workflow Dispatcher',
-        prefix: 'arda_live_8f2a',
-        role: 'agent_developer',
-        created_at: '2026-09-01T10:00:00Z',
-        last_used: '12m ago',
-        status: 'active',
-        scopes: ['agents:read', 'runs:execute', 'tools:invoke'],
-      },
-      {
-        id: 'key_ci_cd_registry',
-        name: 'GitHub Actions Agent Deployer',
-        prefix: 'arda_live_3c19',
-        role: 'agent_developer',
-        created_at: '2026-08-15T14:30:00Z',
-        last_used: '2h ago',
-        status: 'active',
-        scopes: ['agents:read', 'agents:write'],
-      },
-      {
-        id: 'key_compliance_collector',
-        name: 'SIEM Audit Trail Ingestion',
-        prefix: 'arda_live_9b4e',
-        role: 'reviewer',
-        created_at: '2026-07-20T08:15:00Z',
-        last_used: '1d ago',
-        status: 'active',
-        scopes: ['audit:read', 'reviews:read'],
-      },
-    ];
   },
 };

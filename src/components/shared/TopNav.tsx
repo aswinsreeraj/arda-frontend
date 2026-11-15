@@ -4,7 +4,6 @@ import { useAuthStore } from '@/features/auth/authStore';
 import { useQuery } from '@tanstack/react-query';
 import { reviewApi } from '@/features/reviews/reviewApi';
 import { getDefaultDashboard } from '@/utils/navigation';
-import { ThemeToggle } from './ThemeToggle';
 import { ChevronDown, LogOut, Shield } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -140,11 +139,8 @@ export const TopNav: React.FC = () => {
         </nav>
       </div>
 
-      {/* Top Right User, Theme Toggle & Role Details */}
+      {/* Top Right User & Role Details */}
       <div className="flex items-center space-x-4 text-slate-500 dark:text-neutral-400">
-        {/* Theme Toggle Button */}
-        <ThemeToggle />
-
         {/* User Identity & Role */}
         <div className="flex items-center space-x-2.5 text-sm">
           <div className="text-right">

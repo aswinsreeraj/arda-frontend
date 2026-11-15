@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/authStore';
 import { getDefaultDashboard } from '@/utils/navigation';
-import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 export const LandingHeader: React.FC = () => {
   const { isAuthenticated, user } = useAuthStore();
@@ -40,10 +39,8 @@ export const LandingHeader: React.FC = () => {
           </Link>
         </nav>
 
-        {/* Action Buttons & Theme Toggle */}
+        {/* Action Buttons */}
         <div className="flex items-center space-x-3 sm:space-x-4">
-          <ThemeToggle />
-
           {isAuthenticated ? (
             <Link
               to={targetDashboard}

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Key } from 'lucide-react';
-import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 interface DocsHeaderProps {
   onOpenApiKeyModal: () => void;
@@ -36,8 +35,6 @@ export const DocsHeader: React.FC<DocsHeaderProps> = ({ onOpenApiKeyModal }) => 
 
       {/* Right Action buttons */}
       <div className="flex items-center space-x-4 text-sm">
-        <ThemeToggle />
-
         <button
           onClick={onOpenApiKeyModal}
           type="button"

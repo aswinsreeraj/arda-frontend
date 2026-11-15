@@ -29,24 +29,4 @@ export interface UpdateMemberRequest {
   status?: MemberStatus;
 }
 
-export type OrgAdminSection = 'people' | 'api-keys' | 'usage';
-
-export interface ApiKeyItem {
-  id: string;
-  name: string;
-  prefix: string;
-  role: TenantRole;
-  created_at: string;
-  last_used: string;
-  status: 'active' | 'revoked';
-  scopes: string[];
-}
-
-export interface SSOConfiguration {
-  provider: 'okta' | 'google' | 'azure_ad' | 'saml';
-  enabled: boolean;
-  entity_id: string;
-  acs_url: string;
-  domains: string[];
-  enforce_sso: boolean;
-}
+export type OrgAdminSection = 'people' | 'usage';

@@ -5,7 +5,6 @@ import { orgApi } from './orgApi';
 import type { MemberStatus, OrgAdminSection, TenantMember, TenantRole } from './types';
 import { PeopleTable } from './components/PeopleTable';
 import { InvitePersonModal } from './components/InvitePersonModal';
-import { ApiKeysTab } from './components/ApiKeysTab';
 import { UsageTab } from './components/UsageTab';
 import { UserPlus, Search, RefreshCw, AlertCircle } from 'lucide-react';
 
@@ -34,13 +33,6 @@ export const OrgPage: React.FC = () => {
     queryKey: ['tenant-members', tenantId],
     queryFn: ({ signal }) => orgApi.fetchMembers(tenantId, user?.id, signal),
     staleTime: 15000,
-  });
-
-  // Fetch API keys
-  const { data: apiKeys = [] } = useQuery({
-    queryKey: ['tenant-api-keys', tenantId],
-    queryFn: () => orgApi.fetchApiKeys(tenantId),
-    staleTime: 30000,
   });
 
   // Mutations
@@ -144,19 +136,6 @@ export const OrgPage: React.FC = () => {
                   }`}
                 >
                   People
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveSection('api-keys')}
-                  className={`w-full text-left flex items-center px-2.5 py-1.5 rounded-md transition-colors ${
-                    activeSection === 'api-keys'
-                      ? 'bg-slate-100 dark:bg-[#222222] text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-[#2e2e2e]'
-                      : 'text-slate-600 dark:text-[#999999] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-[#1a1a1a]'
-                  }`}
-                >
-                  API keys
                 </button>
               </li>
               <li>
@@ -312,9 +291,6 @@ export const OrgPage: React.FC = () => {
             )}
           </div>
         )}
-
-        {/* API KEYS TAB */}
-        {activeSection === 'api-keys' && <ApiKeysTab initialKeys={apiKeys} />}
 
         {/* USAGE TAB */}
         {activeSection === 'usage' && <UsageTab memberCount={counts.active} />}

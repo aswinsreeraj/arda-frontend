@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/authStore';
 import { TopNav } from '@/components/shared/TopNav';
-import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import {
   Copy,
   Check,
@@ -83,10 +82,8 @@ export const GuidePage: React.FC = () => {
               </nav>
             </div>
 
-            {/* Right auth actions & Theme Toggle */}
+            {/* Right auth actions */}
             <div className="flex items-center space-x-4">
-              <ThemeToggle />
-
               <Link to="/login" className="text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-[#9ca3af] dark:hover:text-white transition-colors">
                 Sign In
               </Link>

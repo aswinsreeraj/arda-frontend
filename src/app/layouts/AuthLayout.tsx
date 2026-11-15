@@ -1,7 +1,6 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Lock } from 'lucide-react';
-import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 export const AuthLayout: React.FC = () => {
   return (
@@ -16,9 +15,6 @@ export const AuthLayout: React.FC = () => {
           >
             <span className="font-semibold text-lg tracking-tight text-[var(--text-primary)]">ΛRDΛ</span>
           </Link>
-        </div>
-        <div className="flex items-center space-x-4">
-          <ThemeToggle />
         </div>
       </header>
 
