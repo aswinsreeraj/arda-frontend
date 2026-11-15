@@ -17,6 +17,11 @@ export default defineConfig({
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/temporal-api': {
+        target: process.env.VITE_TEMPORAL_UI_URL || 'http://localhost:8233',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/temporal-api/, '/api'),
+      },
       '/ws': {
         target: (process.env.VITE_BACKEND_URL || 'http://localhost:8000').replace('http', 'ws'),
         ws: true,

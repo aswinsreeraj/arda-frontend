@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '@/features/auth/authStore';
+import { TopNav } from '@/components/shared/TopNav';
 import { ENDPOINT_GROUPS, ALL_ENDPOINTS, getEndpointById } from './docsData';
 import { DocsHeader } from './components/DocsHeader';
 import { AuthCalloutBanner } from './components/AuthCalloutBanner';
@@ -27,6 +29,7 @@ export const DocsPage: React.FC = () => {
       ? searchEndpoint
       : 'create-execution';
 
+  const { isAuthenticated } = useAuthStore();
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
 
   const handleSelectEndpoint = (id: string) => {
@@ -50,7 +53,11 @@ export const DocsPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col font-sans text-[#DADADA] selection:bg-blue-600/40 selection:text-white bg-[#131313]">
       {/* Top Application Header */}
-      <DocsHeader onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
+      {isAuthenticated ? (
+        <TopNav />
+      ) : (
+        <DocsHeader onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
+      )}
 
       {/* Main 3-Column API Reference Workspace */}
       <div className="flex flex-1 w-full max-w-[1920px] mx-auto overflow-hidden">

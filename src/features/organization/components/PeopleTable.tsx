@@ -85,7 +85,7 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
                       </div>
                     ) : (
                       <div
-                        className={`w-6 h-6 rounded-full text-[10px] font-medium flex items-center justify-center ${
+                        className={`w-7 h-7 rounded-full text-xs font-medium flex items-center justify-center ${
                           isDisabled
                             ? 'bg-[#202020] text-[#666666]'
                             : 'bg-[#2a2a2a] text-[#a3a3a3]'
@@ -106,7 +106,7 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
                       {isInvited ? 'Pending invite' : member.display_name}
                     </span>
                     {member.is_current_user && (
-                      <span className="text-[10px] bg-[#242424] text-[#888888] px-1.5 py-0.2 rounded border border-[#333333]">
+                      <span className="text-xs bg-[#242424] text-[#888888] px-1.5 py-0.5 rounded border border-[#333333]">
                         you
                       </span>
                     )}

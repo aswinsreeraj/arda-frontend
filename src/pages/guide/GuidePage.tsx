@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuthStore } from '@/features/auth/authStore';
+import { TopNav } from '@/components/shared/TopNav';
 import {
   Copy,
   Check,
@@ -46,6 +48,7 @@ const CodeSnippet: React.FC<CodeSnippetProps> = ({ filename, code }) => {
 };
 
 export const GuidePage: React.FC = () => {
+  const { isAuthenticated } = useAuthStore();
   const [activeAnchor, setActiveAnchor] = useState('what-is-this-platform');
 
   const scrollTo = (id: string) => {
@@ -59,43 +62,47 @@ export const GuidePage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col text-[#dadada] text-[13px] leading-relaxed selection:bg-[#2563eb] selection:text-white bg-[#131313]">
       {/* Top Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-[#282828] backdrop-blur-sm bg-[#131313]/95">
-        <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between">
-          {/* Left brand & primary nav */}
-          <div className="flex items-center space-x-8">
-            <Link to="/" className="flex items-center space-x-2 text-white font-medium text-sm tracking-tight hover:opacity-90">
-              <span className="font-semibold text-white tracking-wide text-sm font-sans">ΛRDΛ</span>
-            </Link>
-            <nav className="hidden md:flex items-center space-x-6 text-[13px] text-[#9ca3af]">
-              <Link to="/docs" className="hover:text-white transition-colors">
-                Docs
+      {isAuthenticated ? (
+        <TopNav />
+      ) : (
+        <header className="sticky top-0 z-50 w-full border-b border-[#282828] backdrop-blur-sm bg-[#131313]/95">
+          <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between">
+            {/* Left brand & primary nav */}
+            <div className="flex items-center space-x-8">
+              <Link to="/" className="flex items-center space-x-2 text-white font-medium text-sm tracking-tight hover:opacity-90">
+                <span className="font-semibold text-white tracking-wide text-sm font-sans">ΛRDΛ</span>
               </Link>
-              <Link to="/guide" className="text-white font-medium">
-                Guides
-              </Link>
-              <Link to="/docs" className="hover:text-white transition-colors">
-                API reference
-              </Link>
-              <Link to="/runs" className="hover:text-white transition-colors">
-                Execution Traces
-              </Link>
-            </nav>
-          </div>
+              <nav className="hidden md:flex items-center space-x-6 text-[13px] text-[#9ca3af]">
+                <Link to="/docs" className="hover:text-white transition-colors">
+                  Docs
+                </Link>
+                <Link to="/guide" className="text-white font-medium">
+                  Guides
+                </Link>
+                <Link to="/docs" className="hover:text-white transition-colors">
+                  API reference
+                </Link>
+                <Link to="/runs" className="hover:text-white transition-colors">
+                  Execution Traces
+                </Link>
+              </nav>
+            </div>
 
-          {/* Right auth actions */}
-          <div className="flex items-center space-x-4">
-            <Link to="/login" className="text-[13px] text-[#9ca3af] hover:text-white transition-colors">
-              Sign in
-            </Link>
-            <Link
-              to="/reviews"
-              className="text-[12px] font-medium bg-[#2563eb] text-white px-3.5 py-1.5 rounded hover:bg-[#1d4ed8] transition-colors shadow-xs"
-            >
-              Get Started
-            </Link>
+            {/* Right auth actions */}
+            <div className="flex items-center space-x-4">
+              <Link to="/login" className="text-[13px] text-[#9ca3af] hover:text-white transition-colors">
+                Sign in
+              </Link>
+              <Link
+                to="/reviews"
+                className="text-[12px] font-medium bg-[#2563eb] text-white px-3.5 py-1.5 rounded hover:bg-[#1d4ed8] transition-colors shadow-xs"
+              >
+                Get Started
+              </Link>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Documentation Layout */}
       <div className="max-w-[1440px] mx-auto w-full px-6 flex-1 flex pt-8 pb-20">

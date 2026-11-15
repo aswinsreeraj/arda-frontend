@@ -137,7 +137,7 @@ export const router = createBrowserRouter([
       {
         path: '/audit',
         element: (
-          <RoleGuard allowedRoles={['company_admin', 'reviewer', 'agent_developer']}>
+          <RoleGuard allowedRoles={['super_admin', 'company_admin', 'reviewer', 'agent_developer']}>
             <AuditTrailPage />
           </RoleGuard>
         ),
@@ -161,7 +161,7 @@ export const router = createBrowserRouter([
       {
         path: '/platform',
         element: (
-          <RoleGuard allowedRoles={['company_admin', 'super_admin']}>
+          <RoleGuard allowedRoles={['super_admin']}>
             <PlatformPage />
           </RoleGuard>
         ),
@@ -169,7 +169,7 @@ export const router = createBrowserRouter([
       {
         path: '/super-admin',
         element: (
-          <RoleGuard allowedRoles={['company_admin', 'super_admin']}>
+          <RoleGuard allowedRoles={['super_admin']}>
             <PlatformPage />
           </RoleGuard>
         ),

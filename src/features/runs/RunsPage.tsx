@@ -14,15 +14,21 @@ export const RunsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isDispatcherOpen, setIsDispatcherOpen] = useState(false);
 
-  // Query real runs from backend & store
+  // Query real runs from backend & store, polling dynamically if any run is in 'running' state
   const {
     data: fetchedRuns = [],
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useQuery({
     queryKey: ['runs'],
     queryFn: ({ signal }) => runsApi.fetchRuns(signal),
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      const hasRunning = data?.some((r) => r.status === 'running' || r.status === 'accepted');
+      return hasRunning ? 3000 : 15000;
+    },
   });
 
   // Keep store in sync with fetched runs if store has fewer
@@ -138,7 +144,7 @@ export const RunsPage: React.FC = () => {
       ) : (
         <RunsTable
           runs={allRuns}
-          isLoading={isLoading}
+          isLoading={isLoading || isFetching}
           error={error as Error | null}
           onRefresh={() => refetch()}
           onSelectRun={handleSelectRun}

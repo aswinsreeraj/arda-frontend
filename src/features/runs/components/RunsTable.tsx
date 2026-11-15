@@ -64,7 +64,7 @@ export const RunsTable: React.FC<RunsTableProps> = ({
       case 'running':
       case 'accepted':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono border bg-blue-950/40 text-blue-400 border-blue-800/50">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono border bg-blue-950/40 text-blue-400 border-blue-800/50">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping mr-1.5" />
             <span>running</span>
           </span>
@@ -165,9 +165,9 @@ export const RunsTable: React.FC<RunsTableProps> = ({
 
       {/* Table Container */}
       <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#181818] shadow-sm">
-        <table className="w-full text-left border-collapse text-xs">
+        <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr className="border-b border-[#262626] text-[11px] uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
+            <tr className="border-b border-[#262626] text-xs uppercase tracking-wider text-[#929292] font-semibold bg-[#161616]">
               <th className="py-3 px-4">Run & Workflow ID</th>
               <th className="py-3 px-4">Agent</th>
               <th className="py-3 px-4">Mode</th>
@@ -239,20 +239,20 @@ export const RunsTable: React.FC<RunsTableProps> = ({
                     }`}
                   >
                     <td className="py-3.5 px-4 font-mono">
-                      <div className="text-white font-medium flex items-center gap-1.5">
+                      <div className="text-white font-medium flex items-center gap-1.5 text-xs sm:text-sm">
                         <span>{run.id.slice(0, 16)}</span>
                         {isSelected && (
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                         )}
                       </div>
-                      <div className="text-[10px] text-gray-500 truncate max-w-xs">
+                      <div className="text-xs text-gray-400 truncate max-w-xs mt-0.5">
                         {run.workflow_id}
                       </div>
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <div className="font-medium text-white">{run.agent_name}</div>
-                      <div className="text-[11px] font-mono text-gray-400">
+                      <div className="font-medium text-white text-xs sm:text-sm">{run.agent_name}</div>
+                      <div className="text-xs font-mono text-gray-400 mt-0.5">
                         v{run.agent_version_number || 1}
                       </div>
                     </td>
@@ -265,11 +265,11 @@ export const RunsTable: React.FC<RunsTableProps> = ({
 
                     <td className="py-3.5 px-4">{getStatusBadge(run.status)}</td>
 
-                    <td className="py-3.5 px-4 font-mono text-gray-300">
+                    <td className="py-3.5 px-4 font-mono text-gray-200 text-xs sm:text-sm">
                       {run.duration_ms}ms
                     </td>
 
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-gray-400">
+                    <td className="py-3.5 px-4 font-mono text-xs text-gray-400">
                       {formatDate(run.created_at)}
                     </td>
                   </tr>

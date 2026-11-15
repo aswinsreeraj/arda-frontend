@@ -53,7 +53,7 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
       case 'running':
       case 'accepted':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono border bg-blue-950/40 text-blue-400 border-blue-800/50">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono border bg-blue-950/40 text-blue-400 border-blue-800/50">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping mr-1.5" />
             <span>running</span>
           </span>
@@ -100,7 +100,7 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
             </Badge>
           </div>
 
-          <div className="text-[11px] font-mono text-gray-500">
+          <div className="text-xs font-mono text-gray-400">
             Workflow: {run.workflow_id}
           </div>
         </div>
@@ -109,7 +109,7 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
         <div className="flex items-center gap-3">
           <div className="text-right text-xs text-gray-400 font-mono">
             <div>Duration: <strong className="text-white">{run.duration_ms}ms</strong></div>
-            <div className="text-[10px] text-gray-500">
+            <div className="text-xs text-gray-400 mt-0.5">
               {new Date(run.created_at).toLocaleString()}
             </div>
           </div>

@@ -48,23 +48,23 @@ export const AuditTable: React.FC<AuditTableProps> = ({ items, onInspectIntegrit
       className="mt-2 border border-[#222222] rounded bg-[#141414] overflow-x-auto custom-scroll"
       data-purpose="ledger-table-container"
     >
-      <table className="w-full text-left text-xs border-collapse font-sans whitespace-nowrap">
+      <table className="w-full text-left text-xs sm:text-sm border-collapse font-sans whitespace-nowrap">
         {/* Table Header */}
-        <thead className="bg-[#171717] text-[#71717a] font-normal border-b border-[#222222] select-none text-[11px]">
+        <thead className="bg-[#171717] text-[#8e8e93] font-normal border-b border-[#222222] select-none text-xs">
           <tr>
-            <th className="w-20 py-2.5 px-3 pl-4 font-normal">Seq</th>
-            <th className="w-44 py-2.5 px-3 font-normal">Recorded (UTC)</th>
-            <th className="w-32 py-2.5 px-3 font-normal">Execution</th>
-            <th className="w-36 py-2.5 px-3 font-normal">Agent</th>
-            <th className="w-28 py-2.5 px-3 font-normal">Source</th>
-            <th className="py-2.5 px-3 font-normal">Decision</th>
-            <th className="w-24 py-2.5 px-3 text-right font-normal">Confidence</th>
-            <th className="w-28 py-2.5 px-3 pr-4 text-right font-normal">Integrity</th>
+            <th className="w-20 py-3 px-3 pl-4 font-medium">Seq</th>
+            <th className="w-44 py-3 px-3 font-medium">Recorded (UTC)</th>
+            <th className="w-32 py-3 px-3 font-medium">Execution</th>
+            <th className="w-36 py-3 px-3 font-medium">Agent</th>
+            <th className="w-28 py-3 px-3 font-medium">Source</th>
+            <th className="py-3 px-3 font-medium">Decision</th>
+            <th className="w-24 py-3 px-3 text-right font-medium">Confidence</th>
+            <th className="w-28 py-3 px-3 pr-4 text-right font-medium">Integrity</th>
           </tr>
         </thead>
 
         {/* Table Body */}
-        <tbody className="divide-y divide-[#1e1e1e] text-[#9ca3af] text-[12px]">
+        <tbody className="divide-y divide-[#1e1e1e] text-[#a1a1aa] text-xs sm:text-sm">
           {items.map((item) => {
             const isExpanded = expandedSeq === item.seq;
             const isHuman = item.source === 'human';
@@ -203,18 +203,18 @@ export const AuditTable: React.FC<AuditTableProps> = ({ items, onInspectIntegrit
                           <div className="flex items-center space-x-2">
                             <Link
                               to={`/runs?search=${encodeURIComponent(item.execution_id)}`}
-                              className="px-2 py-1 rounded bg-[#1c1c1c] hover:bg-[#252525] text-neutral-300 text-[11px] border border-[#2b2b2b] flex items-center space-x-1"
+                              className="px-2.5 py-1.5 rounded bg-[#1c1c1c] hover:bg-[#252525] text-neutral-300 text-xs border border-[#2b2b2b] flex items-center space-x-1"
                             >
                               <span>View Run Trace</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </Link>
                             {item.case_id && (
                               <Link
                                 to={`/reviews?search=${encodeURIComponent(item.case_id)}`}
-                                className="px-2 py-1 rounded bg-[#16202c] hover:bg-[#1f2d3d] text-sky-300 text-[11px] border border-[#24354a] flex items-center space-x-1"
+                                className="px-2.5 py-1.5 rounded bg-[#16202c] hover:bg-[#1f2d3d] text-sky-300 text-xs border border-[#24354a] flex items-center space-x-1"
                               >
                                 <span>View Review Case</span>
-                                <ExternalLink className="w-3 h-3" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                               </Link>
                             )}
                           </div>
@@ -222,8 +222,8 @@ export const AuditTable: React.FC<AuditTableProps> = ({ items, onInspectIntegrit
 
                         {/* Guardrail Denial Alert if present */}
                         {item.denial_reason && (
-                          <div className="p-3 rounded bg-rose-950/20 border border-rose-800/40 text-rose-300 text-[11px] flex items-start space-x-2">
-                            <ShieldAlert className="w-3.5 h-3.5 text-rose-400 mt-0.5 shrink-0" />
+                          <div className="p-3 rounded bg-rose-950/20 border border-rose-800/40 text-rose-300 text-xs flex items-start space-x-2">
+                            <ShieldAlert className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
                             <div>
                               <span className="font-semibold">Guardrail Policy Intervention: </span>
                               <span>{item.denial_reason}</span>
@@ -232,11 +232,11 @@ export const AuditTable: React.FC<AuditTableProps> = ({ items, onInspectIntegrit
                         )}
 
                         {/* Cryptographic Linkage Hashes */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-[11px]">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
                           <div className="p-2.5 rounded bg-[#161616] border border-[#242424]">
                             <div className="text-neutral-500 flex items-center justify-between mb-1">
                               <span>Prior Block Hash (H_{'{i-1}'})</span>
-                              <span className="text-[10px] text-neutral-600">Parent Link</span>
+                              <span className="text-xs text-neutral-600">Parent Link</span>
                             </div>
                             <div className="text-neutral-300 select-all break-all bg-[#0d0d0d] p-1.5 rounded border border-[#1f1f1f]">
                               {item.prev_hash}

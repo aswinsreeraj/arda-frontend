@@ -160,19 +160,19 @@ export const AuditTrailPage: React.FC = () => {
       >
         <div>
           <div className="flex items-center space-x-2.5">
-            <h1 className="text-lg font-semibold text-white tracking-tight">Audit trail</h1>
+            <h1 className="text-xl font-bold text-white tracking-tight">Audit trail</h1>
             {/* read-only badge */}
-            <span className="inline-flex items-center space-x-1 px-1.5 py-0.5 rounded text-[11px] font-mono bg-[#1a1a1a] text-[#9ca3af] border border-[#2b2b2b]">
-              <Lock className="w-3 h-3 text-neutral-400" />
+            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded text-xs font-mono bg-[#1a1a1a] text-[#9ca3af] border border-[#2b2b2b]">
+              <Lock className="w-3.5 h-3.5 text-neutral-400" />
               <span>read-only</span>
             </span>
             {/* append-only badge */}
-            <span className="inline-flex items-center space-x-1.5 px-1.5 py-0.5 rounded text-[11px] font-mono bg-[#1a1a1a] text-[#9ca3af] border border-[#2b2b2b]">
+            <span className="inline-flex items-center space-x-1.5 px-2 py-0.5 rounded text-xs font-mono bg-[#1a1a1a] text-[#9ca3af] border border-[#2b2b2b]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>append-only</span>
             </span>
           </div>
-          <p className="text-xs text-[#70757f] mt-1">
+          <p className="text-xs sm:text-sm text-[#8a8f99] mt-1">
             Every decision the platform has committed, automatic and reviewed. Each entry is
             hash-linked to the one before it.
           </p>
@@ -180,13 +180,13 @@ export const AuditTrailPage: React.FC = () => {
 
         {/* Right Chain Head Stats & Verify Action */}
         <div className="flex items-center space-x-4">
-          <div className="text-right text-[11px] font-mono leading-tight space-y-1">
-            <div className="text-[#7c828d]">
-              chain head <span className="text-neutral-300">#{chainHead.seq}</span> ·{' '}
+          <div className="text-right text-xs font-mono leading-tight space-y-1">
+            <div className="text-[#8c929e]">
+              chain head <span className="text-neutral-200">#{chainHead.seq}</span> ·{' '}
               <span className="text-neutral-400">{chainHead.hash}</span>
             </div>
-            <div className="text-[#7c828d]">
-              last entry <span className="text-neutral-400">{chainHead.lastEntry}</span>
+            <div className="text-[#8c929e]">
+              last entry <span className="text-neutral-300">{chainHead.lastEntry}</span>
             </div>
           </div>
           <button
@@ -202,7 +202,7 @@ export const AuditTrailPage: React.FC = () => {
 
       {/* Toolbar: Search, Filters, Sources & Counter */}
       <section
-        className="flex flex-wrap items-center justify-between gap-3 py-2 text-[12px]"
+        className="flex flex-wrap items-center justify-between gap-3 py-2 text-xs sm:text-sm"
         data-purpose="table-filter-toolbar"
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -212,7 +212,7 @@ export const AuditTrailPage: React.FC = () => {
             <input
               value={filters.search || ''}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-              className="h-8 pl-8 pr-3 w-64 bg-[#181818] border border-[#262626] rounded text-[#d6d9e0] placeholder-[#5a5f6b] focus:outline-none focus:border-neutral-500 text-xs transition-colors"
+              className="h-8 pl-8 pr-3 w-64 bg-[#181818] border border-[#262626] rounded text-[#d6d9e0] placeholder-[#5a5f6b] focus:outline-none focus:border-neutral-500 text-xs sm:text-sm transition-colors"
               placeholder="Execution ID, seq, hash, actor"
               type="text"
             />
@@ -229,7 +229,7 @@ export const AuditTrailPage: React.FC = () => {
                   timeframe: e.target.value as AuditListFilters['timeframe'],
                 }))
               }
-              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
+              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
             >
               <option value="all">Recorded: All time</option>
               <option value="24h">Recorded: Last 24 hours</option>
@@ -245,7 +245,7 @@ export const AuditTrailPage: React.FC = () => {
               value={filters.agent_id || 'all'}
               aria-label="Agent Filter"
               onChange={(e) => setFilters((prev) => ({ ...prev, agent_id: e.target.value }))}
-              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
+              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
             >
               <option value="all">Agent: All agents</option>
               {uniqueAgents.map((agName) => (
@@ -261,7 +261,7 @@ export const AuditTrailPage: React.FC = () => {
           <div className="flex items-center h-8 bg-[#181818] border border-[#262626] rounded p-0.5">
             <button
               onClick={() => setFilters((prev) => ({ ...prev, source: 'all' }))}
-              className={`px-2.5 h-full rounded text-[11px] font-medium transition-colors ${
+              className={`px-2.5 h-full rounded text-xs font-medium transition-colors ${
                 filters.source === 'all' ? 'bg-[#282828] text-white' : 'text-[#8c919b] hover:text-white'
               }`}
             >
@@ -269,7 +269,7 @@ export const AuditTrailPage: React.FC = () => {
             </button>
             <button
               onClick={() => setFilters((prev) => ({ ...prev, source: 'agent' }))}
-              className={`px-2.5 h-full rounded text-[11px] flex items-center space-x-1.5 transition-colors ${
+              className={`px-2.5 h-full rounded text-xs flex items-center space-x-1.5 transition-colors ${
                 filters.source === 'agent'
                   ? 'bg-[#282828] text-white font-medium'
                   : 'text-[#8c919b] hover:text-neutral-300'
@@ -280,7 +280,7 @@ export const AuditTrailPage: React.FC = () => {
             </button>
             <button
               onClick={() => setFilters((prev) => ({ ...prev, source: 'human' }))}
-              className={`px-2.5 h-full rounded text-[11px] flex items-center space-x-1.5 transition-colors ${
+              className={`px-2.5 h-full rounded text-xs flex items-center space-x-1.5 transition-colors ${
                 filters.source === 'human'
                   ? 'bg-[#282828] text-white font-medium'
                   : 'text-[#8c919b] hover:text-neutral-300'
@@ -302,7 +302,7 @@ export const AuditTrailPage: React.FC = () => {
                   outcome: e.target.value as AuditListFilters['outcome'],
                 }))
               }
-              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
+              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
             >
               <option value="all">Outcome: All outcomes</option>
               <option value="allowed">Allowed / Approved</option>
@@ -314,7 +314,7 @@ export const AuditTrailPage: React.FC = () => {
         </div>
 
         {/* Result Count */}
-        <span className="text-[12px] font-mono text-[#666b75]">
+        <span className="text-xs sm:text-sm font-mono text-[#787e8a]">
           {filteredItems.length} entries
         </span>
       </section>
@@ -349,7 +349,7 @@ export const AuditTrailPage: React.FC = () => {
 
       {/* Table Compliance Footer */}
       <footer
-        className="mt-3 py-1 flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-[#626772] space-y-2 sm:space-y-0"
+        className="mt-3 py-1 flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-[#767c88] space-y-2 sm:space-y-0"
         data-purpose="ledger-compliance-footer"
       >
         <div className="flex items-center space-x-1.5">

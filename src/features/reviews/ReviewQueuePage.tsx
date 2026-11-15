@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   Clock,
   ShieldAlert,
+  ShieldCheck,
   Check,
   X,
   Edit3,
@@ -257,19 +258,25 @@ export const ReviewQueuePage: React.FC = () => {
         }
       } else if (e.key === 'a' || e.key === 'A') {
         e.preventDefault();
-        triggerAdjudicate('approve');
+        if (caseDetail?.status !== 'RESOLVED') {
+          triggerAdjudicate('approve');
+        }
       } else if (e.key === 'r' || e.key === 'R') {
         e.preventDefault();
-        triggerAdjudicate('reject');
+        if (caseDetail?.status !== 'RESOLVED') {
+          triggerAdjudicate('reject');
+        }
       } else if (e.key === 'o' || e.key === 'O') {
         e.preventDefault();
-        triggerAdjudicate('override');
+        if (caseDetail?.status !== 'RESOLVED') {
+          triggerAdjudicate('override');
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, filteredCases, handleSelectCase, triggerAdjudicate, isResolveModalOpen]);
+  }, [currentIndex, filteredCases, handleSelectCase, triggerAdjudicate, isResolveModalOpen, caseDetail?.status]);
 
   // Derive priority badge based on confidence and threshold
   const getPriorityBadge = (confidence: number) => {
@@ -929,51 +936,77 @@ export const ReviewQueuePage: React.FC = () => {
 
               {/* Sticky Bottom Action Bar */}
               <footer className="p-3.5 border-t border-[#232323] bg-[#161616] flex items-center justify-between flex-none z-20">
-                <div className="flex items-center space-x-2">
-                  <button
-                    disabled={caseDetail.status === 'RESOLVED' || resolveMutation.isPending}
-                    onClick={() => triggerAdjudicate('approve')}
-                    className="bg-blue-600 hover:bg-blue-500 disabled:bg-[#202020] disabled:text-neutral-500 disabled:border disabled:border-[#2e2e2e] text-white font-medium px-4 py-1.5 rounded text-xs flex items-center space-x-1.5 shadow-sm transition-colors cursor-pointer"
-                  >
-                    <span>✓ Approve</span>
-                    <span className="bg-blue-700 text-blue-200 px-1 py-0.2 rounded text-[10px] font-mono">
-                      A
-                    </span>
-                  </button>
+                {caseDetail.status === 'RESOLVED' ? (
+                  <div className="flex-1 flex items-center justify-between bg-[#181818] border border-emerald-800/40 rounded px-3.5 py-2">
+                    <div className="flex items-center space-x-2.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <div>
+                        <div className="text-xs font-semibold text-emerald-300 flex items-center space-x-1.5">
+                          <span>Case Resolved · Immutable Record</span>
+                          <span className="px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 text-[10px] font-mono uppercase">
+                            Final
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-neutral-400 mt-0.5">
+                          This case has already been adjudicated and committed to Temporal. No further modification permitted.
+                        </div>
+                      </div>
+                    </div>
+                    {caseDetail.resolution?.resolution_reason && (
+                      <div className="text-right max-w-xs truncate text-[11px] text-neutral-400 italic">
+                        &quot;{caseDetail.resolution.resolution_reason}&quot;
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        disabled={resolveMutation.isPending}
+                        onClick={() => triggerAdjudicate('approve')}
+                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-[#202020] disabled:text-neutral-500 text-white font-medium px-4 py-1.5 rounded text-xs flex items-center space-x-1.5 shadow-sm transition-colors cursor-pointer"
+                      >
+                        <span>✓ Approve</span>
+                        <span className="bg-blue-700 text-blue-200 px-1 py-0.2 rounded text-[10px] font-mono">
+                          A
+                        </span>
+                      </button>
 
-                  <button
-                    disabled={caseDetail.status === 'RESOLVED' || resolveMutation.isPending}
-                    onClick={() => triggerAdjudicate('reject')}
-                    className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-red-900/50 hover:border-red-700/70 text-red-400 font-medium px-3.5 py-1.5 rounded text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
-                  >
-                    <span>✕ Reject</span>
-                    <span className="bg-[#2a2a2a] text-neutral-400 px-1 py-0.2 rounded text-[10px] font-mono">
-                      R
-                    </span>
-                  </button>
+                      <button
+                        disabled={resolveMutation.isPending}
+                        onClick={() => triggerAdjudicate('reject')}
+                        className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-red-900/50 hover:border-red-700/70 text-red-400 font-medium px-3.5 py-1.5 rounded text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+                      >
+                        <span>✕ Reject</span>
+                        <span className="bg-[#2a2a2a] text-neutral-400 px-1 py-0.2 rounded text-[10px] font-mono">
+                          R
+                        </span>
+                      </button>
 
-                  <button
-                    disabled={caseDetail.status === 'RESOLVED' || resolveMutation.isPending}
-                    onClick={() => triggerAdjudicate('override')}
-                    className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-[#333333] hover:border-neutral-500 text-neutral-300 font-medium px-3.5 py-1.5 rounded text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
-                  >
-                    <span>✎ Override</span>
-                    <span className="bg-[#2a2a2a] text-neutral-400 px-1 py-0.2 rounded text-[10px] font-mono">
-                      O
-                    </span>
-                  </button>
-                </div>
+                      <button
+                        disabled={resolveMutation.isPending}
+                        onClick={() => triggerAdjudicate('override')}
+                        className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-[#333333] hover:border-neutral-500 text-neutral-300 font-medium px-3.5 py-1.5 rounded text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+                      >
+                        <span>✎ Override</span>
+                        <span className="bg-[#2a2a2a] text-neutral-400 px-1 py-0.2 rounded text-[10px] font-mono">
+                          O
+                        </span>
+                      </button>
+                    </div>
 
-                {/* Hotkey Guide */}
-                <div className="flex items-center space-x-1.5 text-xs text-neutral-400">
-                  <span className="bg-[#222222] border border-[#333] px-1 py-0.2 rounded font-mono text-[10px] text-neutral-300">
-                    J
-                  </span>
-                  <span className="bg-[#222222] border border-[#333] px-1 py-0.2 rounded font-mono text-[10px] text-neutral-300">
-                    K
-                  </span>
-                  <span className="text-[11px] text-neutral-400">next / prev case</span>
-                </div>
+                    {/* Hotkey Guide */}
+                    <div className="flex items-center space-x-1.5 text-xs text-neutral-400">
+                      <span className="bg-[#222222] border border-[#333] px-1 py-0.2 rounded font-mono text-[10px] text-neutral-300">
+                        J
+                      </span>
+                      <span className="bg-[#222222] border border-[#333] px-1 py-0.2 rounded font-mono text-[10px] text-neutral-300">
+                        K
+                      </span>
+                      <span className="text-[11px] text-neutral-400">next / prev case</span>
+                    </div>
+                  </>
+                )}
               </footer>
             </>
           )}
