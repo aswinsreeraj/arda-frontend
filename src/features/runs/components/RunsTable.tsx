@@ -111,7 +111,7 @@ export const RunsTable: React.FC<RunsTableProps> = ({
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-[#181818] border border-[#2e2e2e] text-xs text-gray-300 rounded-md pl-2.5 pr-7 py-1.5 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
+              className="bg-[#181818] border border-[#2e2e2e] text-xs text-gray-300 rounded-md pl-2.5 pr-8 py-1.5 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
             >
               <option value="all">All statuses</option>
               <option value="running">Running</option>
@@ -126,7 +126,7 @@ export const RunsTable: React.FC<RunsTableProps> = ({
             <select
               value={modeFilter}
               onChange={(e) => setModeFilter(e.target.value)}
-              className="bg-[#181818] border border-[#2e2e2e] text-xs text-gray-300 rounded-md pl-2.5 pr-7 py-1.5 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
+              className="bg-[#181818] border border-[#2e2e2e] text-xs text-gray-300 rounded-md pl-2.5 pr-8 py-1.5 focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
             >
               <option value="all">All modes</option>
               <option value="durable">Durable (Temporal)</option>

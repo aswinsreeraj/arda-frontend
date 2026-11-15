@@ -191,7 +191,7 @@ export const AuditTrailPage: React.FC = () => {
           </div>
           <button
             onClick={handleVerifyChain}
-            className="h-8 px-3 rounded bg-[#1e293b]/70 hover:bg-[#283548] text-sky-300 border border-[#334155] text-xs font-medium flex items-center space-x-1.5 transition-colors shadow-xs"
+            className="h-9 px-3 rounded bg-[#1e293b]/70 hover:bg-[#283548] text-sky-300 border border-[#334155] text-xs font-medium flex items-center space-x-1.5 transition-colors shadow-xs"
             title="Perform cryptographic verification over hash-chain"
           >
             <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
@@ -212,7 +212,7 @@ export const AuditTrailPage: React.FC = () => {
             <input
               value={filters.search || ''}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-              className="h-8 pl-8 pr-3 w-64 bg-[#181818] border border-[#262626] rounded text-[#d6d9e0] placeholder-[#5a5f6b] focus:outline-none focus:border-neutral-500 text-xs sm:text-sm transition-colors"
+              className="h-9 pl-8 pr-3 w-64 bg-[#181818] border border-[#262626] rounded text-[#d6d9e0] placeholder-[#5a5f6b] focus:outline-none focus:border-neutral-500 text-xs sm:text-sm transition-colors"
               placeholder="Execution ID, seq, hash, actor"
               type="text"
             />
@@ -229,7 +229,7 @@ export const AuditTrailPage: React.FC = () => {
                   timeframe: e.target.value as AuditListFilters['timeframe'],
                 }))
               }
-              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
+              className="h-9 py-1 pl-2.5 pr-8 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
             >
               <option value="all">Recorded: All time</option>
               <option value="24h">Recorded: Last 24 hours</option>
@@ -245,7 +245,7 @@ export const AuditTrailPage: React.FC = () => {
               value={filters.agent_id || 'all'}
               aria-label="Agent Filter"
               onChange={(e) => setFilters((prev) => ({ ...prev, agent_id: e.target.value }))}
-              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
+              className="h-9 py-1 pl-2.5 pr-8 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
             >
               <option value="all">Agent: All agents</option>
               {uniqueAgents.map((agName) => (
@@ -258,7 +258,7 @@ export const AuditTrailPage: React.FC = () => {
           </div>
 
           {/* Segmented Source Filter */}
-          <div className="flex items-center h-8 bg-[#181818] border border-[#262626] rounded p-0.5">
+          <div className="flex items-center h-9 bg-[#181818] border border-[#262626] rounded p-0.5">
             <button
               onClick={() => setFilters((prev) => ({ ...prev, source: 'all' }))}
               className={`px-2.5 h-full rounded text-xs font-medium transition-colors ${
@@ -302,7 +302,7 @@ export const AuditTrailPage: React.FC = () => {
                   outcome: e.target.value as AuditListFilters['outcome'],
                 }))
               }
-              className="h-8 pl-2.5 pr-7 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
+              className="h-9 py-1 pl-2.5 pr-8 rounded bg-[#181818] border border-[#262626] text-[#8e94a0] hover:text-white text-xs sm:text-sm appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer"
             >
               <option value="all">Outcome: All outcomes</option>
               <option value="allowed">Allowed / Approved</option>
