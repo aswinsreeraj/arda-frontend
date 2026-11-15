@@ -10,12 +10,14 @@ import {
   X,
   ShieldCheck,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '../agentApi';
 import type { Credential } from '../types';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/features/auth/authStore';
+import { ARDA_LLM_PROVIDERS, getProviderDisplayName } from '../llmProviders';
 
 export const LlmKeysTab: React.FC = () => {
   const queryClient = useQueryClient();
@@ -23,9 +25,14 @@ export const LlmKeysTab: React.FC = () => {
   const [isAddKeyOpen, setIsAddKeyOpen] = useState(false);
 
   // Form states (never stored in local storage)
-  const [provider, setProvider] = useState('');
+  const [selectedProviderId, setSelectedProviderId] = useState<string>('openai');
+  const [customProvider, setCustomProvider] = useState('');
   const [secretValue, setSecretValue] = useState('');
   const [modalError, setModalError] = useState<string | null>(null);
+
+  const isCustom = selectedProviderId === 'custom';
+  const effectiveProvider = isCustom ? customProvider.trim().toLowerCase() : selectedProviderId;
+  const currentProviderMeta = ARDA_LLM_PROVIDERS.find((p) => p.id === selectedProviderId);
 
   // Verification results map: credentialId -> { verified: boolean, message: string }
   const [verifyResults, setVerifyResults] = useState<
@@ -58,14 +65,15 @@ export const LlmKeysTab: React.FC = () => {
     mutationFn: async () => {
       return agentApi.saveCredential({
         category: 'llm',
-        provider: provider.trim().toLowerCase(),
+        provider: effectiveProvider,
         secret_value: secretValue.trim(),
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['credentials'] });
       setIsAddKeyOpen(false);
-      setProvider('');
+      setSelectedProviderId('openai');
+      setCustomProvider('');
       setSecretValue(''); // Immediately purge from state
       setModalError(null);
     },
@@ -104,8 +112,8 @@ export const LlmKeysTab: React.FC = () => {
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!provider.trim()) {
-      setModalError('Provider name is required (e.g. groq, openai, anthropic)');
+    if (!effectiveProvider) {
+      setModalError('Please select or specify an LLM provider identifier');
       return;
     }
     if (!secretValue.trim()) {
@@ -239,14 +247,16 @@ export const LlmKeysTab: React.FC = () => {
                 const isVerifying = verifyingId === cred.id;
 
                 return (
-                  <tr key={cred.id} className="hover:bg-[#1d1d1d] transition">
+                  <tr key={cred.id} className="hover:bg-slate-50 dark:hover:bg-[#1d1d1d] transition">
                     <td className="py-3.5 px-4">
-                      <div className="font-medium text-white text-sm capitalize">
-                        {cred.provider}
+                      <div className="font-medium text-slate-900 dark:text-white text-sm">
+                        {getProviderDisplayName(cred.provider)}
                       </div>
-                      <div className="font-mono text-[11px] text-[#71717a]">LLM Provider</div>
+                      <div className="font-mono text-[11px] text-slate-500 dark:text-[#71717a]">
+                        ID: {cred.provider}
+                      </div>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-gray-400 text-xs">
+                    <td className="py-3.5 px-4 font-mono text-slate-500 dark:text-gray-400 text-xs">
                       {maskReference(cred.reference)}
                     </td>
                     <td className="py-3.5 px-4">
@@ -255,20 +265,20 @@ export const LlmKeysTab: React.FC = () => {
                           <span
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono border ${
                               check.verified
-                                ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/50'
-                                : 'bg-red-950/40 text-red-400 border-red-800/50'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/50'
+                                : 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800/50'
                             }`}
                             title={check.message}
                           >
                             {check.verified ? (
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                             ) : (
-                              <XCircle className="w-3 h-3 text-red-400" />
+                              <XCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
                             )}
                             <span>{check.verified ? 'verified' : 'unreachable'}</span>
                           </span>
                         ) : (
-                          <span className="text-[11px] text-gray-500 font-mono">unverified</span>
+                          <span className="text-[11px] text-slate-500 dark:text-gray-500 font-mono">unverified</span>
                         )}
 
                         {canManageCredentials && (
@@ -285,7 +295,7 @@ export const LlmKeysTab: React.FC = () => {
                         )}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-gray-500 font-mono text-[11px]">
+                    <td className="py-3.5 px-4 text-slate-500 dark:text-gray-500 font-mono text-[11px]">
                       {new Date(cred.created_at).toLocaleDateString()}
                     </td>
                     {canManageCredentials && (
@@ -298,7 +308,7 @@ export const LlmKeysTab: React.FC = () => {
                               deleteMutation.mutate(cred.id);
                             }
                           }}
-                          className="text-gray-400 hover:text-red-400 p-1"
+                          className="text-slate-400 hover:text-red-600 dark:hover:text-red-400 p-1"
                           title="Delete vaulted key"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -316,16 +326,16 @@ export const LlmKeysTab: React.FC = () => {
       {/* Add Key Modal */}
       {isAddKeyOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
-          <div className="bg-[#1c1c1c] border border-[#2e2e2e] rounded-xl shadow-2xl max-w-md w-full overflow-hidden text-xs">
-            <div className="px-5 py-4 border-b border-[#282828] flex items-center justify-between">
-              <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                <Key className="w-4 h-4 text-blue-400" />
+          <div className="bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-2xl max-w-md w-full overflow-hidden text-xs">
+            <div className="px-5 py-4 border-b border-slate-200 dark:border-[#282828] flex items-center justify-between">
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Key className="w-4 h-4 text-blue-500" />
                 <span>Vault LLM Provider Key</span>
               </h4>
               <button
                 type="button"
                 onClick={() => setIsAddKeyOpen(false)}
-                className="text-gray-400 hover:text-white p-1 rounded-md"
+                className="text-slate-400 hover:text-slate-700 dark:hover:text-white p-1 rounded-md"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -333,43 +343,80 @@ export const LlmKeysTab: React.FC = () => {
 
             <form onSubmit={handleAddSubmit} className="p-5 space-y-4">
               {modalError && (
-                <div className="p-3 rounded-lg bg-red-950/40 border border-red-800/50 text-red-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
                   <span>{modalError}</span>
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="font-medium text-gray-300">Provider Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. groq, openai, anthropic"
-                  value={provider}
-                  onChange={(e) => setProvider(e.target.value)}
-                  className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white font-mono focus:border-blue-500 focus:outline-none"
-                  autoFocus
-                />
-                <span className="text-[10px] text-gray-500 block">
-                  Alphanumeric identifier matching runtime model configuration.
-                </span>
+                <label className="font-medium text-slate-700 dark:text-gray-300">LLM Provider</label>
+                <select
+                  value={selectedProviderId}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedProviderId(val);
+                    setModalError(null);
+                  }}
+                  className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white font-sans focus:border-blue-500 focus:outline-none"
+                >
+                  <optgroup label="ARDA Runtime Integrated Providers">
+                    {ARDA_LLM_PROVIDERS.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.id})
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Other">
+                    <option value="custom">Custom Provider Identifier...</option>
+                  </optgroup>
+                </select>
+
+                {isCustom && (
+                  <div className="pt-1 space-y-1">
+                    <input
+                      type="text"
+                      placeholder="e.g. mistral, ollama, vllm"
+                      value={customProvider}
+                      onChange={(e) => setCustomProvider(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white font-mono focus:border-blue-500 focus:outline-none"
+                      autoFocus
+                    />
+                    <span className="text-[10px] text-slate-500 dark:text-gray-500 block">
+                      Custom provider identifier matching runtime adapter or proxy gateway.
+                    </span>
+                  </div>
+                )}
+
+                {currentProviderMeta && !isCustom && (
+                  <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 text-[11px] text-blue-700 dark:text-blue-300 space-y-1">
+                    <div className="flex items-center gap-1.5 font-medium">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                      <span>{currentProviderMeta.description}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-blue-400 font-mono">
+                      Supported Models: {currentProviderMeta.models.join(', ')}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-medium text-gray-300">API Secret Key</label>
+                <label className="font-medium text-slate-700 dark:text-gray-300">API Secret Key</label>
                 <input
                   type="password"
-                  placeholder="sk-..."
+                  placeholder={currentProviderMeta?.placeholderKey || 'sk-...'}
                   value={secretValue}
                   onChange={(e) => setSecretValue(e.target.value)}
-                  className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white font-mono focus:border-blue-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-[#141414] border border-slate-300 dark:border-[#2f2f2f] rounded-md px-3 py-2 text-slate-900 dark:text-white font-mono focus:border-blue-500 focus:outline-none"
                   autoComplete="off"
                 />
-                <span className="text-[10px] text-gray-500 block">
+                <span className="text-[10px] text-slate-500 dark:text-gray-500 block">
                   Encrypted at rest with HashiCorp Vault. Plaintext is never stored in browser memory.
                 </span>
               </div>
 
-              <div className="pt-3 border-t border-[#282828] flex items-center justify-end space-x-2">
+              <div className="pt-3 border-t border-slate-200 dark:border-[#282828] flex items-center justify-end space-x-2">
                 <Button
                   type="button"
                   variant="secondary"

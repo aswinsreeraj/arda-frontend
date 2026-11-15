@@ -7,11 +7,14 @@ import { ConfigInspector } from './components/ConfigInspector';
 import { RegisterAgentModal } from './components/RegisterAgentModal';
 import { McpServersTab } from './components/McpServersTab';
 import { LlmKeysTab } from './components/LlmKeysTab';
+import { useAuthStore } from '@/features/auth/authStore';
+import { getStoredMcpServers } from './mcpServerModel';
 
 type TabType = 'agents' | 'mcp' | 'llm';
 type ScreenViewType = 'table' | 'inspector';
 
 export const AgentRegistryPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('agents');
   const [screenView, setScreenView] = useState<ScreenViewType>('table');
   const [selectedAgent, setSelectedAgent] = useState<AgentDetail | null>(null);
@@ -42,6 +45,7 @@ export const AgentRegistryPage: React.FC = () => {
 
   const agents = agentsData?.agents || [];
   const llmKeys = credentialsData.filter((c) => c.category === 'llm');
+  const mcpServers = getStoredMcpServers(user?.tenant_id || 'default-tenant', toolsData, credentialsData);
 
   // Handle agent selection
   const handleSelectAgent = (agent: AgentDetail) => {
@@ -116,7 +120,7 @@ export const AgentRegistryPage: React.FC = () => {
                   : 'bg-slate-100 dark:bg-[#222222] text-slate-500 dark:text-gray-500'
               }`}
             >
-              {toolsData.length}
+              {mcpServers.length}
             </span>
           </button>
 
