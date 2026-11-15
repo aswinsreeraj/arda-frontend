@@ -937,37 +937,37 @@ export const ReviewQueuePage: React.FC = () => {
               {/* Sticky Bottom Action Bar */}
               <footer className="p-3.5 border-t border-[#232323] bg-[#161616] flex items-center justify-between flex-none z-20">
                 {caseDetail.status === 'RESOLVED' ? (
-                  <div className="flex-1 flex items-center justify-between bg-[#181818] border border-emerald-800/40 rounded px-3.5 py-2">
-                    <div className="flex items-center space-x-2.5">
-                      <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <div className="flex-1 flex items-center justify-between bg-[#181818] border border-emerald-800/40 rounded-lg px-4 py-3">
+                    <div className="flex items-center space-x-3">
+                      <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
                       <div>
-                        <div className="text-xs font-semibold text-emerald-300 flex items-center space-x-1.5">
+                        <div className="text-sm font-semibold text-emerald-300 flex items-center space-x-2">
                           <span>Case Resolved · Immutable Record</span>
-                          <span className="px-1.5 py-0.2 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 text-[10px] font-mono uppercase">
+                          <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 text-xs font-mono uppercase font-bold">
                             Final
                           </span>
                         </div>
-                        <div className="text-[11px] text-neutral-400 mt-0.5">
+                        <div className="text-xs text-neutral-400 mt-1">
                           This case has already been adjudicated and committed to Temporal. No further modification permitted.
                         </div>
                       </div>
                     </div>
                     {caseDetail.resolution?.resolution_reason && (
-                      <div className="text-right max-w-xs truncate text-[11px] text-neutral-400 italic">
+                      <div className="text-right max-w-sm truncate text-xs text-neutral-400 italic">
                         &quot;{caseDetail.resolution.resolution_reason}&quot;
                       </div>
                     )}
                   </div>
                 ) : (
                   <>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3">
                       <button
                         disabled={resolveMutation.isPending}
                         onClick={() => triggerAdjudicate('approve')}
-                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-[#202020] disabled:text-neutral-500 text-white font-medium px-4 py-1.5 rounded text-xs flex items-center space-x-1.5 shadow-sm transition-colors cursor-pointer"
+                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-[#202020] disabled:text-neutral-500 text-white font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 shadow-sm transition-colors cursor-pointer"
                       >
                         <span>✓ Approve</span>
-                        <span className="bg-blue-700 text-blue-200 px-1 py-0.2 rounded text-[10px] font-mono">
+                        <span className="bg-blue-700 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono">
                           A
                         </span>
                       </button>
@@ -975,10 +975,10 @@ export const ReviewQueuePage: React.FC = () => {
                       <button
                         disabled={resolveMutation.isPending}
                         onClick={() => triggerAdjudicate('reject')}
-                        className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-red-900/50 hover:border-red-700/70 text-red-400 font-medium px-3.5 py-1.5 rounded text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+                        className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-red-900/50 hover:border-red-700/70 text-red-400 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer"
                       >
                         <span>✕ Reject</span>
-                        <span className="bg-[#2a2a2a] text-neutral-400 px-1 py-0.2 rounded text-[10px] font-mono">
+                        <span className="bg-[#2a2a2a] text-neutral-400 px-1.5 py-0.5 rounded text-xs font-mono">
                           R
                         </span>
                       </button>
@@ -986,24 +986,24 @@ export const ReviewQueuePage: React.FC = () => {
                       <button
                         disabled={resolveMutation.isPending}
                         onClick={() => triggerAdjudicate('override')}
-                        className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-[#333333] hover:border-neutral-500 text-neutral-300 font-medium px-3.5 py-1.5 rounded text-xs flex items-center space-x-1.5 transition-colors cursor-pointer"
+                        className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-[#333333] hover:border-neutral-500 text-neutral-300 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer"
                       >
                         <span>✎ Override</span>
-                        <span className="bg-[#2a2a2a] text-neutral-400 px-1 py-0.2 rounded text-[10px] font-mono">
+                        <span className="bg-[#2a2a2a] text-neutral-400 px-1.5 py-0.5 rounded text-xs font-mono">
                           O
                         </span>
                       </button>
                     </div>
 
                     {/* Hotkey Guide */}
-                    <div className="flex items-center space-x-1.5 text-xs text-neutral-400">
-                      <span className="bg-[#222222] border border-[#333] px-1 py-0.2 rounded font-mono text-[10px] text-neutral-300">
+                    <div className="flex items-center space-x-2 text-xs text-neutral-400">
+                      <span className="bg-[#222222] border border-[#333] px-1.5 py-0.5 rounded font-mono text-xs text-neutral-300">
                         J
                       </span>
-                      <span className="bg-[#222222] border border-[#333] px-1 py-0.2 rounded font-mono text-[10px] text-neutral-300">
+                      <span className="bg-[#222222] border border-[#333] px-1.5 py-0.5 rounded font-mono text-xs text-neutral-300">
                         K
                       </span>
-                      <span className="text-[11px] text-neutral-400">next / prev case</span>
+                      <span className="text-xs text-neutral-400">next / prev case</span>
                     </div>
                   </>
                 )}

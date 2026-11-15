@@ -166,7 +166,7 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
               <Play className="w-4 h-4 text-blue-400 fill-blue-400" />
               <span>Execute Governed Agent (New Run)</span>
             </h4>
-            <p className="text-[11px] text-gray-400 mt-0.5">
+            <p className="text-xs text-gray-400 mt-0.5">
               Dispatches execution through the ARDA gateway with policy enforcement.
             </p>
           </div>
@@ -256,13 +256,13 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
                 <Terminal className="w-3.5 h-3.5 text-blue-400" />
                 <span>Input Payload (JSON)</span>
               </label>
-              <span className="text-[10px] text-gray-500 font-mono">Passed to prompt template</span>
+              <span className="text-xs text-gray-500 font-mono">Passed to prompt template</span>
             </div>
             <textarea
               rows={7}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white font-mono text-[11px] leading-relaxed focus:border-blue-500 focus:outline-none resize-none"
+              className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none resize-none"
             />
           </div>
 

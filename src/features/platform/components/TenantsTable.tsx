@@ -42,7 +42,7 @@ export const TenantsTable: React.FC<TenantsTableProps> = ({
                 {/* Organization */}
                 <td className="py-3 px-4">
                   <div className="font-medium text-white">{t.name}</div>
-                  <div className="text-[11px] font-mono text-[#666666]">
+                  <div className="text-xs font-mono text-[#8c8c8c] mt-0.5">
                     {t.slug} · {t.id}
                   </div>
                 </td>

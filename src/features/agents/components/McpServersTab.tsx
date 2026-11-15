@@ -159,9 +159,9 @@ export const McpServersTab: React.FC = () => {
 
       {/* Tools Table Container */}
       <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#181818] shadow-sm">
-        <table className="w-full text-left border-collapse text-xs">
+        <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr className="border-b border-[#262626] text-[11px] uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
+            <tr className="border-b border-[#262626] text-xs uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
               <th className="py-3 px-4">Tool / Identifier</th>
               <th className="py-3 px-4">Classification</th>
               <th className="py-3 px-4">Handler</th>

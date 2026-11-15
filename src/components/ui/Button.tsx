@@ -24,22 +24,22 @@ export const Button: React.FC<ButtonProps> = ({
     'inline-flex items-center justify-center font-medium transition-all active:scale-[0.98] select-none rounded disabled:opacity-50 disabled:pointer-events-none';
 
   const sizeStyles = {
-    sm: 'text-[11px] px-2.5 py-1 gap-1.5',
-    md: 'text-xs px-3.5 py-1.5 gap-2',
-    lg: 'text-sm px-4 py-2 gap-2.5',
+    sm: 'text-xs px-3 py-1.5 gap-1.5 rounded-md min-h-[34px]',
+    md: 'text-sm px-4 py-2 gap-2 rounded-md min-h-[40px]',
+    lg: 'text-base px-5 py-2.5 gap-2.5 rounded-lg min-h-[46px]',
   };
 
   const variantStyles = {
     primary:
-      'bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-sm hover:shadow-[0_0_12px_rgba(37,99,235,0.35)] border border-transparent',
+      'bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-sm hover:shadow-[0_0_12px_rgba(37,99,235,0.35)] border border-transparent font-medium',
     secondary:
-      'bg-[#1f1f1f] hover:bg-[#282828] text-gray-200 border border-[#333333]',
+      'bg-neutral-100 hover:bg-neutral-200 dark:bg-[#1f1f1f] dark:hover:bg-[#282828] text-neutral-800 dark:text-gray-200 border border-neutral-300 dark:border-[#333333]',
     outline:
-      'bg-transparent hover:bg-[#282828] text-gray-300 border border-[#3e3e3e] hover:border-[#555555]',
+      'bg-transparent hover:bg-neutral-100 dark:hover:bg-[#282828] text-neutral-700 dark:text-gray-300 border border-neutral-300 dark:border-[#3e3e3e] hover:border-neutral-400 dark:hover:border-[#555555]',
     ghost:
-      'bg-transparent hover:bg-[#222222] text-gray-400 hover:text-white',
+      'bg-transparent hover:bg-neutral-100 dark:hover:bg-[#222222] text-neutral-600 dark:text-gray-400 hover:text-neutral-900 dark:hover:text-white',
     danger:
-      'bg-[#1f1f1f] hover:bg-[#252525] border border-red-900/50 hover:border-red-700/70 text-red-400',
+      'bg-red-50 hover:bg-red-100 dark:bg-[#1f1f1f] dark:hover:bg-[#252525] border border-red-300 dark:border-red-900/50 hover:border-red-400 dark:hover:border-red-700/70 text-red-600 dark:text-red-400',
   };
 
   return (
@@ -75,10 +75,10 @@ export const Button: React.FC<ButtonProps> = ({
       {hotkey && (
         <span
           className={clsx(
-            'px-1 py-0.2 rounded text-[10px] font-mono leading-none',
+            'px-1.5 py-0.5 rounded text-xs font-mono leading-none',
             variant === 'primary'
-              ? 'bg-blue-700 text-blue-200'
-              : 'bg-[#2a2a2a] text-neutral-400 border border-[#3a3a3a]'
+              ? 'bg-blue-700 text-blue-100'
+              : 'bg-black/10 dark:bg-[#2a2a2a] text-neutral-600 dark:text-neutral-400 border border-neutral-300 dark:border-[#3a3a3a]'
           )}
         >
           {hotkey}

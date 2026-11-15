@@ -6,7 +6,7 @@ import { ResilienceBanner } from '@/components/shared/ResilienceBanner';
 
 export const AppLayout: React.FC = () => {
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#131313] text-[#f3f4f6]">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[var(--surface-canvas)] text-[var(--text-primary)] transition-colors duration-150">
       {/* Fixed top navigation bar */}
       <TopNav />
 

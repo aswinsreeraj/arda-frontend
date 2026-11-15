@@ -14,17 +14,17 @@ export const PreFooterCTA: React.FC = () => {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
           <Link
-            to="/reviews"
-            className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 text-xs font-medium rounded bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-colors shadow-xs"
+            to="/login"
+            className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 text-sm font-medium rounded bg-[#2563eb] text-white hover:bg-[#1d4ed8] transition-colors shadow-xs"
           >
             <span>Get Started</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
             to="/docs"
-            className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 text-xs font-medium rounded border border-[#282828] bg-[#1c1c1c] text-white hover:bg-[#222225] transition-colors"
+            className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 text-sm font-medium rounded border border-[#282828] bg-[#1c1c1c] text-white hover:bg-[#222225] transition-colors"
           >
-            <BookOpen className="w-3.5 h-3.5 text-[#9ca3af]" />
+            <BookOpen className="w-4 h-4 text-[#9ca3af]" />
             <span>Read the Docs</span>
           </Link>
         </div>

@@ -39,9 +39,9 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
       className="w-full border border-[#262626] rounded-md overflow-hidden bg-[#161616]"
       data-purpose="people-table-container"
     >
-      <table className="w-full text-left text-[13px] border-collapse" id="people-table">
+      <table className="w-full text-left text-sm border-collapse" id="people-table">
         <thead>
-          <tr className="border-b border-[#262626] text-[#737373] font-normal text-[12px]">
+          <tr className="border-b border-[#262626] text-[#8c8c8c] font-normal text-xs uppercase tracking-wider">
             <th className="py-2.5 px-4 font-normal" scope="col">
               Name
             </th>

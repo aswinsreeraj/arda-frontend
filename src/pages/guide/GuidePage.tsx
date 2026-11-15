@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '@/features/auth/authStore';
 import { TopNav } from '@/components/shared/TopNav';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import {
   Copy,
   Check,
@@ -60,19 +61,19 @@ export const GuidePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col text-[#dadada] text-[13px] leading-relaxed selection:bg-[#2563eb] selection:text-white bg-[#131313]">
+    <div className="min-h-screen flex flex-col text-[var(--text-secondary)] text-sm sm:text-base leading-relaxed bg-[var(--surface-canvas)] transition-colors duration-150">
       {/* Top Header */}
       {isAuthenticated ? (
         <TopNav />
       ) : (
         <header className="sticky top-0 z-50 w-full border-b border-[#282828] backdrop-blur-sm bg-[#131313]/95">
-          <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
             {/* Left brand & primary nav */}
             <div className="flex items-center space-x-8">
-              <Link to="/" className="flex items-center space-x-2 text-white font-medium text-sm tracking-tight hover:opacity-90">
-                <span className="font-semibold text-white tracking-wide text-sm font-sans">ΛRDΛ</span>
+              <Link to="/" className="flex items-center space-x-2 text-white font-medium text-base tracking-tight hover:opacity-90">
+                <span className="font-semibold text-white tracking-wide text-base font-sans">ΛRDΛ</span>
               </Link>
-              <nav className="hidden md:flex items-center space-x-6 text-[13px] text-[#9ca3af]">
+              <nav className="hidden md:flex items-center space-x-6 text-sm text-[#9ca3af]">
                 <Link to="/docs" className="hover:text-white transition-colors">
                   Docs
                 </Link>
@@ -80,22 +81,21 @@ export const GuidePage: React.FC = () => {
                   Guides
                 </Link>
                 <Link to="/docs" className="hover:text-white transition-colors">
-                  API reference
-                </Link>
-                <Link to="/runs" className="hover:text-white transition-colors">
-                  Execution Traces
+                  API Reference
                 </Link>
               </nav>
             </div>
 
-            {/* Right auth actions */}
+            {/* Right auth actions & Theme Toggle */}
             <div className="flex items-center space-x-4">
-              <Link to="/login" className="text-[13px] text-[#9ca3af] hover:text-white transition-colors">
-                Sign in
+              <ThemeToggle />
+
+              <Link to="/login" className="text-sm text-[#9ca3af] hover:text-white transition-colors">
+                Sign In
               </Link>
               <Link
-                to="/reviews"
-                className="text-[12px] font-medium bg-[#2563eb] text-white px-3.5 py-1.5 rounded hover:bg-[#1d4ed8] transition-colors shadow-xs"
+                to="/login"
+                className="text-sm font-medium bg-[#2563eb] text-white px-4 py-2 rounded hover:bg-[#1d4ed8] transition-colors shadow-xs"
               >
                 Get Started
               </Link>
@@ -847,16 +847,13 @@ status: calibrating · threshold: 0.80 · 42 seed examples`}
 
       {/* Site Footer */}
       <footer className="w-full border-t border-[#282828] bg-[#101010]">
-        <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between text-[11px] text-[#737373]">
+        <div className="max-w-[1440px] mx-auto px-6 h-14 flex items-center justify-between text-xs text-[#737373]">
           <div className="flex items-center space-x-3">
             <span className="font-medium text-[#dadada]">ΛRDΛ</span>
             <span>·</span>
-            <div className="flex items-center space-x-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
-              <span>all systems operational</span>
-            </div>
+            <span>Deterministic AI Agent Governance</span>
           </div>
-          <div>© 2026 Arbiter Systems, Inc.</div>
+          <div>© 2026 ARDA Platform. All rights reserved.</div>
         </div>
       </footer>
     </div>

@@ -106,34 +106,34 @@ export const RunsPage: React.FC = () => {
 
         {/* Metrics Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="p-3 bg-[#181818] border border-[#262626] rounded-lg">
-            <div className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
+          <div className="p-3.5 bg-[#181818] border border-[#262626] rounded-lg">
+            <div className="text-xs text-gray-400 uppercase tracking-wider font-semibold">
               Total Invocations
             </div>
-            <div className="text-lg font-bold font-mono text-white mt-0.5">{totalCount}</div>
+            <div className="text-xl font-bold font-mono text-white mt-1">{totalCount}</div>
           </div>
 
-          <div className="p-3 bg-[#181818] border border-[#262626] rounded-lg">
-            <div className="text-[10px] text-blue-400 uppercase tracking-wider font-semibold">
+          <div className="p-3.5 bg-[#181818] border border-[#262626] rounded-lg">
+            <div className="text-xs text-blue-400 uppercase tracking-wider font-semibold">
               Active / Running
             </div>
-            <div className="text-lg font-bold font-mono text-blue-400 mt-0.5">{runningCount}</div>
+            <div className="text-xl font-bold font-mono text-blue-400 mt-1">{runningCount}</div>
           </div>
 
-          <div className="p-3 bg-[#181818] border border-[#262626] rounded-lg">
-            <div className="text-[10px] text-emerald-400 uppercase tracking-wider font-semibold">
+          <div className="p-3.5 bg-[#181818] border border-[#262626] rounded-lg">
+            <div className="text-xs text-emerald-400 uppercase tracking-wider font-semibold">
               Autonomous Success
             </div>
-            <div className="text-lg font-bold font-mono text-emerald-400 mt-0.5">
+            <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
               {successCount} <span className="text-xs font-normal text-emerald-400/80">({passRate}%)</span>
             </div>
           </div>
 
-          <div className="p-3 bg-[#181818] border border-[#262626] rounded-lg">
-            <div className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold">
+          <div className="p-3.5 bg-[#181818] border border-[#262626] rounded-lg">
+            <div className="text-xs text-amber-400 uppercase tracking-wider font-semibold">
               Human Escalated
             </div>
-            <div className="text-lg font-bold font-mono text-amber-400 mt-0.5">{escalatedCount}</div>
+            <div className="text-xl font-bold font-mono text-amber-400 mt-1">{escalatedCount}</div>
           </div>
         </div>
       </div>

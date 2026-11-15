@@ -1,34 +1,38 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Lock } from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 export const AuthLayout: React.FC = () => {
-  const version = import.meta.env.VITE_APP_VERSION || 'v0.9 beta';
+  const version = import.meta.env.VITE_APP_VERSION || 'v1.0';
 
   return (
-    <div className="min-h-screen text-[#e5e2e1] antialiased flex flex-col justify-between items-center bg-[#131313] selection:bg-blue-600 selection:text-white px-4">
+    <div className="min-h-screen text-[var(--text-primary)] antialiased flex flex-col justify-between items-center bg-[var(--surface-canvas)] selection:bg-blue-600 selection:text-white px-4 transition-colors duration-150">
       {/* Top minimal bar */}
-      <header className="w-full flex items-center justify-between px-6 py-3 text-xs text-[#888888] border-b border-[#222222] bg-[#131313]/90 backdrop-blur-sm fixed top-0 z-40">
-        <div className="flex items-center space-x-2">
-          <span className="font-semibold text-sm tracking-tight text-white">ΛRDΛ</span>
-          <span className="text-[11px] font-mono uppercase tracking-wider text-[#777777] bg-[#1e1e1e] px-1.5 py-0.5 rounded border border-[#2a2a2a]">
+      <header className="w-full flex items-center justify-between px-6 py-3.5 text-sm text-[var(--text-muted)] border-b border-[var(--border-subtle)] bg-[var(--surface-canvas)]/90 backdrop-blur-sm fixed top-0 z-40">
+        <div className="flex items-center space-x-3">
+          <span className="font-semibold text-lg tracking-tight text-[var(--text-primary)]">ΛRDΛ</span>
+          <span className="text-xs font-mono uppercase tracking-wider text-[var(--text-muted)] bg-[var(--surface-recessed)] px-2 py-0.5 rounded border border-[var(--border-subtle)]">
             Governance
           </span>
         </div>
-        <div className="text-xs text-neutral-400 font-mono">
-          AI Agent Platform Auth
+        <div className="flex items-center space-x-4">
+          <div className="text-xs text-[var(--text-muted)] font-mono hidden sm:block">
+            Enterprise Agent Platform Auth
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
       {/* Main card container */}
-      <main className="w-full flex-1 flex flex-col items-center justify-center pt-20 pb-16">
-        <div className="w-full max-w-[440px] my-auto">
+      <main className="w-full flex-1 flex flex-col items-center justify-center pt-24 pb-16">
+        <div className="w-full max-w-[460px] my-auto">
           {/* Brand & Version Header */}
-          <div className="flex items-center justify-between w-full mb-3.5 px-0.5">
+          <div className="flex items-center justify-between w-full mb-4 px-0.5">
             <div className="flex items-center space-x-2">
-              <span className="text-base font-semibold text-white tracking-tight">ΛRDΛ</span>
+              <span className="text-lg font-semibold text-[var(--text-primary)] tracking-tight">ΛRDΛ</span>
             </div>
-            <span className="font-mono text-[11px] text-[#707070] bg-[#1a1a1a] border border-[#2a2a2a] px-2 py-0.5 rounded">
+            <span className="font-mono text-xs text-[var(--text-muted)] bg-[var(--surface-recessed)] border border-[var(--border-subtle)] px-2.5 py-0.5 rounded">
               {version}
             </span>
           </div>
@@ -37,16 +41,16 @@ export const AuthLayout: React.FC = () => {
           <Outlet />
 
           {/* Security & Compliance Footer */}
-          <div className="flex items-center justify-center space-x-2 text-[11px] font-mono text-[#777777] mt-4 select-none">
-            <Lock className="w-3 h-3 text-[#777777]" />
-            <span>SOC2-ready · Audit-logged access</span>
+          <div className="flex items-center justify-center space-x-2 text-xs font-mono text-[var(--text-muted)] mt-5 select-none">
+            <Lock className="w-3.5 h-3.5" />
+            <span>Audit-logged authenticated tenant boundary</span>
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-4 text-center text-[11px] text-neutral-500 border-t border-[#1f1f1f]">
-        © 2026 ARDA Governance Platform. All executions auditable and verified.
+      <footer className="w-full py-4 text-center text-xs text-[var(--text-muted)] border-t border-[var(--border-subtle)]">
+        © 2026 ARDA Platform. All executions cryptographically verified.
       </footer>
     </div>
   );

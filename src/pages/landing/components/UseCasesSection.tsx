@@ -126,7 +126,7 @@ export const UseCasesSection: React.FC = () => {
                           </div>
                           <div>
                             <div className="text-white font-medium font-sans">{agent.name}</div>
-                            <div className="text-[10px] text-[#6b7280] font-mono">{agent.slug}</div>
+                            <div className="text-xs text-[#8c8c8c] font-mono">{agent.slug}</div>
                           </div>
                         </div>
                       </td>

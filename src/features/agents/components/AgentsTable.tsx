@@ -99,9 +99,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
       {/* Table Container */}
       <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#181818] shadow-sm">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr className="border-b border-[#262626] text-[11px] uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
+            <tr className="border-b border-[#262626] text-xs uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
               <th className="py-3 px-4">Agent</th>
               <th className="py-3 px-4">Execution</th>
               <th className="py-3 px-4">Active version</th>
@@ -110,7 +110,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               <th className="py-3 px-4">Updated</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#242424] text-xs">
+          <tbody className="divide-y divide-[#242424] text-xs sm:text-sm">
             {isLoading && agents.length === 0 ? (
               // Loading Skeleton
               Array.from({ length: 4 }).map((_, idx) => (

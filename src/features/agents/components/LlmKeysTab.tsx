@@ -184,9 +184,9 @@ export const LlmKeysTab: React.FC = () => {
 
       {/* Keys Table Container */}
       <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#181818] shadow-sm">
-        <table className="w-full text-left border-collapse text-xs">
+        <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr className="border-b border-[#262626] text-[11px] uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
+            <tr className="border-b border-[#262626] text-xs uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
               <th className="py-3 px-4">Provider</th>
               <th className="py-3 px-4 font-mono">Vault Reference</th>
               <th className="py-3 px-4">Connectivity Status</th>

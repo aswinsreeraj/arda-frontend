@@ -9,7 +9,7 @@ import { LandingFooter } from './components/LandingFooter';
 
 export const LandingPage: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#131313] text-[#9ca3af] antialiased selection:bg-[#2563eb] selection:text-white flex flex-col font-sans">
+    <div className="min-h-screen bg-[var(--surface-canvas)] text-[var(--text-secondary)] antialiased flex flex-col font-sans transition-colors duration-150">
       {/* Sticky Main Header */}
       <LandingHeader />
 
