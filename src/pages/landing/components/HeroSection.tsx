@@ -68,11 +68,11 @@ export const HeroSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Interactive Architecture Window (Matching screenshot media_1794745659533_52aa5738) */}
+          {/* Right Column: Clean, Uncrowded Architecture Window */}
           <div className="lg:col-span-6">
-            <div className="relative rounded-xl border border-slate-800 bg-[#121214] shadow-2xl p-5 font-mono text-xs text-slate-300">
+            <div className="relative rounded-2xl border border-slate-800 bg-[#121214] shadow-2xl p-5 sm:p-6 text-slate-300">
               {/* Window Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800/80 text-[11px]">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800/80 text-xs font-mono">
                 <div className="flex items-center space-x-2">
                   <span className="text-white font-medium">acme-corp</span>
                   <span className="text-slate-600">/</span>
@@ -80,108 +80,116 @@ export const HeroSection: React.FC = () => {
                   <span className="text-slate-600">/</span>
                   <span className="text-slate-400">run_8f2c</span>
                 </div>
-                <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  <span>escalated</span>
+                <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-sans">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span>Escalated to Human</span>
                 </div>
               </div>
 
-              {/* 6-Node Architecture Grid with Dot Background */}
-              <div className="py-5 grid grid-cols-2 gap-3.5 relative bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_0)] bg-[size:18px_18px]">
+              {/* 6-Node Architecture Grid - Clean, spacious & intuitive */}
+              <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-4 relative bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_0)] bg-[size:20px_20px]">
                 {/* Node 1: Agent Action */}
-                <div className="p-3.5 rounded-lg border border-slate-800 bg-[#18181b]/95 space-y-1">
-                  <div className="text-xs text-slate-400 uppercase font-mono tracking-wider">Agent Action</div>
-                  <div className="text-white text-sm font-semibold truncate">fraud-review@3.2.1</div>
-                  <div className="text-xs text-slate-400 font-sans">Proposes $450 refund</div>
-                  <div className="text-[11px] text-slate-500 font-mono">POST /v1/agents/execute</div>
+                <div className="p-4 rounded-xl border border-slate-800/90 bg-[#18181b]/90 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span className="uppercase tracking-wider">1. Agent Action</span>
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-sans">AI Request</span>
+                  </div>
+                  <div>
+                    <div className="text-white text-base font-semibold">Refund $450</div>
+                    <div className="text-xs text-slate-400 mt-1">High-value payout proposed by agent</div>
+                  </div>
                 </div>
 
                 {/* Node 2: Durable Runtime */}
-                <div className="p-3.5 rounded-lg border border-slate-800 bg-[#18181b]/95 space-y-1">
-                  <div className="text-xs text-slate-400 uppercase font-mono tracking-wider">Durable Runtime</div>
-                  <div className="text-emerald-400 text-sm font-semibold">checkpoint 14 · replayable</div>
-                  <div className="text-xs text-slate-400 font-sans">Crash-proof state saved</div>
-                  <div className="text-[11px] text-slate-500 font-mono">Temporal WAL persisted</div>
+                <div className="p-4 rounded-xl border border-slate-800/90 bg-[#18181b]/90 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-emerald-400">
+                    <span className="uppercase tracking-wider">2. Durable Runtime</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="text-emerald-400 text-base font-semibold">Checkpoint Saved</div>
+                    <div className="text-xs text-slate-400 mt-1">Crash-proof · Replays automatically</div>
+                  </div>
                 </div>
 
                 {/* Node 3: Governed Tool Gateway */}
-                <div className="p-3.5 rounded-lg border border-slate-800 bg-[#18181b]/95 space-y-1.5">
-                  <div className="flex justify-between items-center text-xs text-slate-400 font-mono">
-                    <span className="uppercase tracking-wider">Tool Gateway</span>
-                    <span className="text-slate-400 text-[11px]">policy tg-07</span>
+                <div className="p-4 rounded-xl border border-slate-800/90 bg-[#18181b]/90 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span className="uppercase tracking-wider">3. Tool Gateway</span>
+                    <span className="text-[11px] text-slate-500 font-sans">Guardrails</span>
                   </div>
-                  <div className="space-y-1 text-xs">
+                  <div className="space-y-1.5 text-xs font-sans">
                     <div className="flex items-center justify-between text-emerald-400">
-                      <span className="flex items-center space-x-1">
+                      <span className="flex items-center space-x-1.5">
                         <Check className="w-3.5 h-3.5" />
-                        <span>ledger.read</span>
+                        <span className="text-slate-300">Read Balance</span>
                       </span>
-                      <span className="text-[11px] px-1.5 py-0.5 bg-emerald-500/15 rounded font-mono">allow</span>
+                      <span className="text-[11px] px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-md font-mono">Allow</span>
                     </div>
                     <div className="flex items-center justify-between text-red-400">
-                      <span className="flex items-center space-x-1">
+                      <span className="flex items-center space-x-1.5">
                         <X className="w-3.5 h-3.5" />
-                        <span>payments.refund</span>
+                        <span className="text-slate-300">Execute Refund</span>
                       </span>
-                      <span className="text-[11px] px-1.5 py-0.5 bg-red-500/15 rounded font-mono">deny</span>
+                      <span className="text-[11px] px-2 py-0.5 bg-red-500/15 text-red-400 rounded-md font-mono">Guarded</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Node 4: Confidence Gate */}
-                <div className="p-3.5 rounded-lg border border-amber-500/50 bg-[#18181b]/95 space-y-1.5">
-                  <div className="flex justify-between items-center text-xs text-amber-400 font-mono">
-                    <span className="uppercase tracking-wider">Confidence Gate</span>
-                    <span className="text-[11px] px-1.5 py-0.5 bg-amber-500/20 rounded font-semibold">p &lt; τ</span>
+                <div className="p-4 rounded-xl border border-amber-500/50 bg-[#18181b]/90 flex flex-col justify-between space-y-2 shadow-sm shadow-amber-500/5">
+                  <div className="flex items-center justify-between text-xs font-mono text-amber-400">
+                    <span className="uppercase tracking-wider">4. Confidence Gate</span>
+                    <span className="text-[11px] px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-md font-sans font-semibold">Auto-Paused</span>
                   </div>
-                  <div className="text-sm font-semibold text-white">
-                    p 0.62 &lt; τ 0.80
-                  </div>
-                  <div className="text-xs text-amber-300/80 font-sans">
-                    62% confidence below 80% target
-                  </div>
-                  <div className="text-[11px] text-slate-500 font-mono">
-                    Margin: -0.18 (auto-paused)
+                  <div>
+                    <div className="text-white text-base font-semibold">62% Confidence</div>
+                    <div className="text-xs text-amber-300/80 mt-1">Below 80% safety bar · Paused for safety</div>
                   </div>
                 </div>
 
-                {/* Node 5: Feedback / Calibration */}
-                <div className="p-3.5 rounded-lg border border-slate-800 bg-[#18181b]/95 space-y-1">
-                  <div className="text-xs text-slate-400 uppercase font-mono tracking-wider">Calibration</div>
-                  <div className="text-white text-sm font-medium">verdict → τ recalibrated</div>
-                  <div className="text-xs text-slate-400 font-sans">Human choices train thresholds</div>
-                  <div className="text-[11px] text-blue-400 font-mono">feedback loop active</div>
-                </div>
-
-                {/* Node 6: Human Review */}
-                <div className="p-3.5 rounded-lg border border-blue-500/50 bg-[#18181b]/95 space-y-1">
-                  <div className="flex items-center justify-between font-mono">
-                    <span className="text-xs text-blue-400 uppercase tracking-wider">Human Review</span>
+                {/* Node 5: Human Review */}
+                <div className="p-4 rounded-xl border border-blue-500/50 bg-[#18181b]/90 flex flex-col justify-between space-y-2 shadow-sm shadow-blue-500/5">
+                  <div className="flex items-center justify-between text-xs font-mono text-blue-400">
+                    <span className="uppercase tracking-wider">5. Human Review</span>
                     <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
                   </div>
-                  <div className="text-sm font-semibold text-white">case #4109 queued</div>
-                  <div className="text-xs text-slate-400 font-sans">Escalated to human expert</div>
-                  <div className="text-[11px] text-slate-500 font-mono">assigned to fraud-l2</div>
+                  <div>
+                    <div className="text-white text-base font-semibold">Case #4109 Queued</div>
+                    <div className="text-xs text-slate-400 mt-1">Escalated to human specialist for approval</div>
+                  </div>
+                </div>
+
+                {/* Node 6: Continuous Learning */}
+                <div className="p-4 rounded-xl border border-slate-800/90 bg-[#18181b]/90 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span className="uppercase tracking-wider">6. Continuous Learning</span>
+                    <span className="text-[11px] text-blue-400 font-sans">Active</span>
+                  </div>
+                  <div>
+                    <div className="text-white text-base font-semibold">Threshold Calibrated</div>
+                    <div className="text-xs text-slate-400 mt-1">Human choice trains future agent confidence</div>
+                  </div>
                 </div>
               </div>
 
               {/* Status Legend Footer */}
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                <div className="flex items-center space-x-3">
+              <div className="pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-400 gap-2">
+                <div className="flex items-center space-x-3.5 font-sans">
                   <span className="flex items-center space-x-1.5">
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span className="text-slate-300">passed</span>
+                    <span className="text-slate-300">Passed</span>
                   </span>
                   <span className="flex items-center space-x-1.5">
                     <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    <span className="text-slate-300">escalated</span>
+                    <span className="text-slate-300">Escalated</span>
                   </span>
                   <span className="flex items-center space-x-1.5">
                     <span className="w-2 h-2 rounded-full bg-red-400" />
-                    <span className="text-slate-300">blocked</span>
+                    <span className="text-slate-300">Guarded</span>
                   </span>
                 </div>
-                <div className="font-mono text-slate-400">deterministic replay enabled</div>
+                <div className="font-mono text-slate-400 text-[11px]">deterministic safety enabled</div>
               </div>
             </div>
           </div>
