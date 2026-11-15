@@ -290,7 +290,7 @@ export const ReviewQueuePage: React.FC = () => {
   };
 
   return (
-    <main className="flex-1 flex overflow-hidden select-none bg-[#141414] text-neutral-200">
+    <main className="flex-1 flex overflow-hidden select-none bg-slate-100 dark:bg-[#141414] text-slate-900 dark:text-neutral-200">
       {/* Toast Notification */}
       {toastNotice && (
         <div
@@ -311,29 +311,23 @@ export const ReviewQueuePage: React.FC = () => {
       {/* ========================================================= */}
       {/* LEFT: Escalation Queue List (50% Split Pane) */}
       {/* ========================================================= */}
-      <section className="w-1/2 flex flex-col border-r border-[#232323] bg-[#141414] overflow-hidden">
+      <section className="w-1/2 flex flex-col border-r border-slate-200 dark:border-[#232323] bg-white dark:bg-[#141414] overflow-hidden">
         {/* Queue Header & Filter Toolbar */}
-        <div className="p-3.5 border-b border-[#232323] space-y-3 flex-none">
+        <div className="p-3.5 border-b border-slate-200 dark:border-[#232323] space-y-3 flex-none bg-white dark:bg-[#141414]">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <h1 className="text-base font-semibold text-white tracking-tight">
-                Escalation queue
-              </h1>
-              <div className="flex items-center space-x-1 px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 text-[10px] font-medium">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>live api</span>
-              </div>
-            </div>
+            <h1 className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">
+              Escalation Queue
+            </h1>
 
             {/* Status Tabs: OPEN vs RESOLVED */}
-            <div className="flex items-center bg-[#1b1b1b] p-0.5 rounded border border-[#2c2c2c] text-xs">
+            <div className="flex items-center bg-slate-100 dark:bg-[#1b1b1b] p-0.5 rounded border border-slate-200 dark:border-[#2c2c2c] text-xs">
               <button
                 onClick={() => setStatusFilter('OPEN')}
                 className={clsx(
-                  'px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors',
+                  'px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer',
                   statusFilter === 'OPEN'
-                    ? 'bg-[#282828] text-white shadow-sm'
-                    : 'text-neutral-400 hover:text-neutral-200'
+                    ? 'bg-white dark:bg-[#282828] text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200'
                 )}
               >
                 Open
@@ -341,10 +335,10 @@ export const ReviewQueuePage: React.FC = () => {
               <button
                 onClick={() => setStatusFilter('RESOLVED')}
                 className={clsx(
-                  'px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors',
+                  'px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer',
                   statusFilter === 'RESOLVED'
-                    ? 'bg-[#282828] text-white shadow-sm'
-                    : 'text-neutral-400 hover:text-neutral-200'
+                    ? 'bg-white dark:bg-[#282828] text-slate-900 dark:text-white shadow-xs'
+                    : 'text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-200'
                 )}
               >
                 Resolved
@@ -356,18 +350,18 @@ export const ReviewQueuePage: React.FC = () => {
           <div className="flex items-center space-x-2 text-xs">
             {/* Search Box */}
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-neutral-500" />
+              <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400 dark:text-neutral-500" />
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search case ID, agent, proposed decision..."
                 type="text"
-                className="w-full bg-[#1b1b1b] border border-[#2c2c2c] rounded pl-8 pr-7 py-1 text-xs text-neutral-200 placeholder-neutral-500 focus:outline-none focus:border-neutral-500 font-sans"
+                className="w-full bg-white dark:bg-[#1b1b1b] border border-slate-300 dark:border-[#2c2c2c] rounded pl-8 pr-7 py-1 text-xs text-slate-900 dark:text-neutral-200 placeholder-slate-400 dark:placeholder-neutral-500 focus:outline-none focus:border-blue-500 font-sans"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2.5 top-1.5 text-neutral-500 hover:text-white"
+                  className="absolute right-2.5 top-1.5 text-slate-400 hover:text-slate-700 dark:text-neutral-500 dark:hover:text-white"
                 >
                   ✕
                 </button>
@@ -379,7 +373,7 @@ export const ReviewQueuePage: React.FC = () => {
               <select
                 value={selectedAgentId}
                 onChange={(e) => setSelectedAgentId(e.target.value)}
-                className="bg-[#1b1b1b] border border-[#2c2c2c] px-2.5 py-1 rounded text-neutral-300 text-xs hover:bg-[#222] focus:outline-none focus:border-neutral-500 appearance-none pr-7 cursor-pointer"
+                className="bg-white dark:bg-[#1b1b1b] border border-slate-300 dark:border-[#2c2c2c] px-2.5 py-1 rounded text-slate-700 dark:text-neutral-300 text-xs hover:bg-slate-50 dark:hover:bg-[#222] focus:outline-none focus:border-blue-500 appearance-none pr-7 cursor-pointer"
               >
                 <option value="">All agents</option>
                 {availableAgents.map((ag) => (
@@ -388,14 +382,14 @@ export const ReviewQueuePage: React.FC = () => {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3 h-3 text-neutral-500 absolute right-2 top-2 pointer-events-none" />
+              <ChevronDown className="w-3 h-3 text-slate-400 dark:text-neutral-500 absolute right-2 top-2 pointer-events-none" />
             </div>
 
             {/* Refresh Button */}
             <button
               onClick={() => refetchQueue()}
               title="Refresh queue"
-              className="p-1.5 rounded bg-[#1b1b1b] border border-[#2c2c2c] hover:bg-[#222] text-neutral-400 hover:text-white transition-colors"
+              className="p-1.5 rounded bg-white dark:bg-[#1b1b1b] border border-slate-300 dark:border-[#2c2c2c] hover:bg-slate-50 dark:hover:bg-[#222] text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
             >
               <RefreshCw className={clsx('w-3.5 h-3.5', isQueueLoading && 'animate-spin')} />
             </button>
@@ -409,35 +403,35 @@ export const ReviewQueuePage: React.FC = () => {
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
-                  className="h-16 rounded bg-[#1a1a1a] animate-pulse border border-[#232323]"
+                  className="h-16 rounded bg-slate-100 dark:bg-[#1a1a1a] animate-pulse border border-slate-200 dark:border-[#232323]"
                 />
               ))}
             </div>
           ) : isQueueError ? (
             <div className="p-8 text-center space-y-3">
-              <ShieldAlert className="w-8 h-8 text-red-400 mx-auto" />
-              <div className="text-sm font-medium text-white">Failed to load review queue</div>
-              <div className="text-xs text-neutral-400 font-mono">
+              <ShieldAlert className="w-8 h-8 text-red-500 dark:text-red-400 mx-auto" />
+              <div className="text-sm font-medium text-slate-900 dark:text-white">Failed to load review queue</div>
+              <div className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
                 {queueError instanceof Error ? queueError.message : 'Backend connection error'}
               </div>
               <button
                 onClick={() => refetchQueue()}
-                className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium"
+                className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium cursor-pointer"
               >
                 Retry connection
               </button>
             </div>
           ) : filteredCases.length === 0 ? (
             <div className="p-12 text-center space-y-2">
-              <CheckCircle2 className="w-8 h-8 text-neutral-600 mx-auto" />
-              <div className="text-sm font-medium text-white">Queue is clear</div>
-              <div className="text-xs text-neutral-500 max-w-xs mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-slate-400 dark:text-neutral-600 mx-auto" />
+              <div className="text-sm font-medium text-slate-900 dark:text-white">Queue is clear</div>
+              <div className="text-xs text-slate-500 dark:text-neutral-500 max-w-xs mx-auto">
                 No {statusFilter.toLowerCase()} review cases found matching your filters.
               </div>
             </div>
           ) : (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-[#181818] border-b border-[#232323] text-neutral-400 sticky top-0 z-10 select-none">
+              <thead className="bg-slate-50 dark:bg-[#181818] border-b border-slate-200 dark:border-[#232323] text-slate-500 dark:text-neutral-400 sticky top-0 z-10 select-none">
                 <tr className="text-[11px]">
                   <th className="py-2 px-3 font-normal w-12">Priority</th>
                   <th className="py-2 px-3 font-normal w-32">Case ID</th>
@@ -445,7 +439,7 @@ export const ReviewQueuePage: React.FC = () => {
                   <th className="py-2 px-3 font-normal">Proposed decision</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#202020] font-sans">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#202020] font-sans">
                 {filteredCases.map((c) => {
                   const isSelected = c.case_id === activeCaseId;
                   return (
@@ -455,36 +449,36 @@ export const ReviewQueuePage: React.FC = () => {
                       className={clsx(
                         'cursor-pointer transition-colors',
                         isSelected
-                          ? 'bg-[#1e1e1e] border-l-2 border-l-blue-500'
-                          : 'hover:bg-[#1a1a1a]'
+                          ? 'bg-blue-50/80 dark:bg-[#1e1e1e] border-l-2 border-l-blue-500'
+                          : 'hover:bg-slate-50/80 dark:hover:bg-[#1a1a1a]'
                       )}
                     >
                       <td className="py-3 px-3 align-top">
                         {getPriorityBadge(c.confidence)}
                       </td>
-                      <td className="py-3 px-3 align-top font-mono text-neutral-300">
+                      <td className="py-3 px-3 align-top font-mono text-slate-600 dark:text-neutral-300">
                         <div className="space-y-0.5">
-                          <span className={clsx('font-medium', isSelected && 'text-white')}>
+                          <span className={clsx('font-medium', isSelected && 'text-slate-900 dark:text-white')}>
                             {c.case_id}
                           </span>
-                          <div className="text-[10px] text-neutral-500 font-mono truncate max-w-[120px]">
+                          <div className="text-[10px] text-slate-400 dark:text-neutral-500 font-mono truncate max-w-[120px]">
                             {c.execution_id}
                           </div>
                         </div>
                       </td>
                       <td className="py-3 px-3 align-top">
-                        <div className="font-medium text-white truncate max-w-[150px]">
+                        <div className="font-medium text-slate-900 dark:text-white truncate max-w-[150px]">
                           {c.agent_name}
                         </div>
-                        <div className="text-[11px] text-neutral-400 font-mono">
+                        <div className="text-[11px] text-slate-400 dark:text-neutral-400 font-mono">
                           {c.status}
                         </div>
                       </td>
                       <td className="py-3 px-3 align-top">
-                        <div className="font-medium text-neutral-200">
+                        <div className="font-medium text-slate-800 dark:text-neutral-200">
                           {c.proposed_decision}
                         </div>
-                        <div className="text-[11px] text-neutral-400 mt-0.5 line-clamp-1">
+                        <div className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 line-clamp-1">
                           {c.escalation_reasons[0] || 'Escalation threshold breached'}
                         </div>
                       </td>
@@ -497,11 +491,8 @@ export const ReviewQueuePage: React.FC = () => {
         </div>
 
         {/* Queue Footer */}
-        <div className="p-2.5 border-t border-[#232323] bg-[#161616] flex items-center justify-between text-[11px] text-neutral-400 font-mono flex-none">
-          <span>{filteredCases.length} of {listResponse?.total_count ?? cases.length} cases</span>
-          {listResponse?.next_page_token && (
-            <span className="text-blue-400">Additional pages available</span>
-          )}
+        <div className="p-2.5 border-t border-slate-200 dark:border-[#232323] bg-slate-50 dark:bg-[#161616] flex items-center justify-between text-xs text-slate-500 dark:text-neutral-400 font-mono flex-none">
+          <span>{filteredCases.length} {filteredCases.length === 1 ? 'case' : 'cases'}</span>
         </div>
       </section>
 
@@ -509,23 +500,23 @@ export const ReviewQueuePage: React.FC = () => {
       {/* RIGHT: Escalation Case Inspector (50% Split Pane) */}
       {/* ========================================================= */}
       {activeCaseId ? (
-        <section className="w-1/2 flex flex-col bg-[#141414] overflow-hidden">
+        <section className="w-1/2 flex flex-col bg-slate-50 dark:bg-[#141414] overflow-hidden">
           {isDetailLoading ? (
             <div className="flex-1 p-6 space-y-4">
-              <div className="h-10 bg-[#1c1c1c] rounded animate-pulse" />
-              <div className="h-40 bg-[#1c1c1c] rounded animate-pulse" />
-              <div className="h-40 bg-[#1c1c1c] rounded animate-pulse" />
+              <div className="h-10 bg-slate-200 dark:bg-[#1c1c1c] rounded animate-pulse" />
+              <div className="h-40 bg-slate-200 dark:bg-[#1c1c1c] rounded animate-pulse" />
+              <div className="h-40 bg-slate-200 dark:bg-[#1c1c1c] rounded animate-pulse" />
             </div>
           ) : isDetailError || !caseDetail ? (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3">
               <AlertTriangle className="w-8 h-8 text-amber-500" />
-              <div className="text-sm font-medium text-white">Could not load case detail</div>
-              <div className="text-xs text-neutral-400 font-mono max-w-sm">
+              <div className="text-sm font-medium text-slate-900 dark:text-white">Could not load case detail</div>
+              <div className="text-xs text-slate-500 dark:text-neutral-400 font-mono max-w-sm">
                 {detailError instanceof Error ? detailError.message : 'Error retrieving frozen evidence'}
               </div>
               <button
                 onClick={() => refetchDetail()}
-                className="px-3.5 py-1.5 rounded bg-[#202020] hover:bg-[#282828] border border-[#333] text-white text-xs font-medium"
+                className="px-3.5 py-1.5 rounded bg-white hover:bg-slate-100 dark:bg-[#202020] dark:hover:bg-[#282828] border border-slate-300 dark:border-[#333] text-slate-900 dark:text-white text-xs font-medium cursor-pointer"
               >
                 Retry
               </button>
@@ -533,22 +524,22 @@ export const ReviewQueuePage: React.FC = () => {
           ) : (
             <>
               {/* Top Inspector Header */}
-              <div className="p-4 border-b border-[#232323] space-y-2 flex-none bg-[#161616]">
+              <div className="p-4 border-b border-slate-200 dark:border-[#232323] space-y-2 flex-none bg-white dark:bg-[#161616]">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     {getPriorityBadge(caseDetail.confidence)}
-                    <span className="font-mono text-sm font-semibold text-white">
+                    <span className="font-mono text-sm font-semibold text-slate-900 dark:text-white">
                       {caseDetail.case_id || caseDetail.id}
                     </span>
-                    <span className="font-mono text-xs text-neutral-400">
+                    <span className="font-mono text-xs text-slate-500 dark:text-neutral-400">
                       {caseDetail.execution_id}
                     </span>
                     <span
                       className={clsx(
-                        'text-[10px] px-1.5 py-0.2 rounded font-mono uppercase font-semibold border',
+                        'text-[10px] px-1.5 py-0.5 rounded font-mono uppercase font-semibold border',
                         caseDetail.execution_mode === 'durable'
-                          ? 'bg-purple-950/60 border-purple-800/60 text-purple-300'
-                          : 'bg-blue-950/60 border-blue-800/60 text-blue-300'
+                          ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-purple-300'
+                          : 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300'
                       )}
                     >
                       {caseDetail.execution_mode}
@@ -556,7 +547,7 @@ export const ReviewQueuePage: React.FC = () => {
                   </div>
 
                   {/* Navigation Shortcuts */}
-                  <div className="flex items-center space-x-3 text-xs text-neutral-400">
+                  <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-neutral-400">
                     <span>
                       {currentIndex >= 0 ? currentIndex + 1 : 1} of {filteredCases.length}
                     </span>
@@ -587,23 +578,15 @@ export const ReviewQueuePage: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-baseline space-x-2">
-                    <h2 className="text-sm font-semibold text-white">
+                    <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
                       {caseDetail.agent_name}
                     </h2>
-                    <span className="font-mono text-xs text-neutral-400">
+                    <span className="font-mono text-xs text-slate-500 dark:text-neutral-400">
                       v{caseDetail.agent_version_number || 1}
                     </span>
-                    <span className="text-neutral-600">·</span>
-                    <span className="text-xs text-neutral-400">
-                      Created {new Date(caseDetail.created_at).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-3 text-xs">
-                    <span className="text-neutral-400 flex items-center space-x-1">
-                      <span>Temporal:</span>
-                      <span className="font-mono text-white text-[10px] bg-[#222] px-1 py-0.5 rounded border border-[#333]">
-                        {caseDetail.execution_id}
-                      </span>
+                    <span className="text-slate-400 dark:text-neutral-600">·</span>
+                    <span className="text-xs text-slate-500 dark:text-neutral-400">
+                      {new Date(caseDetail.created_at).toLocaleTimeString()}
                     </span>
                   </div>
                 </div>
@@ -674,19 +657,19 @@ export const ReviewQueuePage: React.FC = () => {
                 )}
 
                 {/* Evidence Section */}
-                <div className="rounded border border-[#262626] bg-[#171717] overflow-hidden">
-                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-[#232323] bg-[#1a1a1a]">
-                    <span className="text-xs font-semibold text-neutral-200">
+                <div className="rounded border border-slate-200 dark:border-[#262626] bg-white dark:bg-[#171717] overflow-hidden shadow-xs">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-200 dark:border-[#232323] bg-slate-50 dark:bg-[#1a1a1a]">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-neutral-200">
                       Frozen Evidence
                     </span>
                     <div className="flex items-center space-x-3 text-xs">
                       <button
                         onClick={() => setActiveEvidenceTab('tools')}
                         className={clsx(
-                          'pb-1 transition-colors',
+                          'pb-1 transition-colors cursor-pointer',
                           activeEvidenceTab === 'tools'
-                            ? 'text-neutral-200 border-b-2 border-blue-500 font-medium'
-                            : 'text-neutral-400 hover:text-neutral-300'
+                            ? 'text-blue-600 dark:text-neutral-200 border-b-2 border-blue-500 font-medium'
+                            : 'text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-300'
                         )}
                       >
                         Tool invocations ({caseDetail.frozen_evidence?.tool_calls?.length || 0})
@@ -694,10 +677,10 @@ export const ReviewQueuePage: React.FC = () => {
                       <button
                         onClick={() => setActiveEvidenceTab('input')}
                         className={clsx(
-                          'pb-1 transition-colors',
+                          'pb-1 transition-colors cursor-pointer',
                           activeEvidenceTab === 'input'
-                            ? 'text-neutral-200 border-b-2 border-blue-500 font-medium'
-                            : 'text-neutral-400 hover:text-neutral-300'
+                            ? 'text-blue-600 dark:text-neutral-200 border-b-2 border-blue-500 font-medium'
+                            : 'text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-300'
                         )}
                       >
                         Original input
@@ -706,10 +689,10 @@ export const ReviewQueuePage: React.FC = () => {
                         <button
                           onClick={() => setActiveEvidenceTab('context')}
                           className={clsx(
-                            'pb-1 transition-colors',
+                            'pb-1 transition-colors cursor-pointer',
                             activeEvidenceTab === 'context'
-                              ? 'text-neutral-200 border-b-2 border-blue-500 font-medium'
-                              : 'text-neutral-400 hover:text-neutral-300'
+                              ? 'text-blue-600 dark:text-neutral-200 border-b-2 border-blue-500 font-medium'
+                              : 'text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-300'
                           )}
                         >
                           Context metadata
@@ -809,24 +792,24 @@ export const ReviewQueuePage: React.FC = () => {
                 {/* Split Details: Agent Reasoning & Reliability Signal */}
                 <div className="grid grid-cols-2 gap-3.5">
                   {/* Box 1: Agent Reasoning */}
-                  <div className="p-3.5 rounded border border-[#262626] bg-[#171717] space-y-3">
-                    <h3 className="text-xs font-semibold text-neutral-200">
+                  <div className="p-3.5 rounded border border-slate-200 dark:border-[#262626] bg-white dark:bg-[#171717] space-y-3 shadow-xs">
+                    <h3 className="text-xs font-semibold text-slate-900 dark:text-neutral-200">
                       Agent Reasoning
                     </h3>
                     <div className="space-y-1">
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="text-[11px] text-slate-500 dark:text-neutral-400">
                         Proposed decision
                       </span>
-                      <div className="font-mono font-semibold text-white text-xs bg-[#222] px-2 py-1 rounded inline-block">
+                      <div className="font-mono font-semibold text-slate-900 dark:text-white text-xs bg-slate-100 dark:bg-[#222] px-2 py-1 rounded inline-block">
                         {caseDetail.proposed_decision}
                       </div>
                     </div>
 
                     <div className="space-y-1 pt-1">
-                      <span className="text-[11px] text-neutral-400">
+                      <span className="text-[11px] text-slate-500 dark:text-neutral-400">
                         Stated rationale
                       </span>
-                      <p className="text-xs text-neutral-300 leading-relaxed font-sans bg-[#131313] p-2.5 rounded border border-[#222]">
+                      <p className="text-xs text-slate-700 dark:text-neutral-300 leading-relaxed font-sans bg-slate-50 dark:bg-[#131313] p-2.5 rounded border border-slate-200 dark:border-[#222]">
                         {caseDetail.frozen_evidence?.agent_reasoning ||
                           'No explicit rationale string provided by runtime.'}
                       </p>
@@ -834,9 +817,9 @@ export const ReviewQueuePage: React.FC = () => {
                   </div>
 
                   {/* Box 2: Reliability Signal & Neighbors */}
-                  <div className="p-3.5 rounded border border-[#262626] bg-[#171717] space-y-3.5">
+                  <div className="p-3.5 rounded border border-slate-200 dark:border-[#262626] bg-white dark:bg-[#171717] space-y-3.5 shadow-xs">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-semibold text-neutral-200">
+                      <h3 className="text-xs font-semibold text-slate-900 dark:text-neutral-200">
                         Reliability Calibration
                       </h3>
                       <span className="text-[10px] font-mono text-neutral-400">
@@ -935,25 +918,25 @@ export const ReviewQueuePage: React.FC = () => {
               </div>
 
               {/* Sticky Bottom Action Bar */}
-              <footer className="p-3.5 border-t border-[#232323] bg-[#161616] flex items-center justify-between flex-none z-20">
+              <footer className="p-3.5 border-t border-slate-200 dark:border-[#232323] bg-white dark:bg-[#161616] flex items-center justify-between flex-none z-20">
                 {caseDetail.status === 'RESOLVED' ? (
-                  <div className="flex-1 flex items-center justify-between bg-[#181818] border border-emerald-800/40 rounded-lg px-4 py-3">
+                  <div className="flex-1 flex items-center justify-between bg-emerald-50/60 dark:bg-[#181818] border border-emerald-300 dark:border-emerald-800/40 rounded-lg px-4 py-3">
                     <div className="flex items-center space-x-3">
-                      <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
+                      <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <div>
-                        <div className="text-sm font-semibold text-emerald-300 flex items-center space-x-2">
+                        <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 flex items-center space-x-2">
                           <span>Case Resolved · Immutable Record</span>
-                          <span className="px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/50 text-xs font-mono uppercase font-bold">
+                          <span className="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/50 text-xs font-mono uppercase font-bold">
                             Final
                           </span>
                         </div>
-                        <div className="text-xs text-neutral-400 mt-1">
+                        <div className="text-xs text-emerald-700/80 dark:text-neutral-400 mt-1">
                           This case has already been adjudicated and committed to Temporal. No further modification permitted.
                         </div>
                       </div>
                     </div>
                     {caseDetail.resolution?.resolution_reason && (
-                      <div className="text-right max-w-sm truncate text-xs text-neutral-400 italic">
+                      <div className="text-right max-w-sm truncate text-xs text-emerald-800 dark:text-neutral-400 italic">
                         &quot;{caseDetail.resolution.resolution_reason}&quot;
                       </div>
                     )}
@@ -964,7 +947,7 @@ export const ReviewQueuePage: React.FC = () => {
                       <button
                         disabled={resolveMutation.isPending}
                         onClick={() => triggerAdjudicate('approve')}
-                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-[#202020] disabled:text-neutral-500 text-white font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 shadow-sm transition-colors cursor-pointer"
+                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-200 dark:disabled:bg-[#202020] disabled:text-slate-400 dark:disabled:text-neutral-500 text-white font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 shadow-xs transition-colors cursor-pointer"
                       >
                         <span>✓ Approve</span>
                         <span className="bg-blue-700 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono">
@@ -975,10 +958,10 @@ export const ReviewQueuePage: React.FC = () => {
                       <button
                         disabled={resolveMutation.isPending}
                         onClick={() => triggerAdjudicate('reject')}
-                        className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-red-900/50 hover:border-red-700/70 text-red-400 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer"
+                        className="bg-slate-100 dark:bg-[#1f1f1f] hover:bg-slate-200 dark:hover:bg-[#252525] disabled:bg-slate-200 dark:disabled:bg-[#202020] disabled:text-slate-400 dark:disabled:text-neutral-500 border border-rose-300 dark:border-red-900/50 text-rose-600 dark:text-red-400 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer"
                       >
                         <span>✕ Reject</span>
-                        <span className="bg-[#2a2a2a] text-neutral-400 px-1.5 py-0.5 rounded text-xs font-mono">
+                        <span className="bg-slate-200 dark:bg-[#2a2a2a] text-slate-600 dark:text-neutral-400 px-1.5 py-0.5 rounded text-xs font-mono">
                           R
                         </span>
                       </button>
@@ -986,24 +969,24 @@ export const ReviewQueuePage: React.FC = () => {
                       <button
                         disabled={resolveMutation.isPending}
                         onClick={() => triggerAdjudicate('override')}
-                        className="bg-[#1f1f1f] hover:bg-[#252525] disabled:bg-[#202020] disabled:text-neutral-500 border border-[#333333] hover:border-neutral-500 text-neutral-300 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer"
+                        className="bg-slate-100 dark:bg-[#1f1f1f] hover:bg-slate-200 dark:hover:bg-[#252525] disabled:bg-slate-200 dark:disabled:bg-[#202020] disabled:text-slate-400 dark:disabled:text-neutral-500 border border-slate-300 dark:border-[#333333] hover:border-slate-400 dark:hover:border-neutral-500 text-slate-800 dark:text-neutral-300 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer"
                       >
                         <span>✎ Override</span>
-                        <span className="bg-[#2a2a2a] text-neutral-400 px-1.5 py-0.5 rounded text-xs font-mono">
+                        <span className="bg-slate-200 dark:bg-[#2a2a2a] text-slate-600 dark:text-neutral-400 px-1.5 py-0.5 rounded text-xs font-mono">
                           O
                         </span>
                       </button>
                     </div>
 
                     {/* Hotkey Guide */}
-                    <div className="flex items-center space-x-2 text-xs text-neutral-400">
-                      <span className="bg-[#222222] border border-[#333] px-1.5 py-0.5 rounded font-mono text-xs text-neutral-300">
+                    <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-neutral-400">
+                      <span className="bg-slate-100 dark:bg-[#222222] border border-slate-200 dark:border-[#333] px-1.5 py-0.5 rounded font-mono text-xs text-slate-700 dark:text-neutral-300">
                         J
                       </span>
-                      <span className="bg-[#222222] border border-[#333] px-1.5 py-0.5 rounded font-mono text-xs text-neutral-300">
+                      <span className="bg-slate-100 dark:bg-[#222222] border border-slate-200 dark:border-[#333] px-1.5 py-0.5 rounded font-mono text-xs text-slate-700 dark:text-neutral-300">
                         K
                       </span>
-                      <span className="text-xs text-neutral-400">next / prev case</span>
+                      <span className="text-xs text-slate-500 dark:text-neutral-400">next / prev case</span>
                     </div>
                   </>
                 )}

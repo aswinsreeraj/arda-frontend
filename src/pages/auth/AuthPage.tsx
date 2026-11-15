@@ -4,6 +4,8 @@ import { LoginForm } from '@/features/auth/LoginForm';
 import { AcceptInviteForm } from '@/features/auth/AcceptInviteForm';
 import { RegisterOrgForm } from '@/features/auth/RegisterOrgForm';
 import { Card } from '@/components/ui/Card';
+import { useAuthStore } from '@/features/auth/authStore';
+import { getDefaultDashboard } from '@/utils/navigation';
 import type { UserRole } from '@/types/common';
 
 export const AuthPage: React.FC = () => {
@@ -31,18 +33,8 @@ export const AuthPage: React.FC = () => {
     }
 
     // Role-tailored destination routing
-    const role = userRole || previewRole;
-    if (role === 'reviewer') {
-      navigate('/reviews');
-    } else if (role === 'agent_developer') {
-      navigate('/agents');
-    } else if (role === 'company_admin') {
-      navigate('/org');
-    } else if (role === 'super_admin') {
-      navigate('/platform');
-    } else {
-      navigate('/reviews');
-    }
+    const role = userRole || useAuthStore.getState().user?.role || previewRole;
+    navigate(getDefaultDashboard(role));
   };
 
   return (
@@ -54,7 +46,7 @@ export const AuthPage: React.FC = () => {
         <LoginForm
           onSwitchToInvite={() => navigate('/invite')}
           onSwitchToRegister={() => navigate('/signup')}
-          onSuccess={() => handleSuccess()}
+          onSuccess={(role) => handleSuccess(role)}
         />
       ) : mode === 'invite' ? (
         <AcceptInviteForm

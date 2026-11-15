@@ -54,13 +54,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-500" />
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 dark:text-gray-500" />
           <input
             type="text"
             placeholder="Filter by name or ID"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 bg-[#181818] border border-[#2e2e2e] rounded-md text-xs text-white placeholder-gray-500 focus:border-blue-500 focus:outline-none transition"
+            className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-[#181818] border border-slate-300 dark:border-[#2e2e2e] rounded-md text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 focus:border-blue-500 focus:outline-none transition"
           />
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -86,9 +86,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
 
       {/* Error Banner */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-950/40 border border-red-800/50 text-red-300 text-xs flex items-center justify-between">
+        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />
             <span>Failed to load agents: {error.message}</span>
           </div>
           <Button variant="outline" size="sm" onClick={onRefresh}>
@@ -98,10 +98,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
       )}
 
       {/* Table Container */}
-      <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#181818] shadow-sm">
+      <div className="border border-slate-200 dark:border-[#262626] rounded-lg overflow-hidden bg-white dark:bg-[#181818] shadow-xs">
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr className="border-b border-[#262626] text-xs uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
+            <tr className="border-b border-slate-200 dark:border-[#262626] text-xs uppercase tracking-wider text-slate-500 dark:text-[#828282] font-semibold bg-slate-50 dark:bg-[#161616]">
               <th className="py-3 px-4">Agent</th>
               <th className="py-3 px-4">Execution</th>
               <th className="py-3 px-4">Active version</th>
@@ -110,29 +110,29 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               <th className="py-3 px-4">Updated</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#242424] text-xs sm:text-sm">
+          <tbody className="divide-y divide-slate-100 dark:divide-[#242424] text-xs sm:text-sm">
             {isLoading && agents.length === 0 ? (
               // Loading Skeleton
               Array.from({ length: 4 }).map((_, idx) => (
                 <tr key={idx} className="animate-pulse">
                   <td className="py-4 px-4">
-                    <div className="h-4 bg-[#282828] rounded w-36 mb-1.5" />
-                    <div className="h-3 bg-[#202020] rounded w-48" />
+                    <div className="h-4 bg-slate-200 dark:bg-[#282828] rounded w-36 mb-1.5" />
+                    <div className="h-3 bg-slate-100 dark:bg-[#202020] rounded w-48" />
                   </td>
                   <td className="py-4 px-4">
-                    <div className="h-5 bg-[#252525] rounded w-16" />
+                    <div className="h-5 bg-slate-100 dark:bg-[#252525] rounded w-16" />
                   </td>
                   <td className="py-4 px-4">
-                    <div className="h-4 bg-[#252525] rounded w-10" />
+                    <div className="h-4 bg-slate-100 dark:bg-[#252525] rounded w-10" />
                   </td>
                   <td className="py-4 px-4">
-                    <div className="h-4 bg-[#252525] rounded w-12" />
+                    <div className="h-4 bg-slate-100 dark:bg-[#252525] rounded w-12" />
                   </td>
                   <td className="py-4 px-4">
-                    <div className="h-5 bg-[#252525] rounded w-20" />
+                    <div className="h-5 bg-slate-100 dark:bg-[#252525] rounded w-20" />
                   </td>
                   <td className="py-4 px-4">
-                    <div className="h-4 bg-[#202020] rounded w-24" />
+                    <div className="h-4 bg-slate-100 dark:bg-[#202020] rounded w-24" />
                   </td>
                 </tr>
               ))
@@ -140,9 +140,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               // Empty State
               <tr>
                 <td colSpan={6} className="py-12 text-center">
-                  <Bot className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-                  <p className="text-gray-300 font-medium">No agents found</p>
-                  <p className="text-[11px] text-gray-500 mt-1 max-w-sm mx-auto">
+                  <Bot className="w-8 h-8 text-slate-400 dark:text-gray-600 mx-auto mb-2" />
+                  <p className="text-slate-700 dark:text-gray-300 font-medium">No agents found</p>
+                  <p className="text-xs text-slate-500 dark:text-gray-500 mt-1 max-w-sm mx-auto">
                     {searchQuery
                       ? `No registered agents match "${searchQuery}".`
                       : 'No agents registered yet for this tenant. Register your first agent to begin.'}
@@ -182,18 +182,18 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     onClick={() => onSelectAgent(item)}
                     className={`cursor-pointer transition ${
                       isSelected
-                        ? 'bg-[#222938] hover:bg-[#273042]'
-                        : 'hover:bg-[#1d1d1d]'
+                        ? 'bg-blue-50/80 dark:bg-[#222938] hover:bg-blue-100/60 dark:hover:bg-[#273042]'
+                        : 'hover:bg-slate-50/80 dark:hover:bg-[#1d1d1d]'
                     }`}
                   >
                     <td className="py-3.5 px-4">
-                      <div className="font-medium text-white text-sm flex items-center gap-1.5">
+                      <div className="font-medium text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
                         <span>{item.agent.name}</span>
                         {isSelected && (
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                         )}
                       </div>
-                      <div className="font-mono text-[11px] text-[#71717a]">
+                      <div className="font-mono text-[11px] text-slate-400 dark:text-[#71717a]">
                         {item.agent.id}
                       </div>
                     </td>
@@ -204,10 +204,10 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         {executionMode}
                       </Badge>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-gray-300">
+                    <td className="py-3.5 px-4 font-mono text-slate-700 dark:text-gray-300">
                       {activeVersion ? `v${activeVersion.version_number}` : '—'}
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-medium text-gray-200">
+                    <td className="py-3.5 px-4 font-mono font-medium text-slate-800 dark:text-gray-200">
                       {threshold}
                     </td>
                     <td className="py-3.5 px-4">
@@ -221,7 +221,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                         </Badge>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-gray-400 font-mono text-[11px]">
+                    <td className="py-3.5 px-4 text-slate-500 dark:text-gray-400 font-mono text-[11px]">
                       {formatDate(item.agent.updated_at || item.agent.created_at)}
                     </td>
                   </tr>

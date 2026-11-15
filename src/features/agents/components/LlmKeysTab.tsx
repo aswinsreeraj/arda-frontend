@@ -127,12 +127,10 @@ export const LlmKeysTab: React.FC = () => {
     <div className="space-y-6">
       {/* Callout Notice Banner & Add Key CTA */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="p-3 bg-[#181818] border border-[#2a2a2a] rounded-lg text-xs text-gray-300 flex items-center space-x-2.5 max-w-2xl">
-          <Lock className="w-4 h-4 text-gray-400 shrink-0" />
+        <div className="p-3 bg-white dark:bg-[#181818] border border-slate-200 dark:border-[#2a2a2a] rounded-lg text-xs text-slate-600 dark:text-gray-300 flex items-center space-x-2.5 max-w-2xl shadow-xs">
+          <Lock className="w-4 h-4 text-slate-400 dark:text-gray-400 shrink-0" />
           <span>
-            <strong className="text-white">Bring your own key (BYOK).</strong> Your
-            organization's own LLM provider keys are stored exclusively in HashiCorp Vault. ARDA
-            never logs or exposes plaintext secrets in browser memory.
+            <strong className="text-slate-900 dark:text-white">Bring Your Own Key (BYOK).</strong> Model provider keys are encrypted in Vault and isolated per tenant.
           </span>
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -160,8 +158,8 @@ export const LlmKeysTab: React.FC = () => {
 
       {/* RBAC notice if developer */}
       {!canManageCredentials && (
-        <div className="p-3 rounded-lg bg-blue-950/30 border border-blue-800/40 text-blue-300 text-xs flex items-center gap-2.5">
-          <ShieldCheck className="w-4 h-4 shrink-0 text-blue-400" />
+        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 text-blue-700 dark:text-blue-300 text-xs flex items-center gap-2.5">
+          <ShieldCheck className="w-4 h-4 shrink-0 text-blue-500 dark:text-blue-400" />
           <span>
             Viewing credentials as <strong>{user?.role}</strong>. Vault secret management is restricted
             to <strong>company_admin</strong>.
@@ -171,9 +169,9 @@ export const LlmKeysTab: React.FC = () => {
 
       {/* Error state */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-950/40 border border-red-800/50 text-red-300 text-xs flex items-center justify-between">
+        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />
             <span>Failed to load credentials: {(error as Error).message}</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -183,10 +181,10 @@ export const LlmKeysTab: React.FC = () => {
       )}
 
       {/* Keys Table Container */}
-      <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#181818] shadow-sm">
+      <div className="border border-slate-200 dark:border-[#262626] rounded-lg overflow-hidden bg-white dark:bg-[#181818] shadow-xs">
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr className="border-b border-[#262626] text-xs uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
+            <tr className="border-b border-slate-200 dark:border-[#262626] text-xs uppercase tracking-wider text-slate-500 dark:text-[#828282] font-semibold bg-slate-50 dark:bg-[#161616]">
               <th className="py-3 px-4">Provider</th>
               <th className="py-3 px-4 font-mono">Vault Reference</th>
               <th className="py-3 px-4">Connectivity Status</th>
@@ -194,7 +192,7 @@ export const LlmKeysTab: React.FC = () => {
               {canManageCredentials && <th className="py-3 px-4 text-right">Actions</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#242424]">
+          <tbody className="divide-y divide-slate-100 dark:divide-[#242424]">
             {isLoading && llmCredentials.length === 0 ? (
               Array.from({ length: 2 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">

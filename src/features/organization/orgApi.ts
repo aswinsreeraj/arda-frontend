@@ -12,145 +12,6 @@ import type {
 const LOCAL_INVITES_KEY = 'arda_local_tenant_invites';
 const LOCAL_MEMBER_OVERRIDES_KEY = 'arda_local_member_overrides';
 
-/**
- * Baseline team directory matching Stitch Screen f4840ffc43c44bbc93dfc991ecb315d8
- */
-const STITCH_BASELINE_MEMBERS: TenantMember[] = [
-  {
-    id: 'mem_dana_01',
-    user_id: 'usr_dana_01',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'dana.whitfield@acme-corp.com',
-    display_name: 'Dana Whitfield',
-    role: 'company_admin',
-    status: 'active',
-    created_at: '2026-08-01T10:00:00Z',
-    last_active: '2m ago',
-    is_current_user: true,
-  },
-  {
-    id: 'mem_marcus_02',
-    user_id: 'usr_marcus_02',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'marcus.okafor@acme-corp.com',
-    display_name: 'Marcus Okafor',
-    role: 'agent_developer',
-    status: 'active',
-    created_at: '2026-08-15T11:20:00Z',
-    last_active: '1h ago',
-  },
-  {
-    id: 'mem_priya_03',
-    user_id: 'usr_priya_03',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'priya.raman@acme-corp.com',
-    display_name: 'Priya Raman',
-    role: 'reviewer',
-    status: 'active',
-    created_at: '2026-08-20T14:15:00Z',
-    last_active: '19m ago',
-  },
-  {
-    id: 'mem_tomas_04',
-    user_id: 'usr_tomas_04',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'tomas.herrera@acme-corp.com',
-    display_name: 'Tomás Herrera',
-    role: 'reviewer',
-    status: 'active',
-    created_at: '2026-08-22T09:45:00Z',
-    last_active: '4h ago',
-  },
-  {
-    id: 'mem_hannah_05',
-    user_id: 'usr_hannah_05',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'hannah.liu@acme.io',
-    display_name: 'Hannah Liu',
-    role: 'agent_developer',
-    status: 'active',
-    created_at: '2026-09-01T16:30:00Z',
-    last_active: '20h ago',
-  },
-  {
-    id: 'mem_samuel_06',
-    user_id: 'usr_samuel_06',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'samuel.adeyemi@acme-corp.com',
-    display_name: 'Samuel Adeyemi',
-    role: 'company_admin',
-    status: 'active',
-    created_at: '2026-09-05T08:00:00Z',
-    last_active: '3d ago',
-  },
-  {
-    id: 'mem_jordan_07',
-    user_id: 'usr_jordan_07',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'jordan.pike@acme-corp.com',
-    display_name: 'Jordan Pike',
-    role: 'reviewer',
-    status: 'invited',
-    created_at: '2026-09-28T12:00:00Z',
-    last_active: 'sent 2d ago',
-  },
-  {
-    id: 'mem_elena_08',
-    user_id: 'usr_elena_08',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'elena.vasquez@acme-corp.com',
-    display_name: 'Elena Vasquez',
-    role: 'reviewer',
-    status: 'active',
-    created_at: '2026-09-10T13:20:00Z',
-    last_active: '2h ago',
-  },
-  {
-    id: 'mem_kai_09',
-    user_id: 'usr_kai_09',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'kai.nakamura@acme.io',
-    display_name: 'Kai Nakamura',
-    role: 'agent_developer',
-    status: 'active',
-    created_at: '2026-09-12T15:10:00Z',
-    last_active: '5d ago',
-  },
-  {
-    id: 'mem_mensah_10',
-    user_id: 'usr_mensah_10',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'r.mensah@acme-corp.com',
-    display_name: 'R. Mensah',
-    role: 'agent_developer',
-    status: 'invited',
-    created_at: '2026-09-17T09:00:00Z',
-    last_active: 'sent 13d ago',
-  },
-  {
-    id: 'mem_olivia_11',
-    user_id: 'usr_olivia_11',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'olivia.brandt@acme-corp.com',
-    display_name: 'Olivia Brandt',
-    role: 'reviewer',
-    status: 'disabled',
-    created_at: '2026-07-10T10:00:00Z',
-    last_active: 'Aug 12',
-  },
-  {
-    id: 'mem_victor_12',
-    user_id: 'usr_victor_12',
-    tenant_id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
-    email: 'victor.chen@acme-corp.com',
-    display_name: 'Victor Chen',
-    role: 'agent_developer',
-    status: 'disabled',
-    created_at: '2026-06-15T11:00:00Z',
-    last_active: 'Jul 3',
-  },
-];
-
 function getLocalInvites(): TenantMember[] {
   try {
     const raw = localStorage.getItem(LOCAL_INVITES_KEY);
@@ -217,39 +78,28 @@ export const orgApi = {
     // Map by email / user_id to deduplicate
     const memberMap = new Map<string, TenantMember>();
 
-    // 1. Add baseline Stitch members
-    for (const mem of STITCH_BASELINE_MEMBERS) {
-      memberMap.set(mem.email.toLowerCase(), { ...mem });
-    }
-
-    // 2. Overlay live backend members
+    // 1. Overlay live backend members
     for (const mem of backendMembers) {
       const key = mem.email.toLowerCase();
-      const existing = memberMap.get(key);
       memberMap.set(key, {
-        ...(existing || {}),
         ...mem,
         status: (mem.status as MemberStatus) || 'active',
       });
     }
 
-    // 3. Overlay local invitations
+    // 2. Overlay local invitations
     for (const inv of localInvites) {
       memberMap.set(inv.email.toLowerCase(), inv);
     }
 
-    // 4. Apply manual role / status overrides
+    // 3. Apply manual role / status overrides
     const result: TenantMember[] = [];
     for (const mem of memberMap.values()) {
       const override = overrides[mem.user_id] || overrides[mem.email.toLowerCase()];
       const finalMem = override ? { ...mem, ...override } : { ...mem };
 
       // Mark current user
-      if (
-        (currentUserId && finalMem.user_id === currentUserId) ||
-        finalMem.email === 'admin@acme.com' ||
-        finalMem.email === 'dana.whitfield@acme-corp.com'
-      ) {
+      if (currentUserId && (finalMem.user_id === currentUserId || finalMem.id === currentUserId)) {
         finalMem.is_current_user = true;
       }
 

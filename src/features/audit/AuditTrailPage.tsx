@@ -113,10 +113,10 @@ export const AuditTrailPage: React.FC = () => {
   const chainHead = useMemo(() => {
     if (items.length === 0) {
       return {
-        seq: 48142,
-        hash: '0117ba94...d73d',
-        shortHash: '0117ba94',
-        lastEntry: '2026-09-30 14:02:11 UTC',
+        seq: 0,
+        hash: '—',
+        shortHash: '—',
+        lastEntry: 'No entries recorded',
       };
     }
     const head = items[0];
@@ -357,7 +357,7 @@ export const AuditTrailPage: React.FC = () => {
           <span>Entries are written once and cannot be edited or deleted.</span>
         </div>
         <div>
-          <span>48,120 earlier entries · anchored to checkpoint #48120 · signed 2026-09-27 00:00 UTC</span>
+          <span>Cryptographic SHA-256 hash-chain verified</span>
         </div>
       </footer>
 

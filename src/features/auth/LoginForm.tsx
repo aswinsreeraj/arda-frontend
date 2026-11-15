@@ -6,6 +6,7 @@ import { useAuthStore } from './authStore';
 import { authApi } from './authApi';
 import { ArrowRight, Eye, EyeOff, ShieldCheck, UserCheck, Code, Shield } from 'lucide-react';
 import type { LoginRequest } from './types';
+import type { UserRole } from '@/types/common';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid work email address'),
@@ -15,7 +16,7 @@ const loginSchema = z.object({
 interface LoginFormProps {
   onSwitchToInvite: () => void;
   onSwitchToRegister: () => void;
-  onSuccess: () => void;
+  onSuccess: (role?: UserRole) => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
@@ -55,7 +56,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         role: res.role,
         queue: res.role === 'reviewer' ? 'fraud-l2' : undefined,
       });
-      onSuccess();
+      onSuccess(res.role);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid email or password';
       setErrorMsg(msg);
@@ -115,13 +116,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => handleQuickFill('developer@acme.com', 'DeveloperPass123!')}
+            onClick={() => handleQuickFill('agent.dev@acme.com', 'DeveloperPass123!')}
             className="flex items-center space-x-1.5 p-1.5 rounded-lg bg-white dark:bg-[#202020] hover:bg-slate-100 dark:hover:bg-[#282828] border border-slate-200 dark:border-[#333] text-left text-xs transition-colors cursor-pointer"
           >
             <Code className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             <div>
               <div className="font-medium text-slate-900 dark:text-white text-[11px]">Dave (Developer)</div>
-              <div className="text-[9px] text-slate-500 dark:text-neutral-400 font-mono">developer@acme.com</div>
+              <div className="text-[9px] text-slate-500 dark:text-neutral-400 font-mono">agent.dev@acme.com</div>
             </div>
           </button>
           <button

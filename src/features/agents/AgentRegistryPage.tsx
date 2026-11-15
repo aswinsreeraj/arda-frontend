@@ -49,14 +49,6 @@ export const AgentRegistryPage: React.FC = () => {
     setScreenView('inspector');
   };
 
-  // Switch to inspector view directly
-  const handleSwitchToInspector = () => {
-    if (!selectedAgent && agents.length > 0) {
-      setSelectedAgent(agents[0]);
-    }
-    setScreenView('inspector');
-  };
-
   // Agent registered successfully callback
   const handleAgentRegistered = (newAgent: AgentDetail) => {
     setSelectedAgent(newAgent);
@@ -70,54 +62,37 @@ export const AgentRegistryPage: React.FC = () => {
 
   return (
     <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-6 flex flex-col gap-6 overflow-y-auto">
-      {/* View Switcher & Title */}
+      {/* Title & Navigation Tabs */}
       <div className="flex flex-col space-y-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold tracking-tight text-white">Agent Registry</h1>
-          <div className="flex items-center bg-[#1c1c1c] p-1 rounded-lg border border-[#2e2e2e] text-xs">
-            <span className="text-[#9ca3af] px-2">Screen View:</span>
-            <button
-              type="button"
-              onClick={() => setScreenView('table')}
-              className={`px-2.5 py-1 rounded font-medium transition ${
-                screenView === 'table'
-                  ? 'bg-[#2c2c2c] text-white shadow-sm'
-                  : 'text-[#9ca3af] hover:text-white'
-              }`}
-            >
-              Registry Table
-            </button>
-            <button
-              type="button"
-              onClick={handleSwitchToInspector}
-              className={`px-2.5 py-1 rounded font-medium transition ${
-                screenView === 'inspector'
-                  ? 'bg-[#2c2c2c] text-white shadow-sm'
-                  : 'text-[#9ca3af] hover:text-white'
-              }`}
-            >
-              Config Inspector
-            </button>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Agent Registry</h1>
+            <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+              Configure and version governed agent workflows, tool permissions, and LLM providers.
+            </p>
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex items-center border-b border-[#282828] space-x-6">
+        <div className="flex items-center border-b border-slate-200 dark:border-[#282828] space-x-6">
           <button
             type="button"
-            onClick={() => setActiveTab('agents')}
+            onClick={() => {
+              setActiveTab('agents');
+              setScreenView('table');
+            }}
             className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
               activeTab === 'agents'
-                ? 'border-white text-white'
-                : 'border-transparent text-[#8e8e93] hover:text-white'
+                ? 'border-blue-600 dark:border-white text-slate-900 dark:text-white font-semibold'
+                : 'border-transparent text-slate-500 dark:text-[#8e8e93] hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>Agents</span>
             <span
               className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${
                 activeTab === 'agents'
-                  ? 'bg-[#282828] text-gray-200'
-                  : 'bg-[#222222] text-gray-500'
+                  ? 'bg-slate-200 dark:bg-[#282828] text-slate-800 dark:text-gray-200'
+                  : 'bg-slate-100 dark:bg-[#222222] text-slate-500 dark:text-gray-500'
               }`}
             >
               {agents.length}
@@ -129,16 +104,16 @@ export const AgentRegistryPage: React.FC = () => {
             onClick={() => setActiveTab('mcp')}
             className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
               activeTab === 'mcp'
-                ? 'border-white text-white'
-                : 'border-transparent text-[#8e8e93] hover:text-white'
+                ? 'border-blue-600 dark:border-white text-slate-900 dark:text-white font-semibold'
+                : 'border-transparent text-slate-500 dark:text-[#8e8e93] hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>MCP Servers</span>
             <span
               className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${
                 activeTab === 'mcp'
-                  ? 'bg-[#282828] text-gray-200'
-                  : 'bg-[#222222] text-gray-500'
+                  ? 'bg-slate-200 dark:bg-[#282828] text-slate-800 dark:text-gray-200'
+                  : 'bg-slate-100 dark:bg-[#222222] text-slate-500 dark:text-gray-500'
               }`}
             >
               {toolsData.length}
@@ -150,16 +125,16 @@ export const AgentRegistryPage: React.FC = () => {
             onClick={() => setActiveTab('llm')}
             className={`pb-3 text-sm font-medium border-b-2 flex items-center space-x-2 transition ${
               activeTab === 'llm'
-                ? 'border-white text-white'
-                : 'border-transparent text-[#8e8e93] hover:text-white'
+                ? 'border-blue-600 dark:border-white text-slate-900 dark:text-white font-semibold'
+                : 'border-transparent text-slate-500 dark:text-[#8e8e93] hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span>LLM Keys</span>
             <span
               className={`text-[11px] font-mono px-1.5 py-0.5 rounded ${
                 activeTab === 'llm'
-                  ? 'bg-[#282828] text-gray-200'
-                  : 'bg-[#222222] text-gray-500'
+                  ? 'bg-slate-200 dark:bg-[#282828] text-slate-800 dark:text-gray-200'
+                  : 'bg-slate-100 dark:bg-[#222222] text-slate-500 dark:text-gray-500'
               }`}
             >
               {llmKeys.length}

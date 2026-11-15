@@ -112,14 +112,11 @@ export const McpServersTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Callout Notice Banner & Register Tool CTA */}
+      {/* Header Bar & Register Tool CTA */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center space-x-2.5 text-xs text-gray-400">
-          <Lock className="w-4 h-4 text-gray-400 shrink-0" />
-          <span>
-            MCP servers and tools run isolated under your network envelope. Credentials are
-            encrypted at rest using tenant KMS.
-          </span>
+        <div className="flex items-center space-x-2 text-xs text-slate-500 dark:text-gray-400">
+          <Lock className="w-4 h-4 text-slate-400 dark:text-gray-400 shrink-0" />
+          <span>Tool definitions and MCP endpoints for agent execution.</span>
         </div>
         <div className="flex items-center gap-2 self-end sm:self-auto">
           <Button
@@ -146,9 +143,9 @@ export const McpServersTab: React.FC = () => {
 
       {/* Error state */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-950/40 border border-red-800/50 text-red-300 text-xs flex items-center justify-between">
+        <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />
             <span>Failed to load tools: {(error as Error).message}</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -158,10 +155,10 @@ export const McpServersTab: React.FC = () => {
       )}
 
       {/* Tools Table Container */}
-      <div className="border border-[#262626] rounded-lg overflow-hidden bg-[#181818] shadow-sm">
+      <div className="border border-slate-200 dark:border-[#262626] rounded-lg overflow-hidden bg-white dark:bg-[#181818] shadow-xs">
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr className="border-b border-[#262626] text-xs uppercase tracking-wider text-[#828282] font-semibold bg-[#161616]">
+            <tr className="border-b border-slate-200 dark:border-[#262626] text-xs uppercase tracking-wider text-slate-500 dark:text-[#828282] font-semibold bg-slate-50 dark:bg-[#161616]">
               <th className="py-3 px-4">Tool / Identifier</th>
               <th className="py-3 px-4">Classification</th>
               <th className="py-3 px-4">Handler</th>
@@ -170,7 +167,7 @@ export const McpServersTab: React.FC = () => {
               {canDeleteTools && <th className="py-3 px-4 text-right">Actions</th>}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#242424]">
+          <tbody className="divide-y divide-slate-100 dark:divide-[#242424]">
             {isLoading && tools.length === 0 ? (
               Array.from({ length: 3 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">

@@ -14,109 +14,16 @@ const LOCAL_ONBOARDED_TENANTS_KEY = 'arda_local_onboarded_tenants';
 const LOCAL_TENANT_OVERRIDES_KEY = 'arda_local_tenant_overrides';
 const LOCAL_PLATFORM_CONFIG_KEY = 'arda_local_platform_config';
 
-/**
- * Baseline 10 Production Organizations matching Stitch Screen 452b984a592e4655af6caef3f08b0360
- */
-const STITCH_BASELINE_TENANTS: PlatformTenant[] = [
+const DEFAULT_PLATFORM_TENANTS: PlatformTenant[] = [
   {
-    id: 'org_7f3a91c2',
-    name: 'Acme Corp',
-    slug: 'acme-corp',
+    id: '416a2492-7e2c-484d-972d-c88d95a89b7a',
+    name: 'Acme Robotics',
+    slug: 'acme-robotics',
     tier: 'enterprise',
     status: 'active',
-    agent_count: 14,
-    member_count: 12,
-    created_at: '2025-11-04',
-  },
-  {
-    id: 'org_2b81e0d4',
-    name: 'Kestrel Bank',
-    slug: 'kestrel-bank',
-    tier: 'enterprise',
-    status: 'active',
-    agent_count: 31,
-    member_count: 48,
-    created_at: '2025-12-15',
-  },
-  {
-    id: 'org_91cc4a7e',
-    name: 'Helix Health',
-    slug: 'helix-health',
-    tier: 'enterprise',
-    status: 'active',
-    agent_count: 22,
-    member_count: 37,
-    created_at: '2026-01-20',
-  },
-  {
-    id: 'org_5d0f33b1',
-    name: 'Northwind Freight',
-    slug: 'northwind-freight',
-    tier: 'growth',
-    status: 'active',
-    agent_count: 9,
-    member_count: 15,
-    created_at: '2026-02-11',
-  },
-  {
-    id: 'org_c47a8e25',
-    name: 'Brightline Insurance',
-    slug: 'brightline-insurance',
-    tier: 'enterprise',
-    status: 'active',
-    agent_count: 18,
-    member_count: 26,
-    created_at: '2026-03-02',
-  },
-  {
-    id: 'org_0e6b2f98',
-    name: 'Ledgerly',
-    slug: 'ledgerly',
-    tier: 'growth',
-    status: 'suspended',
-    agent_count: 6,
-    member_count: 8,
-    created_at: '2026-03-28',
-  },
-  {
-    id: 'org_ab14d7c3',
-    name: 'Meridian Claims',
-    slug: 'meridian-claims',
-    tier: 'growth',
-    status: 'active',
-    agent_count: 12,
-    member_count: 19,
-    created_at: '2026-05-06',
-  },
-  {
-    id: 'org_6f29e4a0',
-    name: 'Orbital Retail',
-    slug: 'orbital-retail',
-    tier: 'growth',
-    status: 'active',
-    agent_count: 7,
-    member_count: 11,
-    created_at: '2026-06-17',
-  },
-  {
-    id: 'org_d83c1b56',
-    name: 'Parcelworks',
-    slug: 'parcelworks',
-    tier: 'starter',
-    status: 'active',
-    agent_count: 3,
+    agent_count: 4,
     member_count: 4,
-    created_at: '2026-08-09',
-  },
-  {
-    id: 'org_e2a7f019',
-    name: 'Tidewater Logistics',
-    slug: 'tidewater-logistics',
-    tier: 'starter',
-    status: 'active',
-    agent_count: 2,
-    member_count: 3,
-    created_at: '2026-09-22',
+    created_at: '2026-10-27',
   },
 ];
 
@@ -159,7 +66,7 @@ export const platformApi = {
     const map = new Map<string, PlatformTenant>();
 
     // 1. Load Stitch baseline
-    for (const t of STITCH_BASELINE_TENANTS) {
+    for (const t of DEFAULT_PLATFORM_TENANTS) {
       map.set(t.id, { ...t });
     }
 
