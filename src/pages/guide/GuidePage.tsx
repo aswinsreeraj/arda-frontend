@@ -66,21 +66,18 @@ export const GuidePage: React.FC = () => {
       {isAuthenticated ? (
         <TopNav />
       ) : (
-        <header className="sticky top-0 z-50 w-full border-b border-[#282828] backdrop-blur-sm bg-[#131313]/95">
+        <header className="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-[#282828] backdrop-blur-sm bg-white/95 dark:bg-[#131313]/95 transition-colors">
           <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
             {/* Left brand & primary nav */}
             <div className="flex items-center space-x-8">
-              <Link to="/" className="flex items-center space-x-2 text-white font-medium text-base tracking-tight hover:opacity-90">
-                <span className="font-semibold text-white tracking-wide text-base font-sans">ΛRDΛ</span>
+              <Link to="/" className="flex items-center space-x-2 text-slate-900 dark:text-white font-medium text-base tracking-tight hover:opacity-90">
+                <span className="font-semibold text-slate-900 dark:text-white tracking-wide text-base font-sans">ΛRDΛ</span>
               </Link>
-              <nav className="hidden md:flex items-center space-x-6 text-sm text-[#9ca3af]">
-                <Link to="/docs" className="hover:text-white transition-colors">
-                  Docs
-                </Link>
-                <Link to="/guide" className="text-white font-medium">
+              <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+                <Link to="/guide" className="text-slate-900 dark:text-white font-semibold">
                   Guides
                 </Link>
-                <Link to="/docs" className="hover:text-white transition-colors">
+                <Link to="/docs" className="text-slate-600 hover:text-slate-900 dark:text-[#9ca3af] dark:hover:text-white transition-colors">
                   API Reference
                 </Link>
               </nav>
@@ -90,14 +87,14 @@ export const GuidePage: React.FC = () => {
             <div className="flex items-center space-x-4">
               <ThemeToggle />
 
-              <Link to="/login" className="text-sm text-[#9ca3af] hover:text-white transition-colors">
+              <Link to="/login" className="text-sm font-medium text-slate-700 hover:text-slate-900 dark:text-[#9ca3af] dark:hover:text-white transition-colors">
                 Sign In
               </Link>
               <Link
-                to="/login"
-                className="text-sm font-medium bg-[#2563eb] text-white px-4 py-2 rounded hover:bg-[#1d4ed8] transition-colors shadow-xs"
+                to="/signup"
+                className="text-sm font-medium bg-[#2563eb] !text-white text-white px-4 py-2 rounded hover:bg-[#1d4ed8] transition-colors shadow-xs"
               >
-                Get Started
+                Sign Up
               </Link>
             </div>
           </div>

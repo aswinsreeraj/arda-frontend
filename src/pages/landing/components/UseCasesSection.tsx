@@ -67,72 +67,73 @@ export const UseCasesSection: React.FC = () => {
   ];
 
   return (
-    <section className="py-20 border-b border-[#282828] bg-[#131313]" id="use-cases">
+    <section className="py-20 border-b border-slate-200 dark:border-[#282828] bg-white dark:bg-[#131313] transition-colors" id="use-cases">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           {/* Left Column: Copy */}
           <div className="lg:col-span-4 space-y-4">
-            <div className="text-[11px] font-mono text-[#6b7280] uppercase tracking-wider">
-              Production Deployments
+            <div className="text-xs font-mono text-blue-600 dark:text-blue-400 uppercase tracking-wider font-medium">
+              Enterprise Agent Fleet
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              One platform, many agent types.
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+              One platform, any agent use case.
             </h2>
-            <p className="text-xs sm:text-sm text-[#9ca3af] leading-relaxed">
-              ARDA doesn’t know what fraud or procurement is. Each agent is just a prompt, a tool
-              set, and a decision policy — the runtime, gateway, and review queue are shared.
+            <p className="text-sm sm:text-base text-slate-600 dark:text-[#9ca3af] leading-relaxed">
+              ARDA abstracts runtime governance across any domain — fraud detection, customer support,
+              procurement, claims, or data analysis. Every agent shares the same durable execution engine,
+              policy gateway, and human review infrastructure.
             </p>
-            <div className="pt-4 text-xs font-mono text-[#6b7280] space-y-1">
+            <div className="pt-4 text-xs font-mono text-slate-500 dark:text-[#6b7280] space-y-1">
               <div>same runtime · same gateway · same review queue</div>
-              <div className="text-[11px] text-[#6b7280]/80">
-                Per-agent calibrated τ thresholds update dynamically.
+              <div className="text-[11px] text-slate-500 dark:text-[#6b7280]/80">
+                Per-agent calibrated safety thresholds adapt dynamically.
               </div>
             </div>
           </div>
 
           {/* Right Column: Agent Registry Table */}
-          <div className="lg:col-span-8 overflow-hidden rounded-lg border border-[#282828] bg-[#181818]">
+          <div className="lg:col-span-8 overflow-hidden rounded-xl border border-slate-200 dark:border-[#282828] bg-white dark:bg-[#181818] shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full text-left font-mono text-xs">
-                <thead className="border-b border-[#282828] bg-[#1c1c1c] text-[#6b7280] text-[11px]">
+                <thead className="border-b border-slate-200 dark:border-[#282828] bg-slate-50 dark:bg-[#1c1c1c] text-slate-600 dark:text-[#6b7280] text-xs">
                   <tr>
-                    <th className="py-3.5 px-4 font-medium" scope="col">
+                    <th className="py-3.5 px-4 font-semibold" scope="col">
                       Agent
                     </th>
-                    <th className="py-3.5 px-4 font-medium" scope="col">
+                    <th className="py-3.5 px-4 font-semibold" scope="col">
                       Version
                     </th>
-                    <th className="py-3.5 px-4 font-medium" scope="col">
+                    <th className="py-3.5 px-4 font-semibold" scope="col">
                       Tools
                     </th>
-                    <th className="py-3.5 px-4 font-medium" scope="col">
+                    <th className="py-3.5 px-4 font-semibold" scope="col">
                       Threshold τ
                     </th>
-                    <th className="py-3.5 px-4 font-medium text-right" scope="col">
+                    <th className="py-3.5 px-4 font-semibold text-right" scope="col">
                       Escalation
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#282828]">
+                <tbody className="divide-y divide-slate-200 dark:divide-[#282828]">
                   {agents.map((agent) => (
                     <tr
                       key={agent.slug}
-                      className="hover:bg-[#1c1c1c]/60 transition-colors"
+                      className="hover:bg-slate-50 dark:hover:bg-[#1c1c1c]/60 transition-colors"
                     >
                       <td className="py-3.5 px-4">
                         <div className="flex items-center space-x-2.5">
-                          <div className="w-6 h-6 rounded bg-[#131313] border border-[#282828] flex items-center justify-center text-[#9ca3af]">
+                          <div className="w-6 h-6 rounded bg-slate-100 dark:bg-[#131313] border border-slate-200 dark:border-[#282828] flex items-center justify-center text-slate-600 dark:text-[#9ca3af]">
                             {agent.icon}
                           </div>
                           <div>
-                            <div className="text-white font-medium font-sans">{agent.name}</div>
-                            <div className="text-xs text-[#8c8c8c] font-mono">{agent.slug}</div>
+                            <div className="text-slate-900 dark:text-white font-medium font-sans">{agent.name}</div>
+                            <div className="text-xs text-slate-500 dark:text-[#8c8c8c] font-mono">{agent.slug}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="py-3.5 px-4 text-[#9ca3af]">{agent.version}</td>
-                      <td className="py-3.5 px-4 text-[#9ca3af]">{agent.toolsCount}</td>
-                      <td className="py-3.5 px-4 text-white font-medium">{agent.threshold}</td>
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-[#9ca3af]">{agent.version}</td>
+                      <td className="py-3.5 px-4 text-slate-600 dark:text-[#9ca3af]">{agent.toolsCount}</td>
+                      <td className="py-3.5 px-4 text-slate-900 dark:text-white font-medium">{agent.threshold}</td>
                       <td className={`py-3.5 px-4 text-right font-medium ${agent.rateColor}`}>
                         {agent.escalationRate}
                       </td>

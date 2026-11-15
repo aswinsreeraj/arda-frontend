@@ -144,6 +144,12 @@ html:not(.dark) .bg-\[\#131313\],
 html:not(.dark) .bg-\[\#141414\] {
   background-color: var(--surface-canvas) !important;
 }
+html:not(.dark) .bg-\[\#131313\]\/90,
+html:not(.dark) .bg-\[\#131313\]\/95,
+html:not(.dark) .bg-\[\#161616\]\/90,
+html:not(.dark) .bg-\[\#161616\]\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
 html:not(.dark) .bg-\[\#161616\],
 html:not(.dark) .bg-\[\#171717\],
 html:not(.dark) .bg-\[\#181818\],
@@ -171,11 +177,29 @@ html:not(.dark) .border-\[\#2e2e2e\],
 html:not(.dark) .border-\[\#333333\] {
   border-color: var(--border-subtle) !important;
 }
-html:not(.dark) .text-white,
-html:not(.dark) .text-\[\#f3f4f6\],
-html:not(.dark) .text-\[\#fafafa\],
-html:not(.dark) .text-neutral-100,
-html:not(.dark) .text-neutral-200 {
+
+/* Primary buttons and solid colored action elements MUST ALWAYS keep crisp white text in BOTH light & dark modes */
+button[class*="bg-blue"],
+button[class*="bg-[#2563eb]"],
+button[class*="bg-[#1d4ed8]"],
+a[class*="bg-blue"],
+a[class*="bg-[#2563eb]"],
+a[class*="bg-[#1d4ed8]"],
+.btn-primary,
+.btn-primary *,
+.text-white-force,
+[class*="bg-[#2563eb]"] > *,
+[class*="bg-blue-600"] > *,
+[class*="bg-blue-700"] > * {
+  color: #ffffff !important;
+}
+
+/* Light mode text remapping - ONLY affects non-colored backgrounds and regular text */
+html:not(.dark) .text-white:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not([class*="bg-blue"]):not([class*="bg-blue"] *):not([class*="bg-[#2563eb]"]):not([class*="bg-[#2563eb]"] *):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-amber"]):not(.text-white-force),
+html:not(.dark) .text-\[\#f3f4f6\]:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not([class*="bg-"]):not([class*="bg-"] *),
+html:not(.dark) .text-\[\#fafafa\]:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not([class*="bg-"]):not([class*="bg-"] *),
+html:not(.dark) .text-neutral-100:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not([class*="bg-"]):not([class*="bg-"] *),
+html:not(.dark) .text-neutral-200:not(button):not(button *):not(a[class*="bg-"]):not(a[class*="bg-"] *):not([class*="bg-"]):not([class*="bg-"] *) {
   color: var(--text-primary) !important;
 }
 html:not(.dark) .text-\[\#dadada\],

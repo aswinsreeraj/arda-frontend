@@ -61,7 +61,7 @@ export const TopNav: React.FC = () => {
       visible: hasRole(['super_admin', 'company_admin', 'reviewer', 'agent_developer']),
     },
     {
-      label: 'API Docs',
+      label: 'API Reference',
       path: '/docs',
       visible: true,
     },
@@ -73,37 +73,37 @@ export const TopNav: React.FC = () => {
   ];
 
   return (
-    <header className="flex-none border-b border-[#242424] bg-[#161616] px-6 py-3 flex items-center justify-between text-sm z-30 select-none">
+    <header className="flex-none border-b border-slate-200 dark:border-[#242424] bg-white dark:bg-[#161616] px-6 py-3 flex items-center justify-between text-sm z-30 select-none transition-colors">
       <div className="flex items-center space-x-6">
         {/* Brand Logo & Workspace */}
         <div className="flex items-center space-x-3">
           <NavLink
             to={getDefaultDashboard(user?.role)}
             title="Go to default console dashboard"
-            className="font-semibold text-lg tracking-tight text-white flex items-center space-x-1.5 hover:opacity-90 transition-opacity"
+            className="font-semibold text-lg tracking-tight text-slate-900 dark:text-white flex items-center space-x-1.5 hover:opacity-90 transition-opacity"
           >
             <span>ΛRDΛ</span>
           </NavLink>
-          <span className="text-neutral-500">/</span>
+          <span className="text-slate-400 dark:text-neutral-500">/</span>
 
           {/* Workspace info */}
           <div className="relative">
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center space-x-2 text-neutral-300 hover:text-white transition-colors py-1 px-2.5 rounded hover:bg-[#222] text-sm"
+              className="flex items-center space-x-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-[#222] transition-colors py-1 px-2.5 rounded text-sm"
             >
               <span className="font-medium">{user?.tenant_name || 'Acme Robotics'}</span>
-              <ChevronDown className="w-4 h-4 text-neutral-400" />
+              <ChevronDown className="w-4 h-4 text-slate-400 dark:text-neutral-400" />
             </button>
 
             {isDropdownOpen && (
-              <div className="absolute left-0 mt-2 w-60 rounded-md bg-[#1c1c1c] border border-[#2e2e2e] shadow-xl py-1 text-sm text-neutral-300 z-50">
-                <div className="px-3 py-1.5 text-xs uppercase font-mono text-neutral-400 border-b border-[#282828]">
+              <div className="absolute left-0 mt-2 w-60 rounded-md bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2e2e2e] shadow-xl py-1 text-sm text-slate-700 dark:text-neutral-300 z-50">
+                <div className="px-3 py-1.5 text-xs uppercase font-mono text-slate-500 dark:text-neutral-400 border-b border-slate-200 dark:border-[#282828]">
                   Active Tenant
                 </div>
-                <div className="px-3 py-2 text-white">
+                <div className="px-3 py-2 text-slate-900 dark:text-white">
                   <div className="font-medium text-sm">{user?.tenant_name || 'Acme Robotics'}</div>
-                  <div className="text-xs font-mono text-neutral-400 mt-1 truncate">
+                  <div className="text-xs font-mono text-slate-500 dark:text-neutral-400 mt-1 truncate">
                     {user?.tenant_id}
                   </div>
                 </div>
@@ -124,14 +124,14 @@ export const TopNav: React.FC = () => {
                   clsx(
                     'px-3.5 py-1.5 rounded transition-colors flex items-center space-x-1.5 text-sm font-medium',
                     isActive
-                      ? 'bg-[#252525] text-white font-medium border border-[#333333]'
-                      : 'text-neutral-400 hover:text-neutral-200 hover:bg-[#202020]'
+                      ? 'bg-slate-100 text-slate-900 border border-slate-300 dark:bg-[#252525] dark:text-white dark:border-[#333333]'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-neutral-200 dark:hover:bg-[#202020]'
                   )
                 }
               >
                 <span>{tab.label}</span>
                 {tab.badge !== undefined && (
-                  <span className="bg-[#383838] text-neutral-300 px-2 py-0.5 rounded text-xs font-mono leading-none">
+                  <span className="bg-slate-200 text-slate-700 dark:bg-[#383838] dark:text-neutral-300 px-2 py-0.5 rounded text-xs font-mono leading-none">
                     {tab.badge}
                   </span>
                 )}
@@ -141,32 +141,32 @@ export const TopNav: React.FC = () => {
       </div>
 
       {/* Top Right User, Theme Toggle & Role Details */}
-      <div className="flex items-center space-x-4 text-neutral-400">
+      <div className="flex items-center space-x-4 text-slate-500 dark:text-neutral-400">
         {/* Theme Toggle Button */}
         <ThemeToggle />
 
         {/* User Identity & Role */}
         <div className="flex items-center space-x-2.5 text-sm">
           <div className="text-right">
-            <div className="font-medium text-neutral-200 text-sm leading-tight">
+            <div className="font-medium text-slate-900 dark:text-neutral-200 text-sm leading-tight">
               {user?.full_name || user?.email}
             </div>
-            <div className="flex items-center justify-end space-x-1 text-xs text-neutral-400 font-mono mt-0.5">
-              <Shield className="w-3.5 h-3.5 text-blue-400" />
+            <div className="flex items-center justify-end space-x-1 text-xs text-slate-500 dark:text-neutral-400 font-mono mt-0.5">
+              <Shield className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400" />
               <span className="capitalize">{user?.role?.replace('_', ' ')}</span>
             </div>
           </div>
         </div>
 
         {/* User initials badge */}
-        <div className="h-8 w-8 rounded-full bg-[#2e2e2e] border border-[#3d3d3d] text-neutral-200 flex items-center justify-center font-semibold text-xs">
+        <div className="h-8 w-8 rounded-full bg-slate-100 border border-slate-300 text-slate-700 dark:bg-[#2e2e2e] dark:border-[#3d3d3d] dark:text-neutral-200 flex items-center justify-center font-semibold text-xs">
           {user?.initials || 'AR'}
         </div>
 
         {/* Logout button */}
         <button
           onClick={handleLogout}
-          className="text-neutral-400 hover:text-red-400 transition-colors p-1.5 rounded hover:bg-[#222]"
+          className="text-slate-500 hover:text-red-600 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-red-400 dark:hover:bg-[#222] transition-colors p-1.5 rounded"
           title="Sign out"
         >
           <LogOut className="w-4 h-4" />
