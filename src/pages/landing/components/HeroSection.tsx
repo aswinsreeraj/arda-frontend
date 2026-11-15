@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, BookOpen, Check, X, ShieldAlert, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, Check, X, ShieldAlert } from 'lucide-react';
 
 export const HeroSection: React.FC = () => {
   return (
@@ -9,12 +9,6 @@ export const HeroSection: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           {/* Left Column: Dual-Audience Value Proposition */}
           <div className="lg:col-span-6 space-y-6">
-            {/* Release Pill */}
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full border border-blue-500/30 bg-blue-500/10 text-xs font-medium text-blue-600 dark:text-blue-400">
-              <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-              <span>Production AI Agent Safety & Governance Platform</span>
-            </div>
-
             {/* Main Heading: Plain English & High Impact */}
             <h1 className="text-3xl sm:text-4xl lg:text-[44px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.15]">
               Durable, safe AI agents — without building complex infrastructure yourself.
@@ -171,25 +165,6 @@ export const HeroSection: React.FC = () => {
                     <div className="text-xs text-slate-400 mt-1">Human choice trains future agent confidence</div>
                   </div>
                 </div>
-              </div>
-
-              {/* Status Legend Footer */}
-              <div className="pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-400 gap-2">
-                <div className="flex items-center space-x-3.5 font-sans">
-                  <span className="flex items-center space-x-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                    <span className="text-slate-300">Passed</span>
-                  </span>
-                  <span className="flex items-center space-x-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400" />
-                    <span className="text-slate-300">Escalated</span>
-                  </span>
-                  <span className="flex items-center space-x-1.5">
-                    <span className="w-2 h-2 rounded-full bg-red-400" />
-                    <span className="text-slate-300">Guarded</span>
-                  </span>
-                </div>
-                <div className="font-mono text-slate-400 text-[11px]">deterministic safety enabled</div>
               </div>
             </div>
           </div>
