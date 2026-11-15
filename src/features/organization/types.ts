@@ -29,7 +29,7 @@ export interface UpdateMemberRequest {
   status?: MemberStatus;
 }
 
-export type OrgAdminSection = 'people' | 'sso' | 'api-keys' | 'audit' | 'plan' | 'invoices';
+export type OrgAdminSection = 'people' | 'api-keys' | 'usage';
 
 export interface ApiKeyItem {
   id: string;

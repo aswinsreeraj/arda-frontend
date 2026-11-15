@@ -5,11 +5,9 @@ import { orgApi } from './orgApi';
 import type { MemberStatus, OrgAdminSection, TenantMember, TenantRole } from './types';
 import { PeopleTable } from './components/PeopleTable';
 import { InvitePersonModal } from './components/InvitePersonModal';
-import { SSOTab } from './components/SSOTab';
 import { ApiKeysTab } from './components/ApiKeysTab';
-import { PlanUsageTab } from './components/PlanUsageTab';
+import { UsageTab } from './components/UsageTab';
 import { UserPlus, Search, RefreshCw, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export const OrgPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -151,19 +149,6 @@ export const OrgPage: React.FC = () => {
               <li>
                 <button
                   type="button"
-                  onClick={() => setActiveSection('sso')}
-                  className={`w-full text-left flex items-center px-2.5 py-1.5 rounded-md transition-colors ${
-                    activeSection === 'sso'
-                      ? 'bg-slate-100 dark:bg-[#222222] text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-[#2e2e2e]'
-                      : 'text-slate-600 dark:text-[#999999] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-[#1a1a1a]'
-                  }`}
-                >
-                  Single sign-on
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
                   onClick={() => setActiveSection('api-keys')}
                   className={`w-full text-left flex items-center px-2.5 py-1.5 rounded-md transition-colors ${
                     activeSection === 'api-keys'
@@ -175,46 +160,16 @@ export const OrgPage: React.FC = () => {
                 </button>
               </li>
               <li>
-                <Link
-                  to="/audit"
-                  className="w-full text-left flex items-center px-2.5 py-1.5 rounded-md text-slate-600 dark:text-[#999999] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-[#1a1a1a] transition-colors"
-                >
-                  Audit log
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Section: Billing */}
-          <div>
-            <h3 className="text-xs font-semibold text-slate-500 dark:text-[#666666] tracking-wider uppercase px-2 mb-2">
-              Billing
-            </h3>
-            <ul className="space-y-0.5 text-sm">
-              <li>
                 <button
                   type="button"
-                  onClick={() => setActiveSection('plan')}
+                  onClick={() => setActiveSection('usage')}
                   className={`w-full text-left flex items-center px-2.5 py-1.5 rounded-md transition-colors ${
-                    activeSection === 'plan'
+                    activeSection === 'usage'
                       ? 'bg-slate-100 dark:bg-[#222222] text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-[#2e2e2e]'
                       : 'text-slate-600 dark:text-[#999999] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-[#1a1a1a]'
                   }`}
                 >
-                  Plan & usage
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setActiveSection('invoices')}
-                  className={`w-full text-left flex items-center px-2.5 py-1.5 rounded-md transition-colors ${
-                    activeSection === 'invoices'
-                      ? 'bg-slate-100 dark:bg-[#222222] text-slate-900 dark:text-white font-medium border border-slate-200 dark:border-[#2e2e2e]'
-                      : 'text-slate-600 dark:text-[#999999] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-[#1a1a1a]'
-                  }`}
-                >
-                  Invoices
+                  Usage
                 </button>
               </li>
             </ul>
@@ -358,16 +313,11 @@ export const OrgPage: React.FC = () => {
           </div>
         )}
 
-        {/* SSO TAB */}
-        {activeSection === 'sso' && <SSOTab onSave={(cfg) => orgApi.saveSSOConfig(tenantId, cfg)} />}
-
         {/* API KEYS TAB */}
         {activeSection === 'api-keys' && <ApiKeysTab initialKeys={apiKeys} />}
 
-        {/* PLAN & INVOICES TAB */}
-        {(activeSection === 'plan' || activeSection === 'invoices') && (
-          <PlanUsageTab memberCount={counts.active} />
-        )}
+        {/* USAGE TAB */}
+        {activeSection === 'usage' && <UsageTab memberCount={counts.active} />}
       </main>
 
       {/* Invite Person Modal */}
