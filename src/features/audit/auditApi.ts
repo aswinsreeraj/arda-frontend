@@ -55,10 +55,10 @@ export const auditApi = {
       // Backend tools audit may be empty or unconfigured
     }
 
-    // 2. Fetch live human reviews
+    // 2. Fetch processed (resolved) human reviews only
     let reviewCases: ListReviewsResponse['cases'] = [];
     try {
-      const resp = await apiClient.get<ListReviewsResponse>('/reviews?page_size=100', {
+      const resp = await apiClient.get<ListReviewsResponse>('/reviews?status=RESOLVED&page_size=100', {
         signal,
       });
       if (resp.data?.cases) {
@@ -116,18 +116,25 @@ export const auditApi = {
       });
     }
 
-    // Convert live human review cases
+    // Convert processed human review cases (only adjudicated cases belong in the audit trail)
     for (const rc of reviewCases) {
-      let outcome: AuditEventItem['outcome'] = 'escalated';
-      if (rc.status === 'RESOLVED') {
-        outcome = 'approved';
-      } else if (rc.status === 'ESCALATED' || rc.status === 'OPEN') {
-        outcome = 'escalated';
+      if (rc.status !== 'RESOLVED') {
+        continue;
       }
 
-      let decisionDesc = rc.proposed_decision || 'Pending adjudication';
+      let outcome: AuditEventItem['outcome'] = 'approved';
+      const decUpper = (rc.proposed_decision || '').toUpperCase();
+      if (decUpper.includes('REJECT') || decUpper.includes('DENY')) {
+        outcome = 'denied';
+      } else if (decUpper.includes('OVERRIDE') || decUpper.includes('EXCEPTION')) {
+        outcome = 'overridden';
+      } else {
+        outcome = 'approved';
+      }
+
+      let decisionDesc = rc.proposed_decision || 'Adjudicated';
       if (rc.escalation_reasons && rc.escalation_reasons.length > 0) {
-        decisionDesc = `${rc.proposed_decision || 'Escalation'}: ${rc.escalation_reasons[0]}`;
+        decisionDesc = `${rc.proposed_decision || 'Adjudicated'}: ${rc.escalation_reasons[0]}`;
       }
 
       liveItems.push({

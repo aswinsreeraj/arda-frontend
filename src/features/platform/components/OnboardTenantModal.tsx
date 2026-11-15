@@ -99,11 +99,10 @@ export const OnboardTenantModal: React.FC<OnboardTenantModalProps> = ({
             <div className="space-y-2">
               {/* Starter Tier */}
               <label
-                className={`flex items-start p-3 rounded border cursor-pointer transition ${
-                  tier === 'starter'
-                    ? 'border-blue-600/60 bg-[#172033]/30'
-                    : 'border-[#2b2b2b] bg-[#161616] hover:bg-[#1f1f1f]'
-                }`}
+                className={`flex items-start p-3 rounded border cursor-pointer transition ${tier === 'starter'
+                  ? 'border-blue-600/60 bg-[#172033]/30'
+                  : 'border-[#2b2b2b] bg-[#161616] hover:bg-[#1f1f1f]'
+                  }`}
               >
                 <input
                   type="radio"
@@ -123,11 +122,10 @@ export const OnboardTenantModal: React.FC<OnboardTenantModalProps> = ({
 
               {/* Growth Tier */}
               <label
-                className={`flex items-start p-3 rounded border cursor-pointer transition ${
-                  tier === 'growth'
-                    ? 'border-blue-600/60 bg-[#172033]/30'
-                    : 'border-[#2b2b2b] bg-[#161616] hover:bg-[#1f1f1f]'
-                }`}
+                className={`flex items-start p-3 rounded border cursor-pointer transition ${tier === 'growth'
+                  ? 'border-blue-600/60 bg-[#172033]/30'
+                  : 'border-[#2b2b2b] bg-[#161616] hover:bg-[#1f1f1f]'
+                  }`}
               >
                 <input
                   type="radio"
@@ -147,11 +145,10 @@ export const OnboardTenantModal: React.FC<OnboardTenantModalProps> = ({
 
               {/* Enterprise Tier */}
               <label
-                className={`flex items-start p-3 rounded border cursor-pointer transition ${
-                  tier === 'enterprise'
-                    ? 'border-blue-600/60 bg-[#172033]/30'
-                    : 'border-[#2b2b2b] bg-[#161616] hover:bg-[#1f1f1f]'
-                }`}
+                className={`flex items-start p-3 rounded border cursor-pointer transition ${tier === 'enterprise'
+                  ? 'border-blue-600/60 bg-[#172033]/30'
+                  : 'border-[#2b2b2b] bg-[#161616] hover:bg-[#1f1f1f]'
+                  }`}
               >
                 <input
                   type="radio"

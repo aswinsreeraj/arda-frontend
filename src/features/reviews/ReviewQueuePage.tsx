@@ -22,6 +22,7 @@ import {
   X,
   Edit3,
   RefreshCw,
+  ChevronRight,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -99,16 +100,23 @@ export const ReviewQueuePage: React.FC = () => {
     );
   }, [cases, searchQuery]);
 
-  // Active Selected Case ID
-  const activeCaseId = useMemo(() => {
-    if (caseId) return caseId;
-    if (filteredCases.length > 0) return filteredCases[0].case_id;
-    return '';
-  }, [caseId, filteredCases]);
+  // Active Selected Case ID (only set when explicitly selected / in URL)
+  const activeCaseId = caseId || '';
 
   const currentIndex = useMemo(() => {
     return filteredCases.findIndex((c) => c.case_id === activeCaseId);
   }, [filteredCases, activeCaseId]);
+
+  // Close inspector when user presses Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && activeCaseId && !isResolveModalOpen) {
+        navigate('/reviews');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeCaseId, isResolveModalOpen, navigate]);
 
   // 2. Fetch Active Case Detail from real backend
   const {
@@ -131,13 +139,6 @@ export const ReviewQueuePage: React.FC = () => {
     [navigate]
   );
 
-  // Automatically select first case if URL doesn't specify one
-  useEffect(() => {
-    if (!caseId && filteredCases.length > 0) {
-      navigate(`/reviews/${filteredCases[0].case_id}`, { replace: true });
-    }
-  }, [caseId, filteredCases, navigate]);
-
   // 3. Resolve Mutation calling backend POST /api/v1/reviews/:id/resolve
   const resolveMutation = useMutation({
     mutationFn: async ({
@@ -159,9 +160,13 @@ export const ReviewQueuePage: React.FC = () => {
       setResolveFinalDecision('');
       setResolutionError(null);
 
-      // Invalidate queries so queue and detail views refresh with authoritative backend data
+      // Invalidate queries so queue, detail, and audit trail refresh with authoritative backend data
       queryClient.invalidateQueries({ queryKey: ['reviews'] });
       queryClient.invalidateQueries({ queryKey: ['reviewDetail', variables.caseIdToResolve] });
+      queryClient.invalidateQueries({ queryKey: ['audit-events'] });
+
+      // Return to review queue list
+      navigate('/reviews');
 
       setTimeout(() => setToastNotice(null), 5000);
     },
@@ -289,6 +294,15 @@ export const ReviewQueuePage: React.FC = () => {
     return <span className="text-[10px] font-bold font-mono text-neutral-400">P3</span>;
   };
 
+  const formatUtcTime = (isoString: string) => {
+    try {
+      const d = new Date(isoString);
+      return d.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+    } catch {
+      return isoString;
+    }
+  };
+
   return (
     <main className="flex-1 flex overflow-hidden select-none bg-slate-100 dark:bg-[#141414] text-slate-900 dark:text-neutral-200">
       {/* Toast Notification */}
@@ -309,9 +323,14 @@ export const ReviewQueuePage: React.FC = () => {
       )}
 
       {/* ========================================================= */}
-      {/* LEFT: Escalation Queue List (50% Split Pane) */}
+      {/* LEFT: Escalation Queue List (Full width or Split Pane) */}
       {/* ========================================================= */}
-      <section className="w-1/2 flex flex-col border-r border-slate-200 dark:border-[#232323] bg-white dark:bg-[#141414] overflow-hidden">
+      <section
+        className={clsx(
+          'flex flex-col bg-white dark:bg-[#141414] overflow-hidden transition-all',
+          activeCaseId ? 'w-1/2 border-r border-slate-200 dark:border-[#232323]' : 'w-full'
+        )}
+      >
         {/* Queue Header & Filter Toolbar */}
         <div className="p-3.5 border-b border-slate-200 dark:border-[#232323] space-y-3 flex-none bg-white dark:bg-[#141414]">
           <div className="flex items-center justify-between">
@@ -434,9 +453,16 @@ export const ReviewQueuePage: React.FC = () => {
               <thead className="bg-slate-50 dark:bg-[#181818] border-b border-slate-200 dark:border-[#232323] text-slate-500 dark:text-neutral-400 sticky top-0 z-10 select-none">
                 <tr className="text-[11px]">
                   <th className="py-2 px-3 font-normal w-12">Priority</th>
-                  <th className="py-2 px-3 font-normal w-32">Case ID</th>
-                  <th className="py-2 px-3 font-normal w-40">Agent</th>
+                  <th className="py-2 px-3 font-normal w-36">Case ID</th>
+                  <th className="py-2 px-3 font-normal w-44">Agent</th>
                   <th className="py-2 px-3 font-normal">Proposed decision</th>
+                  {!activeCaseId && (
+                    <>
+                      <th className="py-2 px-3 font-normal w-24 text-right">Confidence</th>
+                      <th className="py-2 px-3 font-normal w-44">Created (UTC)</th>
+                      <th className="py-2 px-3 font-normal w-24 text-right pr-4">Action</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-[#202020] font-sans">
@@ -482,6 +508,22 @@ export const ReviewQueuePage: React.FC = () => {
                           {c.escalation_reasons[0] || 'Escalation threshold breached'}
                         </div>
                       </td>
+                      {!activeCaseId && (
+                        <>
+                          <td className="py-3 px-3 align-top font-mono text-right text-slate-600 dark:text-neutral-300">
+                            {(c.confidence * 100).toFixed(0)}%
+                          </td>
+                          <td className="py-3 px-3 align-top font-mono text-slate-500 dark:text-neutral-400">
+                            {formatUtcTime(c.created_at)}
+                          </td>
+                          <td className="py-3 px-3 align-top text-right pr-4">
+                            <span className="inline-flex items-center space-x-1 text-xs text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                              <span>Inspect</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </span>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   );
                 })}
@@ -573,6 +615,15 @@ export const ReviewQueuePage: React.FC = () => {
                         <ChevronDown className="w-3.5 h-3.5" />
                       </button>
                     </div>
+
+                    {/* Close Sidewindow Button */}
+                    <button
+                      onClick={() => navigate('/reviews')}
+                      title="Close inspector (Esc)"
+                      className="p-1 hover:bg-slate-200 dark:hover:bg-[#222] rounded text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white transition-colors ml-1 cursor-pointer"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
@@ -994,11 +1045,7 @@ export const ReviewQueuePage: React.FC = () => {
             </>
           )}
         </section>
-      ) : (
-        <div className="w-1/2 flex items-center justify-center text-xs text-neutral-500 font-mono">
-          Select an escalation case to inspect
-        </div>
-      )}
+      ) : null}
 
       {/* ========================================================= */}
       {/* ADJUDICATION MODAL (Approve, Reject, Override) */}

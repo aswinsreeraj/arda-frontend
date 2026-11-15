@@ -80,9 +80,8 @@ export const AuditTable: React.FC<AuditTableProps> = ({ items, onInspectIntegrit
               <React.Fragment key={item.seq}>
                 <tr
                   onClick={() => toggleRow(item.seq)}
-                  className={`hover:bg-[#1a1a1a] transition-colors group cursor-pointer ${
-                    isExpanded ? 'bg-[#181818]' : ''
-                  }`}
+                  className={`hover:bg-[#1a1a1a] transition-colors group cursor-pointer ${isExpanded ? 'bg-[#181818]' : ''
+                    }`}
                 >
                   {/* Seq */}
                   <td className="py-2.5 px-3 pl-4 font-mono text-neutral-400">
@@ -146,9 +145,8 @@ export const AuditTable: React.FC<AuditTableProps> = ({ items, onInspectIntegrit
 
                   {/* Confidence */}
                   <td
-                    className={`py-2.5 px-3 text-right font-mono ${
-                      isLowConfidence ? 'text-amber-500 font-medium' : 'text-neutral-300'
-                    }`}
+                    className={`py-2.5 px-3 text-right font-mono ${isLowConfidence ? 'text-amber-500 font-medium' : 'text-neutral-300'
+                      }`}
                   >
                     {item.confidence !== undefined ? item.confidence.toFixed(2) : '—'}
                   </td>
