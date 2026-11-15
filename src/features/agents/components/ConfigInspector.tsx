@@ -4,6 +4,8 @@ import {
   Save,
   Rocket,
   Shield,
+  ShieldCheck,
+  AlertOctagon,
   Sliders,
   FileCode,
   Layers,
@@ -15,6 +17,9 @@ import {
   Trash2,
   Copy,
   Check,
+  Edit3,
+  ChevronDown,
+  X,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '../agentApi';
@@ -27,6 +32,17 @@ import type {
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/features/auth/authStore';
+
+export interface GuardrailRule {
+  id: string;
+  name: string;
+  type: 'parameter_bounds' | 'destructive_operation' | 'conditional_check' | 'custom';
+  description: string;
+  parameter?: string;
+  operator?: '>' | '<' | '>=' | '<=' | '==' | 'contains';
+  thresholdValue?: number | string;
+  enforced: boolean;
+}
 
 interface ConfigInspectorProps {
   agentDetail: AgentDetail;
@@ -86,6 +102,133 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
   } | null>(null);
   const [copiedId, setCopiedId] = useState(false);
 
+  // Parse Initial Guardrail Rules
+  const parseInitialGuardrails = (): GuardrailRule[] => {
+    const raw = initialConfig.guardrails;
+    if (raw && typeof raw === 'object') {
+      if (Array.isArray((raw as any).rules) && (raw as any).rules.length > 0) {
+        return (raw as any).rules as GuardrailRule[];
+      }
+    }
+    const maxAmountVal = typeof (raw as any)?.max_amount === 'number' ? (raw as any).max_amount : 10000;
+    return [
+      {
+        id: 'amount_limit',
+        name: 'Amount Limit Threshold',
+        type: 'parameter_bounds',
+        parameter: 'amount',
+        operator: '>',
+        thresholdValue: maxAmountVal,
+        description: `Escalate any transaction exceeding $${maxAmountVal.toLocaleString()} USD to human review automatically.`,
+        enforced: true,
+      },
+      {
+        id: 'chargeback_check',
+        name: 'High-Risk Prior Chargeback Check',
+        type: 'conditional_check',
+        parameter: 'prior_chargebacks',
+        operator: '>',
+        thresholdValue: 0,
+        description: 'Require review if account tenure < 30 days and prior chargebacks > 0.',
+        enforced: true,
+      },
+      {
+        id: 'destructive_ops',
+        name: 'Destructive Operation Filter',
+        type: 'destructive_operation',
+        parameter: 'command',
+        operator: 'contains',
+        thresholdValue: 'DROP, rm -rf, TRUNCATE',
+        description: 'Block shell execution of destructive commands (DROP TABLE, rm -rf, etc.).',
+        enforced: true,
+      },
+    ];
+  };
+
+  const [guardrailRules, setGuardrailRules] = useState<GuardrailRule[]>(parseInitialGuardrails);
+  const [isGuardrailModalOpen, setIsGuardrailModalOpen] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+
+  // Form state for Guardrail Modal
+  const [ruleFormName, setRuleFormName] = useState('');
+  const [ruleFormType, setRuleFormType] = useState<GuardrailRule['type']>('parameter_bounds');
+  const [ruleFormParam, setRuleFormParam] = useState('');
+  const [ruleFormOperator, setRuleFormOperator] = useState<GuardrailRule['operator']>('>');
+  const [ruleFormThreshold, setRuleFormThreshold] = useState<string>('10000');
+  const [ruleFormDescription, setRuleFormDescription] = useState('');
+  const [ruleFormEnforced, setRuleFormEnforced] = useState(true);
+
+  const openAddGuardrailModal = () => {
+    setEditingRuleId(null);
+    setRuleFormName('');
+    setRuleFormType('parameter_bounds');
+    setRuleFormParam('amount');
+    setRuleFormOperator('>');
+    setRuleFormThreshold('10000');
+    setRuleFormDescription('Escalate any transaction exceeding threshold to human review.');
+    setRuleFormEnforced(true);
+    setIsGuardrailModalOpen(true);
+  };
+
+  const openEditGuardrailModal = (rule: GuardrailRule) => {
+    setEditingRuleId(rule.id);
+    setRuleFormName(rule.name);
+    setRuleFormType(rule.type);
+    setRuleFormParam(rule.parameter || '');
+    setRuleFormOperator(rule.operator || '>');
+    setRuleFormThreshold(String(rule.thresholdValue ?? ''));
+    setRuleFormDescription(rule.description);
+    setRuleFormEnforced(rule.enforced);
+    setIsGuardrailModalOpen(true);
+  };
+
+  const handleToggleEnforced = (ruleId: string) => {
+    setGuardrailRules((prev) =>
+      prev.map((r) => (r.id === ruleId ? { ...r, enforced: !r.enforced } : r))
+    );
+  };
+
+  const handleDeleteGuardrail = (ruleId: string) => {
+    setGuardrailRules((prev) => prev.filter((r) => r.id !== ruleId));
+  };
+
+  const handleSaveGuardrailRule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ruleFormName.trim()) return;
+
+    if (editingRuleId) {
+      setGuardrailRules((prev) =>
+        prev.map((r) =>
+          r.id === editingRuleId
+            ? {
+                ...r,
+                name: ruleFormName.trim(),
+                type: ruleFormType,
+                parameter: ruleFormParam.trim(),
+                operator: ruleFormOperator,
+                thresholdValue: ruleFormThreshold.trim(),
+                description: ruleFormDescription.trim(),
+                enforced: ruleFormEnforced,
+              }
+            : r
+        )
+      );
+    } else {
+      const newRule: GuardrailRule = {
+        id: `rule_${Date.now()}`,
+        name: ruleFormName.trim(),
+        type: ruleFormType,
+        parameter: ruleFormParam.trim(),
+        operator: ruleFormOperator,
+        thresholdValue: ruleFormThreshold.trim(),
+        description: ruleFormDescription.trim(),
+        enforced: ruleFormEnforced,
+      };
+      setGuardrailRules((prev) => [...prev, newRule]);
+    }
+    setIsGuardrailModalOpen(false);
+  };
+
   // Fetch registered tools
   const { data: availableTools = [] } = useQuery<ToolDefinition[]>({
     queryKey: ['tools'],
@@ -119,14 +262,34 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
 
   // Build current configuration object
   const getCurrentConfiguration = (): AgentConfiguration => {
-    let parsedSchema: Record<string, unknown> = {};
-    try {
-      parsedSchema = JSON.parse(schemaText);
-    } catch {
-      // ignore
+    let parsedSchema: Record<string, unknown> | undefined = undefined;
+    const trimmedSchema = schemaText.trim();
+    if (trimmedSchema && trimmedSchema !== '{}') {
+      try {
+        const parsed = JSON.parse(trimmedSchema);
+        if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+          parsedSchema = parsed;
+        }
+      } catch {
+        // Will be caught by mutation validation
+      }
     }
-    return {
-      prompt_template: promptTemplate,
+
+    const maxAmountRule = guardrailRules.find(
+      (r) => r.type === 'parameter_bounds' && r.enforced && r.parameter === 'amount'
+    );
+    const maxAmountVal =
+      maxAmountRule && !isNaN(Number(maxAmountRule.thresholdValue))
+        ? Number(maxAmountRule.thresholdValue)
+        : undefined;
+
+    const guardrailsPayload: Record<string, unknown> = {
+      rules: guardrailRules,
+      ...(maxAmountVal !== undefined ? { max_amount: maxAmountVal } : {}),
+    };
+
+    const cfg: AgentConfiguration = {
+      prompt_template: promptTemplate.trim(),
       tools: selectedTools,
       reliability_threshold: threshold,
       execution_mode: executionMode,
@@ -134,18 +297,36 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
         provider: llmProvider,
         model: llmModel,
       },
-      output_schema: {
-        strict: strictSchema,
-        schema: parsedSchema,
-      },
-      guardrails: initialConfig.guardrails || {},
+      guardrails: guardrailsPayload,
       budgets: initialConfig.budgets || {},
     };
+
+    if (parsedSchema) {
+      cfg.output_schema = {
+        strict: strictSchema,
+        schema: parsedSchema,
+      };
+    }
+
+    return cfg;
   };
 
   // Save Draft Mutation
   const saveDraftMutation = useMutation({
     mutationFn: async () => {
+      if (!promptTemplate.trim()) {
+        throw new Error('System prompt template is required and cannot be empty.');
+      }
+
+      const trimmedSchema = schemaText.trim();
+      if (trimmedSchema && trimmedSchema !== '{}') {
+        try {
+          JSON.parse(trimmedSchema);
+        } catch {
+          throw new Error('Output schema contains invalid JSON syntax. Please correct it or clear the schema.');
+        }
+      }
+
       const cfg = getCurrentConfiguration();
       if (draftVersion) {
         return agentApi.updateDraftVersion(agentDetail.agent.id, draftVersion.id, cfg);
@@ -158,8 +339,12 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
       setFeedbackMsg({ type: 'success', text: 'Draft configuration saved successfully' });
       setTimeout(() => setFeedbackMsg(null), 4000);
     },
-    onError: (err: Error) => {
-      setFeedbackMsg({ type: 'error', text: err.message || 'Failed to save draft' });
+    onError: (err: any) => {
+      let msg = err?.message || 'Failed to save draft';
+      if (err?.details && Array.isArray(err.details) && err.details.length > 0) {
+        msg = `${msg}: ${err.details.join(', ')}`;
+      }
+      setFeedbackMsg({ type: 'error', text: msg });
     },
   });
 
@@ -299,8 +484,8 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
               !canPublish
                 ? 'Only company_admin and reviewer roles can publish versions'
                 : !draftVersion
-                ? 'No draft version to publish'
-                : 'Publish current draft to live traffic'
+                  ? 'No draft version to publish'
+                  : 'Publish current draft to live traffic'
             }
           >
             Publish Version
@@ -311,11 +496,10 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
       {/* Feedback Alert */}
       {feedbackMsg && (
         <div
-          className={`p-3.5 rounded-lg text-xs flex items-center justify-between border ${
-            feedbackMsg.type === 'success'
-              ? 'bg-emerald-950/40 border-emerald-800/50 text-emerald-300'
-              : 'bg-red-950/40 border-red-800/50 text-red-300'
-          }`}
+          className={`p-3.5 rounded-lg text-xs flex items-center justify-between border ${feedbackMsg.type === 'success'
+            ? 'bg-emerald-950/40 border-emerald-800/50 text-emerald-300'
+            : 'bg-red-950/40 border-red-800/50 text-red-300'
+            }`}
         >
           <div className="flex items-center gap-2">
             {feedbackMsg.type === 'success' ? (
@@ -391,11 +575,10 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
                   <button
                     type="button"
                     onClick={() => setExecutionMode('supervised')}
-                    className={`p-3 rounded-lg border text-left transition ${
-                      executionMode === 'supervised'
-                        ? 'border-blue-500 bg-blue-950/20 text-white'
-                        : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
-                    }`}
+                    className={`p-3 rounded-lg border text-left transition ${executionMode === 'supervised'
+                      ? 'border-blue-500 bg-blue-950/20 text-white'
+                      : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
+                      }`}
                   >
                     <div className="font-semibold text-xs text-blue-300">Supervised / Durable</div>
                     <div className="text-[11px] text-gray-400 mt-0.5">
@@ -406,11 +589,10 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
                   <button
                     type="button"
                     onClick={() => setExecutionMode('autonomous')}
-                    className={`p-3 rounded-lg border text-left transition ${
-                      executionMode === 'autonomous'
-                        ? 'border-blue-500 bg-blue-950/20 text-white'
-                        : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
-                    }`}
+                    className={`p-3 rounded-lg border text-left transition ${executionMode === 'autonomous'
+                      ? 'border-blue-500 bg-blue-950/20 text-white'
+                      : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
+                      }`}
                   >
                     <div className="font-semibold text-xs text-emerald-300">Autonomous</div>
                     <div className="text-[11px] text-gray-400 mt-0.5">
@@ -421,11 +603,10 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
                   <button
                     type="button"
                     onClick={() => setExecutionMode('human_in_the_loop')}
-                    className={`p-3 rounded-lg border text-left transition ${
-                      executionMode === 'human_in_the_loop'
-                        ? 'border-blue-500 bg-blue-950/20 text-white'
-                        : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
-                    }`}
+                    className={`p-3 rounded-lg border text-left transition ${executionMode === 'human_in_the_loop'
+                      ? 'border-blue-500 bg-blue-950/20 text-white'
+                      : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
+                      }`}
                   >
                     <div className="font-semibold text-xs text-amber-300">Human-in-the-Loop</div>
                     <div className="text-[11px] text-gray-400 mt-0.5">
@@ -577,15 +758,14 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
                     <div
                       key={tool.id}
                       onClick={() => toggleTool(tool.name)}
-                      className={`flex items-center justify-between p-3.5 hover:bg-[#202020] cursor-pointer transition ${
-                        !tool.enabled ? 'opacity-40' : ''
-                      }`}
+                      className={`flex items-center justify-between p-3.5 hover:bg-[#202020] cursor-pointer transition ${!tool.enabled ? 'opacity-40' : ''
+                        }`}
                     >
                       <div className="flex items-center space-x-3">
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {}}
+                          onChange={() => { }}
                           disabled={!tool.enabled}
                           className="rounded border-gray-700 bg-gray-800 text-blue-600 focus:ring-0 cursor-pointer"
                         />
@@ -603,11 +783,10 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <span
-                          className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-                            tool.classification === 'write'
-                              ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
-                              : 'bg-gray-800 text-gray-400 border-gray-700'
-                          }`}
+                          className={`text-[10px] font-mono px-2 py-0.5 rounded border ${tool.classification === 'write'
+                            ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
+                            : 'bg-gray-800 text-gray-400 border-gray-700'
+                            }`}
                         >
                           {tool.classification}
                         </span>
@@ -736,36 +915,114 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
 
           {/* Section 6: Guardrails */}
           <section id="section-guardrails" className="space-y-4">
-            <div>
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2">
-                <Shield className="w-4 h-4 text-blue-400" />
-                <span>Guardrails condition builder</span>
-              </h3>
-              <p className="text-xs text-gray-400">
-                Deterministic safety boundaries evaluated on every run regardless of confidence.
-              </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-blue-400" />
+                  <span>Guardrails condition builder</span>
+                </h3>
+                <p className="text-xs text-gray-400">
+                  Deterministic safety boundaries evaluated on every run regardless of confidence.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={openAddGuardrailModal}
+                icon={<Plus className="w-3.5 h-3.5" />}
+              >
+                Add Guardrail
+              </Button>
             </div>
 
             <div className="border border-[#282828] rounded-lg p-4 bg-[#181818] space-y-3 text-xs">
-              <div className="flex items-center justify-between p-3 bg-[#141414] border border-[#262626] rounded-md">
-                <div className="space-y-0.5">
-                  <div className="font-medium text-white">Amount Limit Threshold</div>
-                  <div className="text-[11px] text-gray-400">
-                    Escalate any transaction exceeding $10,000 USD to human review automatically.
-                  </div>
+              {guardrailRules.length === 0 ? (
+                <div className="p-6 text-center text-gray-500 border border-dashed border-[#2e2e2e] rounded-md">
+                  No guardrails defined. Click <strong>Add Guardrail</strong> to configure deterministic safety rules.
                 </div>
-                <Badge variant="info">Enforced</Badge>
-              </div>
+              ) : (
+                guardrailRules.map((rule) => (
+                  <div
+                    key={rule.id}
+                    className={`flex items-center justify-between p-3.5 bg-[#141414] border rounded-md transition ${
+                      rule.enforced ? 'border-[#2d2d2d]' : 'border-[#222222] opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div
+                        className={`p-1.5 rounded-md mt-0.5 ${
+                          rule.enforced
+                            ? 'bg-blue-950/40 text-blue-400 border border-blue-900/50'
+                            : 'bg-neutral-900 text-neutral-500 border border-neutral-800'
+                        }`}
+                      >
+                        {rule.type === 'destructive_operation' ? (
+                          <AlertOctagon className="w-4 h-4" />
+                        ) : rule.type === 'conditional_check' ? (
+                          <Sliders className="w-4 h-4" />
+                        ) : (
+                          <ShieldCheck className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-white">{rule.name}</span>
+                          {rule.parameter && (
+                            <span className="px-1.5 py-0.5 rounded bg-[#202020] text-gray-400 font-mono text-[10px] border border-[#2c2c2c]">
+                              {rule.parameter} {rule.operator || '>'} {String(rule.thresholdValue)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-gray-400 leading-normal">
+                          {rule.description}
+                        </div>
+                      </div>
+                    </div>
 
-              <div className="flex items-center justify-between p-3 bg-[#141414] border border-[#262626] rounded-md">
-                <div className="space-y-0.5">
-                  <div className="font-medium text-white">High-Risk Prior Chargeback Check</div>
-                  <div className="text-[11px] text-gray-400">
-                    Require review if account tenure &lt; 30 days and prior chargebacks &gt; 0.
+                    <div className="flex items-center space-x-2 shrink-0">
+                      {/* Enforced Toggle Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleEnforced(rule.id)}
+                        className={`px-2.5 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition cursor-pointer ${
+                          rule.enforced
+                            ? 'bg-blue-950/50 border border-blue-800/80 text-blue-300 hover:bg-blue-900/60'
+                            : 'bg-[#1e1e1e] border border-[#333] text-gray-400 hover:text-white hover:bg-[#252525]'
+                        }`}
+                        title={rule.enforced ? 'Click to disable' : 'Click to enforce'}
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            rule.enforced ? 'bg-blue-400' : 'bg-gray-500'
+                          }`}
+                        />
+                        <span>{rule.enforced ? 'Enforced' : 'Disabled'}</span>
+                      </button>
+
+                      {/* Edit Button */}
+                      <button
+                        type="button"
+                        onClick={() => openEditGuardrailModal(rule)}
+                        className="p-1.5 rounded text-gray-400 hover:text-white hover:bg-[#252525] transition cursor-pointer"
+                        title="Edit guardrail rule"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Delete Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteGuardrail(rule.id)}
+                        className="p-1.5 rounded text-gray-400 hover:text-red-400 hover:bg-red-950/30 transition cursor-pointer"
+                        title="Delete guardrail rule"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <Badge variant="info">Enforced</Badge>
-              </div>
+                ))
+              )}
             </div>
           </section>
         </div>
@@ -864,6 +1121,146 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
           </div>
         </aside>
       </div>
+
+      {/* Modal: Add / Edit Guardrail Rule */}
+      {isGuardrailModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-[#1c1c1c] border border-[#2e2e2e] rounded-xl shadow-2xl max-w-lg w-full overflow-hidden text-xs transform transition-all">
+            <div className="px-5 py-4 border-b border-[#282828] flex items-center justify-between">
+              <div>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-blue-400" />
+                  <span>{editingRuleId ? 'Edit Guardrail Rule' : 'Add Guardrail Rule'}</span>
+                </h4>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Deterministic policy boundary enforced before tool execution.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsGuardrailModalOpen(false)}
+                type="button"
+                className="text-gray-400 hover:text-white p-1 rounded-md transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveGuardrailRule} className="p-5 space-y-4">
+              <div className="space-y-1.5">
+                <label className="font-medium text-gray-300">Rule Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Transaction Amount Limit"
+                  value={ruleFormName}
+                  onChange={(e) => setRuleFormName(e.target.value)}
+                  className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="font-medium text-gray-300">Rule Type</label>
+                  <div className="relative">
+                    <select
+                      value={ruleFormType}
+                      onChange={(e) => setRuleFormType(e.target.value as GuardrailRule['type'])}
+                      className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md pl-3 pr-8 py-2 text-white focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
+                    >
+                      <option value="parameter_bounds">Parameter Bounds (Numeric limit)</option>
+                      <option value="destructive_operation">Destructive Operation Filter</option>
+                      <option value="conditional_check">Conditional Check (Risk/Tenure)</option>
+                      <option value="custom">Custom Policy</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-medium text-gray-300">Target Parameter</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. amount, query, count"
+                    value={ruleFormParam}
+                    onChange={(e) => setRuleFormParam(e.target.value)}
+                    className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <label className="font-medium text-gray-300">Operator</label>
+                  <div className="relative">
+                    <select
+                      value={ruleFormOperator}
+                      onChange={(e) => setRuleFormOperator(e.target.value as GuardrailRule['operator'])}
+                      className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md pl-3 pr-8 py-2 text-white focus:border-blue-500 focus:outline-none appearance-none cursor-pointer"
+                    >
+                      <option value=">">&gt; (Greater than)</option>
+                      <option value="<">&lt; (Less than)</option>
+                      <option value=">=">&gt;= (Greater or equal)</option>
+                      <option value="<=">&lt;= (Less or equal)</option>
+                      <option value="==">== (Equals)</option>
+                      <option value="contains">contains</option>
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="col-span-2 space-y-1.5">
+                  <label className="font-medium text-gray-300">Threshold / Value</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 10000, DROP TABLE"
+                    value={ruleFormThreshold}
+                    onChange={(e) => setRuleFormThreshold(e.target.value)}
+                    className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-medium text-gray-300">Description / Action</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Escalate any transaction exceeding $10,000 USD to human review automatically."
+                  value={ruleFormDescription}
+                  onChange={(e) => setRuleFormDescription(e.target.value)}
+                  className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none transition resize-none"
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="ruleEnforcedCheckbox"
+                  checked={ruleFormEnforced}
+                  onChange={(e) => setRuleFormEnforced(e.target.checked)}
+                  className="rounded border-[#2f2f2f] bg-[#141414] text-blue-600 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                />
+                <label htmlFor="ruleEnforcedCheckbox" className="font-medium text-gray-300 cursor-pointer select-none">
+                  Enforce this guardrail immediately
+                </label>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-3 border-t border-[#282828]">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsGuardrailModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" size="sm">
+                  {editingRuleId ? 'Update Rule' : 'Add Rule'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

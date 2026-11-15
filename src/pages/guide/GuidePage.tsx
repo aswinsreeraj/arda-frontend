@@ -257,8 +257,8 @@ export const GuidePage: React.FC = () => {
                 Registering your first agent
               </h2>
               <p className="text-[13px] text-[#dadada] mt-2 leading-relaxed">
-                An agent is a single config file plus a set of seed examples. These five steps take a new
-                agent from an empty file to a published, versioned agent. Allow about 20 minutes.
+                Register an agent directly in the dashboard or via the REST API, configure its tools and
+                safety guardrails, calibrate with seed examples, and publish an immutable version. Allow about 10 minutes.
               </p>
             </div>
 
@@ -269,23 +269,22 @@ export const GuidePage: React.FC = () => {
                   1
                 </span>
                 <div>
-                  <h3 className="font-medium text-white text-[13px]">Write the configuration file</h3>
+                  <h3 className="font-medium text-white text-[13px]">Register the agent</h3>
                   <p className="text-[12px] text-[#a3a3a3] mt-1 leading-normal">
-                    Create <code>agent.yaml</code> with the prompt, inputs, and output schema.
+                    Click <strong>Register agent</strong> on the Agents tab or call <code>POST /api/v1/agents</code> with
+                    the display name, execution mode, system prompt, and baseline reliability threshold.
                   </p>
                 </div>
               </div>
               <div className="ml-8">
                 <CodeSnippet
-                  filename="agent.yaml"
-                  code={`name: fraud-review
-prompt: |
-  You review card transactions flagged by the risk
-  engine. Decide whether to approve, hold, or refund.
-output_schema:
-  decision: enum[approve, hold, refund]
-  rationale: string
-  amount: number`}
+                  filename="POST /api/v1/agents"
+                  code={`{
+  "name": "fraud-review",
+  "execution_mode": "supervised",
+  "prompt_template": "You review card transactions flagged by the risk engine. Decide whether to approve, hold, or refund.",
+  "reliability_threshold": 0.80
+}`}
                 />
               </div>
             </div>
@@ -299,19 +298,20 @@ output_schema:
                 <div>
                   <h3 className="font-medium text-white text-[13px]">Select tools</h3>
                   <p className="text-[12px] text-[#a3a3a3] mt-1 leading-normal">
-                    Choose tools from your organization's registry. Each tool is allowed explicitly and can
-                    carry argument limits and rate caps. An agent can only call what is listed here.
+                    In the agent's details panel, choose tools from your connected MCP servers and catalog.
+                    Each tool is explicitly allowed and validated by the gateway. The agent can only call what is enabled here.
                   </p>
                 </div>
               </div>
               <div className="ml-8">
                 <CodeSnippet
-                  filename="agent.yaml"
-                  code={`tools:
-  - ledger.read
-  - payments.refund:
-      max_amount: 5000
-      rate_limit: 20/min`}
+                  filename="tools.json"
+                  code={`{
+  "tools": [
+    "mcp:mcp-tx-conn:get_transaction",
+    "mcp:mcp-tx-conn:reverse_transaction"
+  ]
+}`}
                 />
               </div>
             </div>
@@ -328,18 +328,20 @@ output_schema:
                   </h3>
                   <p className="text-[12px] text-[#a3a3a3] mt-1 leading-normal">
                     The threshold <i>t</i> is the confidence an agent needs before its decision is
-                    committed automatically. Guardrails are hard rules checked on every tool call.
+                    committed automatically. Guardrails are deterministic safety boundaries evaluated on every run regardless of model confidence.
                   </p>
                 </div>
               </div>
               <div className="ml-8 space-y-3">
                 <CodeSnippet
-                  filename="agent.yaml"
-                  code={`reliability:
-  threshold: 0.80
-guardrails:
-  - payments.refund
-    when: amount > 5000`}
+                  filename="guardrails.json"
+                  code={`{
+  "reliability_threshold": 0.80,
+  "guardrails": {
+    "max_amount": 5000,
+    "require_review_above": 5000
+  }
+}`}
                 />
                 {/* Alert callout */}
                 <div className="bg-[#231e13] border border-[#5c4314] rounded-lg p-3 text-[12px] flex items-start space-x-3">
@@ -386,18 +388,22 @@ guardrails:
                   5
                 </span>
                 <div>
-                  <h3 className="font-medium text-white text-[13px]">Publish</h3>
+                  <h3 className="font-medium text-white text-[13px]">Publish version</h3>
                   <p className="text-[12px] text-[#a3a3a3] mt-1 leading-normal">
-                    Publishing creates an immutable version. The agent begins in the calibrating state.
+                    Publishing creates an immutable version (e.g. v1). The published agent is immediately available for execution via the Gateway.
                   </p>
                 </div>
               </div>
               <div className="ml-8">
                 <CodeSnippet
-                  filename="terminal"
-                  code={`$ arbiter agents publish fraud-review
-published fraud-review@1.0.0
-status: calibrating · threshold: 0.80 · 42 seed examples`}
+                  filename="POST /api/v1/agents/:id/versions/:versionId/publish"
+                  code={`POST /api/v1/agents/c475d0ee/versions/a3c9c835/publish
+Status: 200 OK
+{
+  "version_number": 1,
+  "published": true,
+  "status": "calibrating"
+}`}
                 />
               </div>
             </div>
