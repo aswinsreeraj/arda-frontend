@@ -62,107 +62,107 @@ export const HeroSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Column: Clean, Uncrowded Architecture Window */}
+          {/* Right Column: Clean, Uncrowded Architecture Window (Adapts to light & dark theme) */}
           <div className="lg:col-span-6">
-            <div className="relative rounded-2xl border border-slate-800 bg-[#121214] shadow-2xl p-5 sm:p-6 text-slate-300">
+            <div className="relative rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-[#121214] shadow-xl dark:shadow-2xl p-5 sm:p-6 text-slate-700 dark:text-slate-300 transition-colors">
               {/* Window Header */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800/80 text-xs font-mono">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800/80 text-xs font-mono">
                 <div className="flex items-center space-x-2">
-                  <span className="text-white font-medium">acme-corp</span>
-                  <span className="text-slate-600">/</span>
-                  <span className="text-white">fraud-review</span>
-                  <span className="text-slate-600">/</span>
-                  <span className="text-slate-400">run_8f2c</span>
+                  <span className="text-slate-900 dark:text-white font-medium">acme-corp</span>
+                  <span className="text-slate-400 dark:text-slate-600">/</span>
+                  <span className="text-slate-900 dark:text-white">fraud-review</span>
+                  <span className="text-slate-400 dark:text-slate-600">/</span>
+                  <span className="text-slate-500 dark:text-slate-400">run_8f2c</span>
                 </div>
-                <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-sans">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <div className="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 text-xs font-sans">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 dark:bg-amber-400 animate-pulse" />
                   <span>Escalated to Human</span>
                 </div>
               </div>
 
-              {/* 6-Node Architecture Grid - Clean, spacious & intuitive */}
-              <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-4 relative bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_0)] bg-[size:20px_20px]">
+              {/* 6-Node Architecture Grid - Clean, spacious & theme-adaptive */}
+              <div className="py-6 grid grid-cols-1 sm:grid-cols-2 gap-4 relative bg-[radial-gradient(rgba(100,116,139,0.12)_1px,transparent_0)] dark:bg-[radial-gradient(rgba(255,255,255,0.05)_1px,transparent_0)] bg-[size:20px_20px]">
                 {/* Node 1: Agent Action */}
-                <div className="p-4 rounded-xl border border-slate-800/90 bg-[#18181b]/90 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-colors">
-                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#18181b]/90 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between space-y-2 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
                     <span className="uppercase tracking-wider">1. Agent Action</span>
-                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-sans">AI Request</span>
+                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-sans">AI Request</span>
                   </div>
                   <div>
-                    <div className="text-white text-base font-semibold">Refund $450</div>
-                    <div className="text-xs text-slate-400 mt-1">High-value payout proposed by agent</div>
+                    <div className="text-slate-900 dark:text-white text-base font-semibold">Refund $450</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">High-value payout proposed by agent</div>
                   </div>
                 </div>
 
                 {/* Node 2: Durable Runtime */}
-                <div className="p-4 rounded-xl border border-slate-800/90 bg-[#18181b]/90 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-colors">
-                  <div className="flex items-center justify-between text-xs font-mono text-emerald-400">
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#18181b]/90 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between space-y-2 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-emerald-600 dark:text-emerald-400">
                     <span className="uppercase tracking-wider">2. Durable Runtime</span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                   </div>
                   <div>
-                    <div className="text-emerald-400 text-base font-semibold">Checkpoint Saved</div>
-                    <div className="text-xs text-slate-400 mt-1">Crash-proof · Replays automatically</div>
+                    <div className="text-emerald-600 dark:text-emerald-400 text-base font-semibold">Checkpoint Saved</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Crash-proof · Replays automatically</div>
                   </div>
                 </div>
 
                 {/* Node 3: Governed Tool Gateway */}
-                <div className="p-4 rounded-xl border border-slate-800/90 bg-[#18181b]/90 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-colors">
-                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#18181b]/90 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between space-y-2 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
                     <span className="uppercase tracking-wider">3. Tool Gateway</span>
                     <span className="text-[11px] text-slate-500 font-sans">Guardrails</span>
                   </div>
                   <div className="space-y-1.5 text-xs font-sans">
-                    <div className="flex items-center justify-between text-emerald-400">
+                    <div className="flex items-center justify-between text-emerald-600 dark:text-emerald-400">
                       <span className="flex items-center space-x-1.5">
                         <Check className="w-3.5 h-3.5" />
-                        <span className="text-slate-300">Read Balance</span>
+                        <span className="text-slate-800 dark:text-slate-300">Read Balance</span>
                       </span>
-                      <span className="text-[11px] px-2 py-0.5 bg-emerald-500/15 text-emerald-400 rounded-md font-mono">Allow</span>
+                      <span className="text-[11px] px-2 py-0.5 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-transparent rounded-md font-mono">Allow</span>
                     </div>
-                    <div className="flex items-center justify-between text-red-400">
+                    <div className="flex items-center justify-between text-red-600 dark:text-red-400">
                       <span className="flex items-center space-x-1.5">
                         <X className="w-3.5 h-3.5" />
-                        <span className="text-slate-300">Execute Refund</span>
+                        <span className="text-slate-800 dark:text-slate-300">Execute Refund</span>
                       </span>
-                      <span className="text-[11px] px-2 py-0.5 bg-red-500/15 text-red-400 rounded-md font-mono">Guarded</span>
+                      <span className="text-[11px] px-2 py-0.5 bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border border-red-200 dark:border-transparent rounded-md font-mono">Guarded</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Node 4: Confidence Gate */}
-                <div className="p-4 rounded-xl border border-amber-500/50 bg-[#18181b]/90 flex flex-col justify-between space-y-2 shadow-sm shadow-amber-500/5">
-                  <div className="flex items-center justify-between text-xs font-mono text-amber-400">
+                <div className="p-4 rounded-xl border border-amber-300 dark:border-amber-500/50 bg-amber-50/50 dark:bg-[#18181b]/90 shadow-xs flex flex-col justify-between space-y-2 shadow-amber-500/5 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-amber-700 dark:text-amber-400">
                     <span className="uppercase tracking-wider">4. Confidence Gate</span>
-                    <span className="text-[11px] px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded-md font-sans font-semibold">Auto-Paused</span>
+                    <span className="text-[11px] px-2 py-0.5 bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-transparent rounded-md font-sans font-semibold">Auto-Paused</span>
                   </div>
                   <div>
-                    <div className="text-white text-base font-semibold">62% Confidence</div>
-                    <div className="text-xs text-amber-300/80 mt-1">Below 80% safety bar · Paused for safety</div>
+                    <div className="text-slate-900 dark:text-white text-base font-semibold">62% Confidence</div>
+                    <div className="text-xs text-amber-800 dark:text-amber-300/80 mt-1">Below 80% safety bar · Paused for safety</div>
                   </div>
                 </div>
 
                 {/* Node 5: Human Review */}
-                <div className="p-4 rounded-xl border border-blue-500/50 bg-[#18181b]/90 flex flex-col justify-between space-y-2 shadow-sm shadow-blue-500/5">
-                  <div className="flex items-center justify-between text-xs font-mono text-blue-400">
+                <div className="p-4 rounded-xl border border-blue-300 dark:border-blue-500/50 bg-blue-50/50 dark:bg-[#18181b]/90 shadow-xs flex flex-col justify-between space-y-2 shadow-blue-500/5 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-blue-700 dark:text-blue-400">
                     <span className="uppercase tracking-wider">5. Human Review</span>
-                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <div className="text-white text-base font-semibold">Case #4109 Queued</div>
-                    <div className="text-xs text-slate-400 mt-1">Escalated to human specialist for approval</div>
+                    <div className="text-slate-900 dark:text-white text-base font-semibold">Case #4109 Queued</div>
+                    <div className="text-xs text-slate-600 dark:text-slate-400 mt-1">Escalated to human specialist for approval</div>
                   </div>
                 </div>
 
                 {/* Node 6: Continuous Learning */}
-                <div className="p-4 rounded-xl border border-slate-800/90 bg-[#18181b]/90 flex flex-col justify-between space-y-2 hover:border-slate-700 transition-colors">
-                  <div className="flex items-center justify-between text-xs font-mono text-slate-400">
+                <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800/90 bg-white dark:bg-[#18181b]/90 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 flex flex-col justify-between space-y-2 transition-colors">
+                  <div className="flex items-center justify-between text-xs font-mono text-slate-500 dark:text-slate-400">
                     <span className="uppercase tracking-wider">6. Continuous Learning</span>
-                    <span className="text-[11px] text-blue-400 font-sans">Active</span>
+                    <span className="text-[11px] text-blue-600 dark:text-blue-400 font-sans">Active</span>
                   </div>
                   <div>
-                    <div className="text-white text-base font-semibold">Threshold Calibrated</div>
-                    <div className="text-xs text-slate-400 mt-1">Human choice trains future agent confidence</div>
+                    <div className="text-slate-900 dark:text-white text-base font-semibold">Threshold Calibrated</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Human choice trains future agent confidence</div>
                   </div>
                 </div>
               </div>
