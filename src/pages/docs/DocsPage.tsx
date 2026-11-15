@@ -8,7 +8,6 @@ import { AuthCalloutBanner } from './components/AuthCalloutBanner';
 import { EndpointSidebar } from './components/EndpointSidebar';
 import { EndpointSpecs } from './components/EndpointSpecs';
 import { CodeConsole } from './components/CodeConsole';
-import { ApiKeyModal } from './components/ApiKeyModal';
 
 export const DocsPage: React.FC = () => {
   const location = useLocation();
@@ -30,7 +29,6 @@ export const DocsPage: React.FC = () => {
       : 'create-execution';
 
   const { isAuthenticated } = useAuthStore();
-  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
 
   const handleSelectEndpoint = (id: string) => {
     setOverrideEndpointId(id);
@@ -51,16 +49,16 @@ export const DocsPage: React.FC = () => {
     currentIndex < ALL_ENDPOINTS.length - 1 ? ALL_ENDPOINTS[currentIndex + 1] : undefined;
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-[var(--text-secondary)] bg-[var(--surface-canvas)] transition-colors duration-150">
+    <div className="min-h-screen flex flex-col font-sans text-[var(--text-secondary)] bg-[var(--surface-canvas)] transition-colors duration-150 overflow-x-hidden">
       {/* Top Application Header */}
       {isAuthenticated ? (
         <TopNav />
       ) : (
-        <DocsHeader onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
+        <DocsHeader />
       )}
 
       {/* Main 3-Column API Reference Workspace */}
-      <div className="flex flex-1 w-full max-w-[1920px] mx-auto overflow-hidden">
+      <div className="flex flex-1 w-full max-w-[1440px] mx-auto overflow-hidden">
         {/* Left Sticky Sidebar */}
         <EndpointSidebar
           groups={ENDPOINT_GROUPS}
@@ -74,10 +72,10 @@ export const DocsPage: React.FC = () => {
           data-purpose="documentation-workspace"
         >
           {/* Top Auth Mode Callout */}
-          <AuthCalloutBanner onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)} />
+          <AuthCalloutBanner />
 
           {/* Center Technical Specifications & Right Code Console */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 p-4 lg:p-6 flex-1 items-start">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 p-4 lg:p-6 flex-1 items-start">
             <EndpointSpecs
               endpoint={selectedEndpoint}
               prevEndpoint={prevEndpoint}
@@ -89,12 +87,6 @@ export const DocsPage: React.FC = () => {
           </div>
         </main>
       </div>
-
-      {/* Modal for Tenant API Keys & Session Tokens */}
-      <ApiKeyModal
-        isOpen={isApiKeyModalOpen}
-        onClose={() => setIsApiKeyModalOpen(false)}
-      />
     </div>
   );
 };

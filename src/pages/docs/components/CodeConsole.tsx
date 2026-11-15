@@ -115,7 +115,7 @@ export const CodeConsole: React.FC<CodeConsoleProps> = ({ endpoint }) => {
   };
 
   return (
-    <section className="lg:col-span-5 space-y-4 sticky top-20" data-purpose="code-console">
+    <section className="xl:col-span-5 space-y-4 sticky top-20 min-w-0" data-purpose="code-console">
       {/* Request Panel */}
       <div className="bg-[#141414] border border-[#282828] rounded-lg overflow-hidden shadow-xl">
         {/* Console Header Tabs */}

@@ -54,7 +54,7 @@ export const EndpointSpecs: React.FC<EndpointSpecsProps> = ({
   };
 
   return (
-    <article className="lg:col-span-7 space-y-8" data-purpose="endpoint-specs">
+    <article className="xl:col-span-7 space-y-8 min-w-0" data-purpose="endpoint-specs">
       {/* Category Tracker & Title */}
       <div className="space-y-2">
         <span className="text-xs font-mono text-[#888888] lowercase block">

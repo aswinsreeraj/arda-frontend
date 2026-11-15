@@ -54,17 +54,17 @@ export const EndpointSidebar: React.FC<EndpointSidebarProps> = ({
   }, [groups, filter]);
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-[#161616] border-r border-[#282828] flex flex-col h-[calc(100vh-3.5rem)] sticky top-14 select-none">
+    <aside className="w-64 flex-shrink-0 bg-[#121214] border-r border-[#242424] flex flex-col h-[calc(100vh-4rem)] sticky top-16 select-none">
       {/* Search Input Filter */}
       <div className="p-3 border-b border-[#242424]">
         <div className="relative flex items-center">
-          <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#6E7681]" />
+          <Search className="w-3.5 h-3.5 absolute left-2.5 text-[#71717a]" />
           <input
             type="text"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             placeholder="Filter endpoints"
-            className="w-full pl-8 pr-7 py-1.5 text-xs bg-[#1C1C1C] border border-[#282828] rounded text-white placeholder-[#6E7681] focus:outline-none focus:border-[#2563EB] transition-colors"
+            className="w-full pl-8 pr-7 py-1.5 text-xs bg-[#18181b] border border-[#27272a] rounded text-white placeholder-[#71717a] focus:outline-none focus:border-[#2563eb] transition-colors"
           />
           {filter && (
             <button
@@ -89,7 +89,7 @@ export const EndpointSidebar: React.FC<EndpointSidebarProps> = ({
             <div key={group.id} className="space-y-1">
               <div className="flex items-center justify-between px-2 text-[11px] font-semibold text-white tracking-wide">
                 <span>{group.title}</span>
-                <span className="text-[9px] uppercase tracking-wider text-[#777777] font-mono">
+                <span className="text-[9px] uppercase tracking-wider text-[#737373] font-mono">
                   {group.authBadge}
                 </span>
               </div>
@@ -103,8 +103,8 @@ export const EndpointSidebar: React.FC<EndpointSidebarProps> = ({
                       type="button"
                       className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded text-left transition-colors text-xs ${
                         isActive
-                          ? 'bg-[#222222] text-white border border-[#2e2e2e] shadow-xs'
-                          : 'text-[#999999] hover:bg-[#1C1C1C] hover:text-white border border-transparent'
+                          ? 'bg-[#1e1e24] text-white border border-[#2e2e38] font-medium shadow-xs'
+                          : 'text-[#9ca3af] hover:bg-[#18181b] hover:text-white border border-transparent'
                       }`}
                     >
                       <span className="truncate pr-1">{ep.title}</span>
