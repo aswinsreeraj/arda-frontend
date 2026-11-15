@@ -49,7 +49,7 @@ export const DocsPage: React.FC = () => {
     currentIndex < ALL_ENDPOINTS.length - 1 ? ALL_ENDPOINTS[currentIndex + 1] : undefined;
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-[var(--text-secondary)] bg-[var(--surface-canvas)] transition-colors duration-150 overflow-x-hidden">
+    <div className="h-screen flex flex-col font-sans text-[var(--text-secondary)] bg-[var(--surface-canvas)] transition-colors duration-150 overflow-hidden">
       {/* Top Application Header */}
       {isAuthenticated ? (
         <TopNav />

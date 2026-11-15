@@ -54,7 +54,7 @@ export const EndpointSidebar: React.FC<EndpointSidebarProps> = ({
   }, [groups, filter]);
 
   return (
-    <aside className="w-64 flex-shrink-0 bg-[#121214] border-r border-[#242424] flex flex-col h-[calc(100vh-4rem)] sticky top-16 select-none">
+    <aside className="w-64 flex-shrink-0 bg-[#121214] border-r border-[#242424] flex flex-col h-full select-none">
       {/* Search Input Filter */}
       <div className="p-3 border-b border-[#242424]">
         <div className="relative flex items-center">
