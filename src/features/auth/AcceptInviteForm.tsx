@@ -23,12 +23,14 @@ type InviteFormData = z.infer<typeof inviteSchema>;
 
 interface AcceptInviteFormProps {
   onSwitchToLogin: () => void;
+  onSwitchToRegister?: () => void;
   onSuccess: (role?: UserRole) => void;
   selectedRole?: UserRole;
 }
 
 export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
   onSwitchToLogin,
+  onSwitchToRegister,
   onSuccess,
   selectedRole = 'agent_developer',
 }) => {
@@ -95,48 +97,48 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
   return (
     <div className="space-y-4">
       {/* Organization Invitation Details Box */}
-      <div className="bg-[#141414] border border-[#282828] rounded-lg p-3 text-xs space-y-3">
+      <div className="bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#282828] rounded-xl p-3.5 text-xs space-y-3">
         <div className="flex items-start space-x-3">
-          <div className="w-8 h-8 rounded bg-[#1e2a4a] border border-[#2b3e75] text-[#b4c5ff] font-bold text-xs flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-[#1e2a4a] border border-blue-200 dark:border-[#2b3e75] text-blue-700 dark:text-[#b4c5ff] font-bold text-xs flex items-center justify-center shrink-0">
             {orgInitials}
           </div>
           <div className="space-y-0.5">
-            <p className="text-xs text-[#e5e2e1] font-normal leading-snug">
-              <strong className="text-white font-semibold">{orgName}</strong> has invited you to
+            <p className="text-xs text-slate-700 dark:text-[#e5e2e1] font-normal leading-snug">
+              <strong className="text-slate-900 dark:text-white font-semibold">{orgName}</strong> has invited you to
               ARDA
             </p>
-            <p className="text-[10px] font-mono text-[#777777]">Invited by {invitedBy}</p>
+            <p className="text-[10px] font-mono text-slate-500 dark:text-[#777777]">Invited by {invitedBy}</p>
           </div>
         </div>
 
         {/* Role & Email metadata table */}
-        <div className="pt-2 border-t border-[#232323] space-y-1.5 text-[11px]">
+        <div className="pt-2 border-t border-slate-200 dark:border-[#232323] space-y-1.5 text-[11px]">
           <div className="flex items-center justify-between">
-            <span className="text-[#888888]">Your role</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-[#16233d] text-[#b4c5ff] border border-[#263b6b]">
+            <span className="text-slate-500 dark:text-[#888888]">Assigned role</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono bg-blue-50 text-blue-700 border border-blue-200 dark:bg-[#16233d] dark:text-[#b4c5ff] dark:border-[#263b6b]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#2563eb] mr-1.5" />
               {roleNameMap[effectiveRole]}
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[#888888]">Email</span>
-            <span className="font-mono text-[#aaaaaa] text-[10px]">{inviteEmail}</span>
+            <span className="text-slate-500 dark:text-[#888888]">Email</span>
+            <span className="font-mono text-slate-600 dark:text-[#aaaaaa] text-[10px]">{inviteEmail}</span>
           </div>
         </div>
       </div>
 
       {/* Section Heading */}
       <div>
-        <h2 className="text-lg font-semibold text-white tracking-tight">Set up your account</h2>
-        <p className="text-xs text-[#8d90a0] mt-0.5">
-          Choose a name and password to complete your account.
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">Accept invitation</h2>
+        <p className="text-xs text-slate-500 dark:text-[#8d90a0] mt-0.5">
+          Choose a name and password to complete your account setup.
         </p>
       </div>
 
       {/* Form Fields */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-[#8d90a0] mb-1" htmlFor="invite-fullname">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#8d90a0] mb-1" htmlFor="invite-fullname">
             Full name
           </label>
           <input
@@ -144,15 +146,15 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
             id="invite-fullname"
             type="text"
             placeholder="Morgan Lee"
-            className="input-telemetry w-full px-3 py-2 text-xs rounded bg-[#141414] border-[#282828] text-[#f3f4f6]"
+            className="input-telemetry w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#282828] text-slate-900 dark:text-[#f3f4f6]"
           />
           {errors.fullName && (
-            <p className="text-[11px] text-red-400 mt-1">{errors.fullName.message}</p>
+            <p className="text-[11px] text-red-500 dark:text-red-400 mt-1">{errors.fullName.message}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#8d90a0] mb-1" htmlFor="invite-password">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#8d90a0] mb-1" htmlFor="invite-password">
             Set password
           </label>
           <div className="relative">
@@ -161,24 +163,24 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
               id="invite-password"
               type={showPassword ? 'text' : 'password'}
               placeholder="Min. 8 characters"
-              className="input-telemetry w-full px-3 py-2 text-xs rounded pr-9 bg-[#141414] border-[#282828] text-[#f3f4f6]"
+              className="input-telemetry w-full px-3 pr-8 py-2 text-xs rounded-lg bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#282828] text-slate-900 dark:text-[#f3f4f6]"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#666666] hover:text-[#999999]"
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-white"
             >
               {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
           </div>
           {errors.password && (
-            <p className="text-[11px] text-red-400 mt-1">{errors.password.message}</p>
+            <p className="text-[11px] text-red-500 dark:text-red-400 mt-1">{errors.password.message}</p>
           )}
         </div>
 
         <div>
           <label
-            className="block text-xs font-medium text-[#8d90a0] mb-1"
+            className="block text-xs font-medium text-slate-700 dark:text-[#8d90a0] mb-1"
             htmlFor="invite-confirm-password"
           >
             Confirm password
@@ -188,10 +190,10 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
             id="invite-confirm-password"
             type={showPassword ? 'text' : 'password'}
             placeholder="Re-enter password"
-            className="input-telemetry w-full px-3 py-2 text-xs rounded bg-[#141414] border-[#282828] text-[#f3f4f6]"
+            className="input-telemetry w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#282828] text-slate-900 dark:text-[#f3f4f6]"
           />
           {errors.confirmPassword && (
-            <p className="text-[11px] text-red-400 mt-1">{errors.confirmPassword.message}</p>
+            <p className="text-[11px] text-red-500 dark:text-red-400 mt-1">{errors.confirmPassword.message}</p>
           )}
         </div>
 
@@ -201,45 +203,59 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
             {...register('terms')}
             id="terms"
             type="checkbox"
-            className="w-3.5 h-3.5 rounded bg-[#141414] border-[#2e2e2e] text-[#2563eb] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            className="w-3.5 h-3.5 rounded bg-slate-50 dark:bg-[#141414] border-slate-300 dark:border-[#2e2e2e] text-[#2563eb] focus:ring-0 focus:ring-offset-0 cursor-pointer"
           />
           <label
             htmlFor="terms"
-            className="text-[11px] text-[#888888] cursor-pointer leading-tight select-none"
+            className="text-[11px] text-slate-600 dark:text-[#888888] cursor-pointer leading-tight select-none"
           >
             I accept the{' '}
-            <a href="#tos" className="text-[#2563eb] hover:underline">
+            <span className="text-[#2563eb] hover:underline">
               Terms of Service
-            </a>{' '}
+            </span>{' '}
             and{' '}
-            <a href="#privacy" className="text-[#2563eb] hover:underline">
+            <span className="text-[#2563eb] hover:underline">
               Privacy Policy
-            </a>
+            </span>
           </label>
         </div>
-        {errors.terms && <p className="text-[11px] text-red-400">{errors.terms.message}</p>}
+        {errors.terms && <p className="text-[11px] text-red-500 dark:text-red-400">{errors.terms.message}</p>}
 
         {/* Submit Button */}
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex items-center justify-center space-x-1.5 bg-[#2563eb] hover:bg-blue-600 text-white text-xs font-medium py-2.5 px-4 rounded shadow-sm transition-all active:scale-[0.99] mt-2"
+          className="btn-primary w-full flex items-center justify-center space-x-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] !text-white text-white text-xs font-medium py-2.5 px-4 rounded-lg shadow-sm transition-all mt-2 cursor-pointer"
         >
           <span>{isLoading ? 'Accepting...' : 'Accept invitation'}</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </form>
 
-      {/* Toggle back to Sign In */}
-      <div className="text-center pt-2">
-        <button
-          type="button"
-          onClick={onSwitchToLogin}
-          className="text-xs text-[#8d90a0] hover:text-white transition-colors"
-        >
-          Already have an account?{' '}
-          <span className="text-[#2563eb] hover:underline">Sign in →</span>
-        </button>
+      {/* Navigation toggles to other pages */}
+      <div className="pt-3 text-center text-xs text-slate-500 dark:text-[#8d90a0] space-y-2 border-t border-slate-200 dark:border-[#222222]">
+        <div>
+          <span>Already have an account? </span>
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            className="text-[#2563eb] hover:underline font-medium cursor-pointer"
+          >
+            Sign in →
+          </button>
+        </div>
+        {onSwitchToRegister && (
+          <div>
+            <span>Need to create a new organization? </span>
+            <button
+              type="button"
+              onClick={onSwitchToRegister}
+              className="text-[#2563eb] hover:underline font-medium cursor-pointer"
+            >
+              Sign up for organization →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

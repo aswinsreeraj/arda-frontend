@@ -19,11 +19,13 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 interface RegisterOrgFormProps {
   onSwitchToLogin: () => void;
+  onSwitchToInvite?: () => void;
   onSuccess: () => void;
 }
 
 export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
   onSwitchToLogin,
+  onSwitchToInvite,
   onSuccess,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -80,17 +82,17 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
     <div className="space-y-4">
       {/* Header */}
       <div>
-        <div className="flex items-center space-x-2 text-white mb-1">
-          <Building2 className="w-4 h-4 text-blue-400" />
-          <h1 className="text-lg font-semibold tracking-tight">Create Organization</h1>
+        <div className="flex items-center space-x-2 mb-1">
+          <Building2 className="w-4 h-4 text-blue-500" />
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-white tracking-tight">Create organization</h1>
         </div>
-        <p className="text-xs text-[#8d90a0]">
-          Set up a new isolated multi-tenant workspace with full admin privileges.
+        <p className="text-xs text-slate-500 dark:text-[#8d90a0]">
+          Set up a new isolated multi-tenant workspace with administrator privileges.
         </p>
       </div>
 
       {errorMsg && (
-        <div className="p-2.5 rounded bg-red-950/40 border border-red-800/60 text-xs text-red-300">
+        <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-600 dark:text-red-400">
           {errorMsg}
         </div>
       )}
@@ -98,52 +100,52 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
       {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-[#8d90a0] mb-1">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#8d90a0] mb-1">
             Organization name
           </label>
           <input
             {...register('company_name')}
             type="text"
             placeholder="Acme Autonomous Systems"
-            className="input-telemetry w-full px-3 py-1.5 text-xs rounded bg-[#141414] border-[#282828] text-[#f3f4f6]"
+            className="input-telemetry w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#282828] text-slate-900 dark:text-[#f3f4f6]"
           />
           {errors.company_name && (
-            <p className="text-[11px] text-red-400 mt-1">{errors.company_name.message}</p>
+            <p className="text-[11px] text-red-500 dark:text-red-400 mt-1">{errors.company_name.message}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#8d90a0] mb-1">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#8d90a0] mb-1">
             Administrator full name
           </label>
           <input
             {...register('display_name')}
             type="text"
             placeholder="Alex Chen"
-            className="input-telemetry w-full px-3 py-1.5 text-xs rounded bg-[#141414] border-[#282828] text-[#f3f4f6]"
+            className="input-telemetry w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#282828] text-slate-900 dark:text-[#f3f4f6]"
           />
           {errors.display_name && (
-            <p className="text-[11px] text-red-400 mt-1">{errors.display_name.message}</p>
+            <p className="text-[11px] text-red-500 dark:text-red-400 mt-1">{errors.display_name.message}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#8d90a0] mb-1">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#8d90a0] mb-1">
             Work email address
           </label>
           <input
             {...register('admin_email')}
             type="email"
             placeholder="alex@acmefinancial.com"
-            className="input-telemetry w-full px-3 py-1.5 text-xs rounded bg-[#141414] border-[#282828] text-[#f3f4f6]"
+            className="input-telemetry w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#282828] text-slate-900 dark:text-[#f3f4f6]"
           />
           {errors.admin_email && (
-            <p className="text-[11px] text-red-400 mt-1">{errors.admin_email.message}</p>
+            <p className="text-[11px] text-red-500 dark:text-red-400 mt-1">{errors.admin_email.message}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#8d90a0] mb-1">
+          <label className="block text-xs font-medium text-slate-700 dark:text-[#8d90a0] mb-1">
             Admin password
           </label>
           <div className="relative">
@@ -151,18 +153,18 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
               placeholder="Min. 8 characters"
-              className="input-telemetry w-full px-3 py-1.5 text-xs rounded pr-9 bg-[#141414] border-[#282828] text-[#f3f4f6]"
+              className="input-telemetry w-full px-3 pr-8 py-2 text-xs rounded-lg bg-slate-50 dark:bg-[#141414] border border-slate-200 dark:border-[#282828] text-slate-900 dark:text-[#f3f4f6]"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-[#666666] hover:text-[#999999]"
+              className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-white"
             >
               {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
             </button>
           </div>
           {errors.password && (
-            <p className="text-[11px] text-red-400 mt-1">{errors.password.message}</p>
+            <p className="text-[11px] text-red-500 dark:text-red-400 mt-1">{errors.password.message}</p>
           )}
         </div>
 
@@ -172,44 +174,58 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
             {...register('terms')}
             id="reg-terms"
             type="checkbox"
-            className="w-3.5 h-3.5 rounded bg-[#141414] border-[#2e2e2e] text-[#2563eb] focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            className="w-3.5 h-3.5 rounded bg-slate-50 dark:bg-[#141414] border-slate-300 dark:border-[#2e2e2e] text-[#2563eb] focus:ring-0 focus:ring-offset-0 cursor-pointer"
           />
           <label
             htmlFor="reg-terms"
-            className="text-[11px] text-[#888888] cursor-pointer leading-tight select-none"
+            className="text-[11px] text-slate-600 dark:text-[#888888] cursor-pointer leading-tight select-none"
           >
             I accept the{' '}
-            <a href="#tos" className="text-[#2563eb] hover:underline">
+            <span className="text-[#2563eb] hover:underline">
               Terms of Service
-            </a>{' '}
+            </span>{' '}
             and{' '}
-            <a href="#privacy" className="text-[#2563eb] hover:underline">
+            <span className="text-[#2563eb] hover:underline">
               Privacy Policy
-            </a>
+            </span>
           </label>
         </div>
-        {errors.terms && <p className="text-[11px] text-red-400">{errors.terms.message}</p>}
+        {errors.terms && <p className="text-[11px] text-red-500 dark:text-red-400">{errors.terms.message}</p>}
 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full flex items-center justify-center space-x-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-50 text-white text-xs font-medium py-2 px-4 rounded shadow-sm transition-all mt-2"
+          className="btn-primary w-full flex items-center justify-center space-x-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-50 !text-white text-white text-xs font-medium py-2.5 px-4 rounded-lg shadow-sm transition-all mt-2 cursor-pointer"
         >
           <span>{isLoading ? 'Creating workspace...' : 'Create Organization & Workspace'}</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </button>
       </form>
 
-      {/* Switch to login */}
-      <div className="text-center pt-2 border-t border-[#222222]">
-        <button
-          type="button"
-          onClick={onSwitchToLogin}
-          className="text-xs text-[#8d90a0] hover:text-white transition-colors"
-        >
-          Already have an account?{' '}
-          <span className="text-[#2563eb] hover:underline">Sign in →</span>
-        </button>
+      {/* Navigation toggles to other pages */}
+      <div className="pt-3 text-center text-xs text-slate-500 dark:text-[#8d90a0] space-y-2 border-t border-slate-200 dark:border-[#222222]">
+        <div>
+          <span>Already have an account? </span>
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            className="text-[#2563eb] hover:underline font-medium cursor-pointer"
+          >
+            Sign in →
+          </button>
+        </div>
+        {onSwitchToInvite && (
+          <div>
+            <span>Have an invitation link? </span>
+            <button
+              type="button"
+              onClick={onSwitchToInvite}
+              className="text-[#2563eb] hover:underline font-medium cursor-pointer"
+            >
+              Accept invitation →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
