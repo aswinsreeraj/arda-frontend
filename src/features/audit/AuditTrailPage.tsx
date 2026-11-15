@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { auditApi } from './auditApi';
 import type { AuditEventItem, AuditListFilters, ChainVerificationResult } from './types';
 import { AuditTable } from './components/AuditTable';
 import { ChainVerificationModal } from './components/ChainVerificationModal';
+import { AuditCaseModal } from './components/AuditCaseModal';
 import {
   Lock,
   Search,
@@ -29,6 +31,34 @@ export const AuditTrailPage: React.FC = () => {
     null
   );
   const [isVerifying, setIsVerifying] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(
+    () => searchParams.get('caseId') || null
+  );
+
+  const handleOpenCaseModal = (caseId: string) => {
+    setSelectedCaseId(caseId);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('caseId', caseId);
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const handleCloseCaseModal = () => {
+    setSelectedCaseId(null);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('caseId');
+        return next;
+      },
+      { replace: true }
+    );
+  };
 
   // Fetch unified audit events and cryptographic chain
   const {
@@ -344,7 +374,11 @@ export const AuditTrailPage: React.FC = () => {
           No audit ledger entries match your filter criteria.
         </div>
       ) : (
-        <AuditTable items={filteredItems} onInspectIntegrity={handleInspectIntegrity} />
+        <AuditTable
+          items={filteredItems}
+          onInspectIntegrity={handleInspectIntegrity}
+          onViewCaseDetails={handleOpenCaseModal}
+        />
       )}
 
       {/* Table Compliance Footer */}
@@ -368,6 +402,13 @@ export const AuditTrailPage: React.FC = () => {
         result={verificationResult}
         isVerifying={isVerifying}
         onReverify={handleVerifyChain}
+      />
+
+      {/* Human Review Case Details Modal */}
+      <AuditCaseModal
+        isOpen={Boolean(selectedCaseId)}
+        caseId={selectedCaseId}
+        onClose={handleCloseCaseModal}
       />
     </main>
   );
