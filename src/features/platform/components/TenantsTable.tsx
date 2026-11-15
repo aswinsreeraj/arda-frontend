@@ -146,11 +146,10 @@ export const TenantsTable: React.FC<TenantsTableProps> = ({
                             setActiveMenuId(null);
                             onChangeTier(t, tierOpt);
                           }}
-                          className={`w-full px-3 py-1 text-left flex items-center justify-between capitalize text-[11px] ${
-                            t.tier === tierOpt
-                              ? 'text-neutral-500 cursor-default'
-                              : 'hover:bg-[#252525] text-neutral-300'
-                          }`}
+                          className={`w-full px-3 py-1 text-left flex items-center justify-between capitalize text-[11px] ${t.tier === tierOpt
+                            ? 'text-neutral-500 cursor-default'
+                            : 'hover:bg-[#252525] text-neutral-300'
+                            }`}
                         >
                           <span>{tierOpt}</span>
                           {t.tier === tierOpt && <span className="text-[10px] text-emerald-400">current</span>}

@@ -8,7 +8,6 @@ import {
   ShieldAlert,
   AlertTriangle,
   Clock,
-  ExternalLink,
   Layers,
   FileText,
   UserCheck,
@@ -17,7 +16,6 @@ import {
   Copy,
 } from 'lucide-react';
 import clsx from 'clsx';
-import { Link } from 'react-router-dom';
 
 interface AuditCaseModalProps {
   isOpen: boolean;
@@ -136,14 +134,7 @@ export const AuditCaseModal: React.FC<AuditCaseModalProps> = ({ isOpen, caseId, 
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
-            <Link
-              to={`/reviews/${caseId}`}
-              className="px-2.5 py-1 rounded bg-[#1e1e1e] hover:bg-[#262626] border border-[#303030] text-xs text-neutral-300 hover:text-white flex items-center space-x-1 transition-colors"
-            >
-              <span>Open in Reviews Queue</span>
-              <ExternalLink className="w-3 h-3 text-neutral-400" />
-            </Link>
+          <div className="flex items-center space-x-2">
             <button
               onClick={onClose}
               title="Close modal (Esc)"
