@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from './authStore';
-import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Mail } from 'lucide-react';
 import type { UserRole } from '@/types/common';
 
 const inviteSchema = z
@@ -39,18 +39,23 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  // Dynamic invitation details from query params or realistic defaults
-  const inviteEmail = searchParams.get('email') || 'morgan.lee@acmefinancial.com';
-  const orgName = searchParams.get('org') || 'Acme Financial';
-  const invitedBy = searchParams.get('invitedBy') || 'alex.chen@acmefinancial.com';
+  // Dynamic invitation details from query params (sent via Mailtrap email link)
+  const inviteEmail = searchParams.get('email') || searchParams.get('to') || '';
+  const token = searchParams.get('token') || '';
+  const orgName = searchParams.get('org') || searchParams.get('tenant_name') || 'Organization';
+  const tenantId = searchParams.get('tenant_id') || searchParams.get('tenant') || 'default-tenant';
+  const invitedBy = searchParams.get('invitedBy') || searchParams.get('inviter') || 'Organization Admin';
   const effectiveRole = (searchParams.get('role') as UserRole) || selectedRole;
+
+  const hasInvitation = Boolean(inviteEmail || token);
 
   const orgInitials = orgName
     .split(' ')
     .map((w) => w[0])
+    .filter(Boolean)
     .join('')
     .slice(0, 2)
-    .toUpperCase() || 'AF';
+    .toUpperCase() || 'AR';
 
   const {
     register,
@@ -70,16 +75,16 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
     setIsLoading(true);
     try {
       // Complete invitation acceptance and establish active session
-      const userId = typeof crypto !== 'undefined' && crypto.randomUUID ? `usr_${crypto.randomUUID().slice(0, 8)}` : 'usr_invite_7712';
+      const userId = typeof crypto !== 'undefined' && crypto.randomUUID ? `usr_${crypto.randomUUID().slice(0, 8)}` : 'usr_invite_member';
       setAuth('invited-user-session-token', {
         id: userId,
-        email: inviteEmail,
+        email: inviteEmail || 'member@organization.com',
         full_name: data.fullName,
-        tenant_id: 'tenant_acme_core',
+        tenant_id: tenantId,
         tenant_name: orgName,
         role: effectiveRole,
         initials: data.fullName.slice(0, 2).toUpperCase(),
-        queue: effectiveRole === 'reviewer' ? 'fraud-l2' : undefined,
+        queue: effectiveRole === 'reviewer' ? 'general-reviews' : undefined,
       });
       onSuccess(effectiveRole);
     } finally {
@@ -93,6 +98,31 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
     company_admin: 'Company Admin',
     super_admin: 'Super Admin',
   };
+
+  if (!hasInvitation) {
+    return (
+      <div className="space-y-4 text-center py-4">
+        <div className="w-12 h-12 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center mx-auto">
+          <Mail className="w-6 h-6" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Invitation Link Required</h2>
+          <p className="text-xs text-slate-500 dark:text-gray-400 mt-1.5 max-w-sm mx-auto leading-relaxed">
+            Team invitations are sent directly via email. Please check your inbox (or Mailtrap) for your secure invitation link to join the organization.
+          </p>
+        </div>
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-medium py-2.5 rounded-lg text-xs transition-colors cursor-pointer shadow-sm"
+          >
+            Return to Sign in
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

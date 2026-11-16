@@ -44,7 +44,6 @@ export const AuthPage: React.FC = () => {
     >
       {mode === 'login' ? (
         <LoginForm
-          onSwitchToInvite={() => navigate('/invite')}
           onSwitchToRegister={() => navigate('/signup')}
           onSuccess={(role) => handleSuccess(role)}
         />
@@ -58,7 +57,6 @@ export const AuthPage: React.FC = () => {
       ) : (
         <RegisterOrgForm
           onSwitchToLogin={() => navigate('/login')}
-          onSwitchToInvite={() => navigate('/invite')}
           onSuccess={() => handleSuccess('company_admin')}
         />
       )}

@@ -14,13 +14,11 @@ const loginSchema = z.object({
 });
 
 interface LoginFormProps {
-  onSwitchToInvite: () => void;
   onSwitchToRegister: () => void;
   onSuccess: (role?: UserRole) => void;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
-  onSwitchToInvite,
   onSwitchToRegister,
   onSuccess,
 }) => {
@@ -138,7 +136,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       </form>
 
       {/* Navigation toggles to other pages */}
-      <div className="pt-3 text-center text-xs text-slate-500 dark:text-[#8d90a0] space-y-2 border-t border-slate-200 dark:border-[#222222]">
+      <div className="pt-3 text-center text-xs text-slate-500 dark:text-[#8d90a0] border-t border-slate-200 dark:border-[#222222]">
         <div>
           <span>Don't have an account? </span>
           <button
@@ -147,16 +145,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             className="text-[#2563eb] hover:underline font-medium cursor-pointer"
           >
             Sign up for organization →
-          </button>
-        </div>
-        <div>
-          <span>Have an invitation link? </span>
-          <button
-            type="button"
-            onClick={onSwitchToInvite}
-            className="text-[#2563eb] hover:underline font-medium cursor-pointer"
-          >
-            Accept invitation →
           </button>
         </div>
       </div>

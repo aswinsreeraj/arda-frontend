@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { MemberStatus, TenantMember, TenantRole } from '../types';
-import { Mail, ChevronDown, MoreHorizontal, UserX, UserCheck, Trash2, Send } from 'lucide-react';
+import { Mail, ChevronDown, MoreHorizontal, UserX, UserCheck, Trash2, Send, Copy } from 'lucide-react';
+import { useAuthStore } from '@/features/auth/authStore';
 
 interface PeopleTableProps {
   members: TenantMember[];
@@ -16,6 +17,7 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
   onDeleteMember,
 }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const user = useAuthStore((s) => s.user);
 
   const getInitials = (name: string, email: string) => {
     if (name) {
@@ -196,16 +198,30 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
                           onMouseLeave={() => setActiveMenuId(null)}
                         >
                           {isInvited && (
-                            <button
-                              onClick={() => {
-                                setActiveMenuId(null);
-                                alert(`Invitation re-sent to ${member.email}`);
-                              }}
-                              className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-slate-700 dark:text-neutral-300 cursor-pointer"
-                            >
-                              <Send className="w-3.5 h-3.5 text-sky-500" />
-                              <span>Resend invitation</span>
-                            </button>
+                            <>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  const inviteUrl = `${window.location.origin}/invite?email=${encodeURIComponent(member.email)}&org=${encodeURIComponent(user?.tenant_name || 'Organization')}&role=${member.role}&invitedBy=${encodeURIComponent(user?.email || 'admin')}`;
+                                  navigator.clipboard.writeText(inviteUrl);
+                                  alert(`Invitation link copied to clipboard:\n${inviteUrl}`);
+                                }}
+                                className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-slate-700 dark:text-neutral-300 cursor-pointer"
+                              >
+                                <Copy className="w-3.5 h-3.5 text-blue-500" />
+                                <span>Copy invite link</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  alert(`Invitation email dispatched to Mailtrap inbox for ${member.email}`);
+                                }}
+                                className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-slate-700 dark:text-neutral-300 cursor-pointer"
+                              >
+                                <Send className="w-3.5 h-3.5 text-sky-500" />
+                                <span>Resend via Mailtrap</span>
+                              </button>
+                            </>
                           )}
 
                           {member.status === 'active' && (

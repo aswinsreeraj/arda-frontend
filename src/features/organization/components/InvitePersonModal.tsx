@@ -88,11 +88,11 @@ export const InvitePersonModal: React.FC<InvitePersonModalProps> = ({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@acme-corp.com"
+              placeholder="colleague@company.com"
               className="w-full bg-[#131313] border border-[#2c2c2c] text-xs text-white placeholder-[#555555] rounded-md px-3 py-2 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
             />
-            <p className="text-[11px] text-[#6b7280] font-mono mt-1">
-              Verified domains: acme-corp.com, acme.io
+            <p className="text-[11px] text-[#6b7280] mt-1">
+              An invitation email with a secure setup link will be sent to this address.
             </p>
           </div>
 

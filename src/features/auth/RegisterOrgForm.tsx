@@ -19,13 +19,11 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 interface RegisterOrgFormProps {
   onSwitchToLogin: () => void;
-  onSwitchToInvite?: () => void;
   onSuccess: () => void;
 }
 
 export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
   onSwitchToLogin,
-  onSwitchToInvite,
   onSuccess,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -203,7 +201,7 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
       </form>
 
       {/* Navigation toggles to other pages */}
-      <div className="pt-3 text-center text-xs text-slate-500 dark:text-[#8d90a0] space-y-2 border-t border-slate-200 dark:border-[#222222]">
+      <div className="pt-3 text-center text-xs text-slate-500 dark:text-[#8d90a0] border-t border-slate-200 dark:border-[#222222]">
         <div>
           <span>Already have an account? </span>
           <button
@@ -214,18 +212,6 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
             Sign in →
           </button>
         </div>
-        {onSwitchToInvite && (
-          <div>
-            <span>Have an invitation link? </span>
-            <button
-              type="button"
-              onClick={onSwitchToInvite}
-              className="text-[#2563eb] hover:underline font-medium cursor-pointer"
-            >
-              Accept invitation →
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
