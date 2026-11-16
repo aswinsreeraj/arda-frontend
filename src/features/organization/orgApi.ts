@@ -76,7 +76,7 @@ export const orgApi = {
     // Map by email / user_id to deduplicate
     const memberMap = new Map<string, TenantMember>();
 
-    // 1. Overlay live backend members
+    // 1. Live backend members from PostgreSQL (active, disabled, and invited)
     for (const mem of backendMembers) {
       const key = mem.email.toLowerCase();
       memberMap.set(key, {
@@ -85,10 +85,14 @@ export const orgApi = {
       });
     }
 
-    // 2. Overlay local invitations
+    // 2. Fallback: only include local offline invitations if not returned by backend
     for (const inv of localInvites) {
-      memberMap.set(inv.email.toLowerCase(), inv);
+      const key = inv.email.toLowerCase();
+      if (!memberMap.has(key)) {
+        memberMap.set(key, inv);
+      }
     }
+
 
     // 3. Apply manual role / status overrides
     const result: TenantMember[] = [];

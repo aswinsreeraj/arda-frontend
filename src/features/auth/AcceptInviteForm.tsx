@@ -4,8 +4,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from './authStore';
-import { ArrowRight, Eye, EyeOff, Mail } from 'lucide-react';
+import { authApi } from './authApi';
+import { ArrowRight, Eye, EyeOff, Mail, AlertCircle } from 'lucide-react';
 import type { UserRole } from '@/types/common';
+
 
 const inviteSchema = z
   .object({
@@ -37,15 +39,16 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
   const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const setAuth = useAuthStore((s) => s.setAuth);
 
   // Dynamic invitation details from query params (sent via Mailtrap email link)
   const inviteEmail = searchParams.get('email') || searchParams.get('to') || '';
   const token = searchParams.get('token') || '';
   const orgName = searchParams.get('org') || searchParams.get('tenant_name') || 'Organization';
-  const tenantId = searchParams.get('tenant_id') || searchParams.get('tenant') || 'default-tenant';
   const invitedBy = searchParams.get('invitedBy') || searchParams.get('inviter') || 'Organization Admin';
   const effectiveRole = (searchParams.get('role') as UserRole) || selectedRole;
+
 
   const hasInvitation = Boolean(inviteEmail || token);
 
@@ -73,24 +76,52 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
 
   const onSubmit = async (data: InviteFormData) => {
     setIsLoading(true);
+    setErrorMsg(null);
     try {
-      // Complete invitation acceptance and establish active session
-      const userId = typeof crypto !== 'undefined' && crypto.randomUUID ? `usr_${crypto.randomUUID().slice(0, 8)}` : 'usr_invite_member';
-      setAuth('invited-user-session-token', {
-        id: userId,
-        email: inviteEmail || 'member@organization.com',
+      const inviteToken = token || searchParams.get('token') || '';
+      if (!inviteToken) {
+        setErrorMsg('Invalid invitation token. Please check your invitation email.');
+        return;
+      }
+
+      const res = await authApi.acceptInvitation(inviteToken, {
         full_name: data.fullName,
-        tenant_id: tenantId,
-        tenant_name: orgName,
-        role: effectiveRole,
-        initials: data.fullName.slice(0, 2).toUpperCase(),
-        queue: effectiveRole === 'reviewer' ? 'general-reviews' : undefined,
+        password: data.password,
       });
-      onSuccess(effectiveRole);
+
+      // Clear any cached local invite for this email
+      if (typeof localStorage !== 'undefined') {
+        const localInvitesStr = localStorage.getItem('arda_local_invites');
+        if (localInvitesStr) {
+          try {
+            const list = JSON.parse(localInvitesStr) as Array<{ email: string }>;
+            const filtered = list.filter((item) => item.email.toLowerCase() !== res.user.email.toLowerCase());
+            localStorage.setItem('arda_local_invites', JSON.stringify(filtered));
+          } catch {
+            // Ignore parse error
+          }
+        }
+      }
+
+      setAuth(res.access_token, {
+        id: res.user.id,
+        email: res.user.email,
+        full_name: res.user.display_name,
+        tenant_id: res.active_tenant_id,
+        tenant_name: orgName,
+        role: res.role,
+        initials: res.user.display_name.slice(0, 2).toUpperCase(),
+        queue: res.role === 'reviewer' ? 'general-reviews' : undefined,
+      });
+      onSuccess(res.role);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to accept invitation. Please try again.';
+      setErrorMsg(msg);
     } finally {
       setIsLoading(false);
     }
   };
+
 
   const roleNameMap: Record<UserRole, string> = {
     reviewer: 'Reviewer',
@@ -165,8 +196,16 @@ export const AcceptInviteForm: React.FC<AcceptInviteFormProps> = ({
         </p>
       </div>
 
+      {errorMsg && (
+        <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-600 dark:text-red-400 flex items-start space-x-2">
+          <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
       {/* Form Fields */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
+
         <div>
           <label className="block text-xs font-medium text-slate-700 dark:text-[#8d90a0] mb-1" htmlFor="invite-fullname">
             Full name

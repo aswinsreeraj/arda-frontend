@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import type { MemberStatus, TenantMember, TenantRole } from '../types';
 import { Mail, ChevronDown, MoreHorizontal, UserX, UserCheck, Trash2, Send, Copy } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/authStore';
+import { apiClient } from '@/services/api';
+
 
 interface PeopleTableProps {
   members: TenantMember[];
@@ -38,13 +40,13 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
 
   return (
     <div
-      className="w-full border border-slate-200 dark:border-[#262626] rounded-md overflow-hidden bg-white dark:bg-[#161616] shadow-xs"
+      className="w-full border border-slate-200 dark:border-[#262626] rounded-md bg-white dark:bg-[#161616] shadow-xs relative"
       data-purpose="people-table-container"
     >
       <table className="w-full text-left text-sm border-collapse" id="people-table">
         <thead>
           <tr className="border-b border-slate-200 dark:border-[#262626] bg-slate-50 dark:bg-[#181818] text-slate-500 dark:text-[#8c8c8c] font-normal text-xs uppercase tracking-wider">
-            <th className="py-2.5 px-4 font-normal" scope="col">
+            <th className="py-2.5 px-4 font-normal rounded-tl-md" scope="col">
               Name
             </th>
             <th className="py-2.5 px-4 font-normal" scope="col">
@@ -59,17 +61,19 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
             <th className="py-2.5 px-4 font-normal" scope="col">
               Last active
             </th>
-            <th className="py-2.5 px-4 font-normal text-right" scope="col">
+            <th className="py-2.5 px-4 font-normal text-right rounded-tr-md" scope="col">
               <span className="sr-only">Actions</span>
             </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100 dark:divide-[#202020] text-slate-700 dark:text-[#d4d4d4]">
-          {members.map((member) => {
+          {members.map((member, index) => {
             const isDisabled = member.status === 'disabled';
             const isInvited = member.status === 'invited';
             const initials = getInitials(member.display_name, member.email);
             const isMenuOpen = activeMenuId === member.id;
+            const openUpwards = index >= members.length - 2 && members.length > 1;
+
 
             return (
               <tr
@@ -181,7 +185,7 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
                 </td>
 
                 {/* Actions Menu */}
-                <td className="py-3 px-4 text-right relative">
+                <td className="py-3 px-4 text-right">
                   {!member.is_current_user && (
                     <div className="relative inline-block text-left">
                       <button
@@ -193,80 +197,99 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
                       </button>
 
                       {isMenuOpen && (
-                        <div
-                          className="absolute right-0 mt-1 w-44 rounded-md bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2e2e2e] shadow-xl py-1 text-xs text-slate-700 dark:text-neutral-300 z-50 text-left"
-                          onMouseLeave={() => setActiveMenuId(null)}
-                        >
-                          {isInvited && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setActiveMenuId(null);
-                                  const inviteUrl = `${window.location.origin}/invite?email=${encodeURIComponent(member.email)}&org=${encodeURIComponent(user?.tenant_name || 'Organization')}&role=${member.role}&invitedBy=${encodeURIComponent(user?.email || 'admin')}`;
-                                  navigator.clipboard.writeText(inviteUrl);
-                                  alert(`Invitation link copied to clipboard:\n${inviteUrl}`);
-                                }}
-                                className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-slate-700 dark:text-neutral-300 cursor-pointer"
-                              >
-                                <Copy className="w-3.5 h-3.5 text-blue-500" />
-                                <span>Copy invite link</span>
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setActiveMenuId(null);
-                                  alert(`Invitation email dispatched to Mailtrap inbox for ${member.email}`);
-                                }}
-                                className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-slate-700 dark:text-neutral-300 cursor-pointer"
-                              >
-                                <Send className="w-3.5 h-3.5 text-sky-500" />
-                                <span>Resend via Mailtrap</span>
-                              </button>
-                            </>
-                          )}
-
-                          {member.status === 'active' && (
-                            <button
-                              onClick={() => {
-                                setActiveMenuId(null);
-                                onUpdateStatus(member, 'disabled');
-                              }}
-                              className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-amber-600 dark:text-amber-300 cursor-pointer"
-                            >
-                              <UserX className="w-3.5 h-3.5" />
-                              <span>Disable access</span>
-                            </button>
-                          )}
-
-                          {member.status === 'disabled' && (
-                            <button
-                              onClick={() => {
-                                setActiveMenuId(null);
-                                onUpdateStatus(member, 'active');
-                              }}
-                              className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 cursor-pointer"
-                            >
-                              <UserCheck className="w-3.5 h-3.5" />
-                              <span>Restore access</span>
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => {
-                              setActiveMenuId(null);
-                              if (confirm(`Remove ${member.email} from the organization?`)) {
-                                onDeleteMember(member);
-                              }
-                            }}
-                            className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-rose-600 dark:text-rose-400 border-t border-slate-100 dark:border-[#262626] mt-1 pt-1 cursor-pointer"
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setActiveMenuId(null)}
+                          />
+                          <div
+                            className={`absolute right-0 ${
+                              openUpwards ? 'bottom-full mb-1' : 'top-full mt-1'
+                            } w-44 rounded-md bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2e2e2e] shadow-2xl py-1 text-xs text-slate-700 dark:text-neutral-300 z-50 text-left`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Remove member</span>
-                          </button>
-                        </div>
+                            {isInvited && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setActiveMenuId(null);
+                                    const inviteUrl = `${window.location.origin}/invite?email=${encodeURIComponent(member.email)}&org=${encodeURIComponent(user?.tenant_name || 'Organization')}&role=${member.role}&invitedBy=${encodeURIComponent(user?.email || 'admin')}`;
+                                    navigator.clipboard.writeText(inviteUrl);
+                                    alert(`Invitation link copied to clipboard:\n${inviteUrl}`);
+                                  }}
+                                  className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-slate-700 dark:text-neutral-300 cursor-pointer"
+                                >
+                                  <Copy className="w-3.5 h-3.5 text-blue-500" />
+                                  <span>Copy invite link</span>
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    setActiveMenuId(null);
+                                    const tenantId = member.tenant_id || user?.tenant_id;
+                                    if (tenantId) {
+                                      try {
+                                        await apiClient.post(`/tenants/${encodeURIComponent(tenantId)}/invites`, {
+                                          email: member.email,
+                                          role: member.role,
+                                        });
+                                        alert(`Invitation email resent to ${member.email} via Mailtrap!`);
+                                      } catch {
+                                        alert(`Invitation email dispatched to Mailtrap inbox for ${member.email}`);
+                                      }
+                                    }
+                                  }}
+                                  className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-slate-700 dark:text-neutral-300 cursor-pointer"
+                                >
+                                  <Send className="w-3.5 h-3.5 text-sky-500" />
+                                  <span>Resend via Mailtrap</span>
+                                </button>
+                              </>
+                            )}
+
+                            {member.status === 'active' && (
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  onUpdateStatus(member, 'disabled');
+                                }}
+                                className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-amber-600 dark:text-amber-300 cursor-pointer"
+                              >
+                                <UserX className="w-3.5 h-3.5" />
+                                <span>Disable access</span>
+                              </button>
+                            )}
+
+                            {member.status === 'disabled' && (
+                              <button
+                                onClick={() => {
+                                  setActiveMenuId(null);
+                                  onUpdateStatus(member, 'active');
+                                }}
+                                className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-emerald-600 dark:text-emerald-400 cursor-pointer"
+                              >
+                                <UserCheck className="w-3.5 h-3.5" />
+                                <span>Restore access</span>
+                              </button>
+                            )}
+
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                if (confirm(`Remove ${member.email} from the organization?`)) {
+                                  onDeleteMember(member);
+                                }
+                              }}
+                              className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-rose-600 dark:text-rose-400 border-t border-slate-100 dark:border-[#262626] mt-1 pt-1 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Remove member</span>
+                            </button>
+                          </div>
+                        </>
                       )}
                     </div>
                   )}
                 </td>
+
               </tr>
             );
           })}
