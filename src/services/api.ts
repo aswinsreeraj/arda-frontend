@@ -41,9 +41,13 @@ apiClient.interceptors.response.use(
     const status = error.response?.status || 500;
 
     if (status === 401) {
-      // Clear token if unauthorized, and redirect to login if not already there
+      // Clear token and caches if unauthorized, and redirect to login if not already there
       localStorage.removeItem(AUTH_TOKEN_KEY);
-      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+      localStorage.removeItem(AUTH_TENANT_KEY);
+      localStorage.removeItem('arda_user_data');
+      localStorage.removeItem('arda_runs_cache');
+      localStorage.removeItem('arda_runs_store');
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/signup')) {
         window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
     }

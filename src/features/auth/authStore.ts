@@ -91,6 +91,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_TENANT_KEY);
     localStorage.removeItem(USER_STORAGE_KEY);
+    localStorage.removeItem('arda_runs_cache');
+    localStorage.removeItem('arda_runs_store');
+    localStorage.removeItem('arda_org_invites');
+    localStorage.removeItem('arda_member_overrides');
+    localStorage.removeItem('arda_tenant_overrides');
     set({ token: null, user: null, isAuthenticated: false });
   },
 
