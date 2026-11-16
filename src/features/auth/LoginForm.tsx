@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from './authStore';
 import { authApi } from './authApi';
-import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ApiError } from '@/types/common';
 import type { LoginRequest } from './types';
 import type { UserRole } from '@/types/common';
 
@@ -22,26 +24,41 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSwitchToRegister,
   onSuccess,
 }) => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isUnverified, setIsUnverified] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
+
+  const verifiedParam = searchParams.get('verified') === 'true';
+  const emailParam = searchParams.get('email') || '';
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginRequest>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      email: emailParam,
       password: '',
     },
   });
 
+  useEffect(() => {
+    if (emailParam) {
+      setValue('email', emailParam);
+    }
+  }, [emailParam, setValue]);
+
   const onSubmit = async (data: LoginRequest) => {
     setIsLoading(true);
     setErrorMsg(null);
+    setIsUnverified(false);
     try {
       const res = await authApi.login(data);
       setAuth(res.access_token, {
@@ -55,12 +72,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       });
       onSuccess(res.role);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Invalid email or password';
-      setErrorMsg(msg);
+      if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
+        setIsUnverified(true);
+        setUnverifiedEmail(data.email);
+        setErrorMsg('Email address has not been verified yet.');
+      } else {
+        const msg = err instanceof Error ? err.message : 'Invalid email or password';
+        setErrorMsg(msg);
+      }
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-4">
@@ -71,11 +95,38 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </p>
       </div>
 
-      {errorMsg && (
-        <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-600 dark:text-red-400">
-          {errorMsg}
+      {verifiedParam && !errorMsg && (
+        <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-600 dark:text-emerald-400 flex items-center space-x-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>Email verified successfully! You can now sign in.</span>
         </div>
       )}
+
+      {isUnverified ? (
+        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-xs text-amber-600 dark:text-amber-400 space-y-1.5">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span className="font-medium">Verification required</span>
+          </div>
+          <p className="text-[11px] text-slate-600 dark:text-[#aaaaaa]">
+            Please verify your email address using the 6-digit code or confirmation link sent via Mailtrap.
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate(`/verify?email=${encodeURIComponent(unverifiedEmail)}`)}
+            className="text-xs text-[#2563eb] hover:underline font-medium block cursor-pointer"
+          >
+            Enter verification code →
+          </button>
+        </div>
+      ) : (
+        errorMsg && (
+          <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-xs text-red-600 dark:text-red-400">
+            {errorMsg}
+          </div>
+        )
+      )}
+
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
         <div>

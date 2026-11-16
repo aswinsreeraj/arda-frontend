@@ -56,10 +56,29 @@ export interface RegisterTenantResponse {
     status: string;
   };
   user: BackendSafeUser;
-  access_token: string;
-  token_type: string;
-  expires_in: number;
+  requires_verification?: boolean;
+  message?: string;
+  access_token?: string;
+  token_type?: string;
+  expires_in?: number;
 }
+
+export interface VerifyEmailRequest {
+  email?: string;
+  code?: string;
+  token?: string;
+}
+
+export interface VerifyEmailResponse {
+  verified: boolean;
+  message: string;
+  user?: BackendSafeUser;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
 
 export interface InvitationMetadata {
   token: string;

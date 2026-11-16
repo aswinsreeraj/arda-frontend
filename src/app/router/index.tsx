@@ -95,6 +95,17 @@ export const router = createBrowserRouter([
       },
     ],
   },
+  {
+    path: '/verify',
+    element: <AuthLayout />,
+    children: [
+      {
+        index: true,
+        element: <AuthPage />,
+      },
+    ],
+  },
+
 
   // Governance App Console Routes (Strictly bound to backend RBAC policy)
   {

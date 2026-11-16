@@ -5,7 +5,9 @@ import { z } from 'zod';
 import { authApi } from './authApi';
 import { useAuthStore } from './authStore';
 import { ArrowRight, Eye, EyeOff, Building2 } from 'lucide-react';
+import { VerifyEmailForm } from './VerifyEmailForm';
 import type { RegisterTenantRequest } from './types';
+
 
 const registerSchema = z.object({
   company_name: z.string().min(2, 'Organization name must be at least 2 characters'),
@@ -29,6 +31,7 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const {
@@ -58,6 +61,11 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
       };
 
       const res = await authApi.registerTenant(payload);
+      if (res.requires_verification || !res.access_token) {
+        setRegisteredEmail(data.admin_email);
+        return;
+      }
+
       setAuth(res.access_token, {
         id: res.user.id,
         email: res.user.email,
@@ -75,6 +83,16 @@ export const RegisterOrgForm: React.FC<RegisterOrgFormProps> = ({
       setIsLoading(false);
     }
   };
+
+  if (registeredEmail) {
+    return (
+      <VerifyEmailForm
+        initialEmail={registeredEmail}
+        onSwitchToLogin={() => onSwitchToLogin()}
+      />
+    );
+  }
+
 
   return (
     <div className="space-y-4">

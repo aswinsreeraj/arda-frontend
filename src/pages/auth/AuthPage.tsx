@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { LoginForm } from '@/features/auth/LoginForm';
 import { AcceptInviteForm } from '@/features/auth/AcceptInviteForm';
 import { RegisterOrgForm } from '@/features/auth/RegisterOrgForm';
+import { VerifyEmailForm } from '@/features/auth/VerifyEmailForm';
 import { Card } from '@/components/ui/Card';
 import { useAuthStore } from '@/features/auth/authStore';
 import { getDefaultDashboard } from '@/utils/navigation';
@@ -15,9 +16,12 @@ export const AuthPage: React.FC = () => {
 
   const isInvitePath = location.pathname.includes('invite');
   const isRegisterPath = location.pathname.includes('signup') || location.pathname.includes('register');
+  const isVerifyPath = location.pathname.includes('verify');
 
-  const mode: 'login' | 'invite' | 'register' =
-    isInvitePath || searchParams.get('mode') === 'invite'
+  const mode: 'login' | 'invite' | 'register' | 'verify' =
+    isVerifyPath || searchParams.get('mode') === 'verify'
+      ? 'verify'
+      : isInvitePath || searchParams.get('mode') === 'invite'
       ? 'invite'
       : isRegisterPath || searchParams.get('mode') === 'register'
       ? 'register'
@@ -54,6 +58,14 @@ export const AuthPage: React.FC = () => {
           onSuccess={(role) => handleSuccess(role)}
           selectedRole={previewRole}
         />
+      ) : mode === 'verify' ? (
+        <VerifyEmailForm
+          initialEmail={searchParams.get('email') || ''}
+          initialToken={searchParams.get('token') || ''}
+          onSwitchToLogin={(email) =>
+            navigate(email ? `/login?verified=true&email=${encodeURIComponent(email)}` : '/login?verified=true')
+          }
+        />
       ) : (
         <RegisterOrgForm
           onSwitchToLogin={() => navigate('/login')}
@@ -63,3 +75,4 @@ export const AuthPage: React.FC = () => {
     </Card>
   );
 };
+

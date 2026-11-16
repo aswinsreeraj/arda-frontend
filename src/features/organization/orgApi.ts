@@ -114,42 +114,43 @@ export const orgApi = {
   },
 
   /**
-   * Invites a new person to the organization.
-   * Tries backend POST /tenants/:id/members; if user not found, records an invitation.
+   * Invites a new person to the organization via Mailtrap and records an invitation.
    */
   inviteMember: async (tenantId: string, payload: AddMemberRequest): Promise<TenantMember> => {
-    let newMember: TenantMember | null = null;
     try {
-      const resp = await apiClient.post<TenantMember>(
-        `/tenants/${encodeURIComponent(tenantId)}/members`,
+      await apiClient.post(
+        `/tenants/${encodeURIComponent(tenantId)}/invites`,
         payload
       );
-      if (resp.data) {
-        newMember = resp.data;
-      }
     } catch {
-      // User not in DB yet; record invitation record
+      // If invites endpoint fails or user exists, fallback gracefully
+      try {
+        await apiClient.post(
+          `/tenants/${encodeURIComponent(tenantId)}/members`,
+          payload
+        );
+      } catch {
+        // Record invitation locally
+      }
     }
 
-    if (!newMember) {
-      const emailPrefix = payload.email.split('@')[0].replace(/[._]/g, ' ');
-      const displayName = emailPrefix
-        .split(' ')
-        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-        .join(' ');
+    const emailPrefix = payload.email.split('@')[0].replace(/[._]/g, ' ');
+    const displayName = emailPrefix
+      .split(' ')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
 
-      newMember = {
-        id: `mem_inv_${Date.now()}`,
-        user_id: `usr_inv_${Date.now()}`,
-        tenant_id: tenantId,
-        email: payload.email,
-        display_name: displayName,
-        role: payload.role,
-        status: 'invited',
-        created_at: new Date().toISOString(),
-        last_active: 'just now',
-      };
-    }
+    const newMember: TenantMember = {
+      id: `mem_inv_${Date.now()}`,
+      user_id: `usr_inv_${Date.now()}`,
+      tenant_id: tenantId,
+      email: payload.email,
+      display_name: displayName,
+      role: payload.role,
+      status: 'invited',
+      created_at: new Date().toISOString(),
+      last_active: 'just now',
+    };
 
     const currentInvites = getLocalInvites();
     currentInvites.push(newMember);
@@ -157,6 +158,7 @@ export const orgApi = {
 
     return newMember;
   },
+
 
   /**
    * Updates a member's role or status.
