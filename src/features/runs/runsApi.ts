@@ -1,4 +1,4 @@
-import { apiClient } from '@/services/api';
+import { apiClient, AUTH_TENANT_KEY } from '@/services/api';
 import type {
   ExecuteAgentResponse,
   RunDetail,
@@ -136,9 +136,14 @@ export const runsApi = {
 
         const status: RunStatus = c.status === 'RESOLVED' ? 'success' : 'escalated';
 
+        const currentTenantId = localStorage.getItem(AUTH_TENANT_KEY) || '';
+        const workflowId = currentTenantId
+          ? `tenant-${currentTenantId}-agent-${c.agent_id}-${caseId.slice(0, 8)}`
+          : `agent-exec-${c.agent_id}-${caseId.slice(0, 8)}`;
+
         return {
           id: c.execution_id || caseId,
-          workflow_id: `agent-exec-${c.agent_id}-${caseId.slice(0, 8)}`,
+          workflow_id: workflowId,
           run_id: caseId,
           agent_id: c.agent_id,
           agent_name: c.agent_name,
@@ -270,6 +275,12 @@ export const runsApi = {
           const existsLocally = localRuns.some((r) => r.workflow_id === wId || r.run_id === rId || r.id === wId);
           const existsReview = reviewRuns.some((r) => r.workflow_id === wId || r.run_id === rId);
 
+          const currentTenantId = localStorage.getItem(AUTH_TENANT_KEY) || '';
+          if (currentTenantId && wId.startsWith('tenant-') && !wId.startsWith(`tenant-${currentTenantId}-`)) {
+            // Workflow belongs to a different tenant; enforce isolation
+            continue;
+          }
+
           if (!existsLocally && !existsReview) {
             const status = mapTemporalStatus(tExec.status);
             let duration = 185;
@@ -278,9 +289,17 @@ export const runsApi = {
               if (diff > 0) duration = diff;
             }
 
-            // Extract agent name / id if workflow follows agent-exec pattern
-            const isAgentExec = wId.startsWith('agent-exec-');
-            const agentId = isAgentExec ? wId.split('-')[2] : 'governed-agent';
+            // Extract agent name / id if workflow follows tenant-..-agent-.. or agent-exec-.. pattern
+            let agentId = 'governed-agent';
+            if (wId.startsWith('tenant-')) {
+              const parts = wId.split('-agent-');
+              if (parts.length > 1) {
+                const after = parts[1].split('-');
+                agentId = after[0] || 'governed-agent';
+              }
+            } else if (wId.startsWith('agent-exec-')) {
+              agentId = wId.split('-')[2] || 'governed-agent';
+            }
 
             const discoveredRun: RunDetail = {
               id: wId,

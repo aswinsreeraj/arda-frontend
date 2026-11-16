@@ -13,6 +13,7 @@ import {
 import type { RunDetail, RunStatus } from '../types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { TEMPORAL_UI_BASE_URL } from '@/services/api';
 
 interface RunInspectorProps {
   run: RunDetail;
@@ -100,8 +101,20 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
             </Badge>
           </div>
 
-          <div className="text-xs font-mono text-gray-400">
-            Workflow: {run.workflow_id}
+          <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
+            <span>Workflow: {run.workflow_id}</span>
+            {run.workflow_id && (
+              <a
+                href={`${TEMPORAL_UI_BASE_URL}/namespaces/default/workflows/${encodeURIComponent(run.workflow_id)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Inspect execution in Temporal Web UI"
+                className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline transition"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Temporal UI</span>
+              </a>
+            )}
           </div>
         </div>
 
@@ -113,6 +126,18 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
               {new Date(run.created_at).toLocaleString()}
             </div>
           </div>
+
+          {run.workflow_id && (
+            <a
+              href={`${TEMPORAL_UI_BASE_URL}/namespaces/default/workflows/${encodeURIComponent(run.workflow_id)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center font-medium rounded-lg transition border border-[#2e2e2e] bg-[#1a1a1a] hover:bg-[#242424] text-white text-xs px-3 py-1.5 gap-1.5 shadow-xs"
+            >
+              <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+              <span>Inspect in Temporal</span>
+            </a>
+          )}
 
           {run.escalation?.case_id && (
             <Button

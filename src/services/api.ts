@@ -2,6 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { ApiError, type ApiErrorResponse } from '@/types/common';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+export const TEMPORAL_UI_BASE_URL = import.meta.env.VITE_TEMPORAL_UI_URL || 'http://localhost:8233';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,

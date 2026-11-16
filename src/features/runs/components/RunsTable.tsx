@@ -6,10 +6,12 @@ import {
   AlertCircle,
   Activity,
   ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 import type { RunDetail, RunStatus } from '../types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { TEMPORAL_UI_BASE_URL } from '@/services/api';
 
 interface RunsTableProps {
   runs: RunDetail[];
@@ -251,8 +253,20 @@ export const RunsTable: React.FC<RunsTableProps> = ({
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                         )}
                       </div>
-                      <div className="text-xs text-gray-400 truncate max-w-xs mt-0.5">
-                        {run.workflow_id}
+                      <div className="text-xs text-gray-400 max-w-xs mt-0.5 flex items-center gap-1.5">
+                        <span className="truncate">{run.workflow_id}</span>
+                        {run.workflow_id && (
+                          <a
+                            href={`${TEMPORAL_UI_BASE_URL}/namespaces/default/workflows/${encodeURIComponent(run.workflow_id)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            title="Inspect in Temporal UI"
+                            className="text-gray-500 hover:text-blue-400 p-0.5 inline-flex items-center shrink-0"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
                       </div>
                     </td>
 

@@ -1,18 +1,26 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { ExternalLink } from 'lucide-react';
 import { runsApi } from './runsApi';
 import { useRunsStore } from './runsStore';
 import type { RunDetail } from './types';
 import { RunsTable } from './components/RunsTable';
 import { RunInspector } from './components/RunInspector';
 import { RunDispatcherModal } from './components/RunDispatcherModal';
+import { useAuthStore } from '@/features/auth/authStore';
+import { TEMPORAL_UI_BASE_URL } from '@/services/api';
 
 type ViewMode = 'table' | 'inspector';
 
 export const RunsPage: React.FC = () => {
   const { runs: storeRuns, selectedRunId, setSelectedRunId, setRuns } = useRunsStore();
+  const { user } = useAuthStore();
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [isDispatcherOpen, setIsDispatcherOpen] = useState(false);
+
+  const temporalOverviewUrl = user?.tenant_id
+    ? `${TEMPORAL_UI_BASE_URL}/namespaces/default/workflows?query=${encodeURIComponent(`WorkflowId STARTS_WITH "tenant-${user.tenant_id}"`)}`
+    : `${TEMPORAL_UI_BASE_URL}/namespaces/default/workflows`;
 
   // Query real runs from backend & store, polling dynamically if any run is in 'running' state
   const {
@@ -72,35 +80,48 @@ export const RunsPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center bg-[#1c1c1c] p-1 rounded-lg border border-[#2e2e2e] text-xs">
-            <span className="text-[#9ca3af] px-2">View:</span>
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              className={`px-2.5 py-1 rounded font-medium transition ${
-                viewMode === 'table'
-                  ? 'bg-[#2c2c2c] text-white shadow-xs'
-                  : 'text-[#9ca3af] hover:text-white'
-              }`}
+          <div className="flex items-center gap-3">
+            <a
+              href={temporalOverviewUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#2e2e2e] bg-[#1a1a1a] hover:bg-[#242424] text-xs font-medium text-gray-200 transition shadow-xs"
+              title={user?.tenant_id ? `Inspect workflows scoped to tenant ${user.tenant_id}` : 'Inspect workflows in Temporal'}
             >
-              Runs Table
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (!selectedRunId && allRuns.length > 0) {
-                  setSelectedRunId(allRuns[0].id);
-                }
-                setViewMode('inspector');
-              }}
-              className={`px-2.5 py-1 rounded font-medium transition ${
-                viewMode === 'inspector'
-                  ? 'bg-[#2c2c2c] text-white shadow-xs'
-                  : 'text-[#9ca3af] hover:text-white'
-              }`}
-            >
-              Run Inspector
-            </button>
+              <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+              <span>Temporal Dashboard</span>
+            </a>
+
+            <div className="flex items-center bg-[#1c1c1c] p-1 rounded-lg border border-[#2e2e2e] text-xs">
+              <span className="text-[#9ca3af] px-2">View:</span>
+              <button
+                type="button"
+                onClick={() => setViewMode('table')}
+                className={`px-2.5 py-1 rounded font-medium transition ${
+                  viewMode === 'table'
+                    ? 'bg-[#2c2c2c] text-white shadow-xs'
+                    : 'text-[#9ca3af] hover:text-white'
+                }`}
+              >
+                Runs Table
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!selectedRunId && allRuns.length > 0) {
+                    setSelectedRunId(allRuns[0].id);
+                  }
+                  setViewMode('inspector');
+                }}
+                className={`px-2.5 py-1 rounded font-medium transition ${
+                  viewMode === 'inspector'
+                    ? 'bg-[#2c2c2c] text-white shadow-xs'
+                    : 'text-[#9ca3af] hover:text-white'
+                }`}
+              >
+                Run Inspector
+              </button>
+            </div>
           </div>
         </div>
 
