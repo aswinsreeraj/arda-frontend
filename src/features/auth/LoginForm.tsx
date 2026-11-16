@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuthStore } from './authStore';
 import { authApi } from './authApi';
-import { ArrowRight, Eye, EyeOff, ShieldCheck, UserCheck, Code, Shield } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import type { LoginRequest } from './types';
 import type { UserRole } from '@/types/common';
 
@@ -32,13 +32,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginRequest>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'reviewer@acme.com',
-      password: 'ReviewerPass123!',
+      email: '',
+      password: '',
     },
   });
 
@@ -52,9 +51,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         email: res.user.email,
         full_name: res.user.display_name,
         tenant_id: res.active_tenant_id,
-        tenant_name: 'Acme Robotics',
+        tenant_name: res.user.display_name ? `${res.user.display_name}'s Org` : 'Organization',
         role: res.role,
-        queue: res.role === 'reviewer' ? 'fraud-l2' : undefined,
+        queue: res.role === 'reviewer' ? 'general-reviews' : undefined,
       });
       onSuccess(res.role);
     } catch (err: unknown) {
@@ -63,12 +62,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleQuickFill = (email: string, pass: string) => {
-    setValue('email', email);
-    setValue('password', pass);
-    setErrorMsg(null);
   };
 
   return (
@@ -85,59 +78,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {errorMsg}
         </div>
       )}
-
-      {/* Quick Test Credential Switchers */}
-      <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-[#181818] border border-slate-200 dark:border-[#262626] space-y-2">
-        <span className="text-[10px] uppercase font-mono text-slate-500 dark:text-neutral-400 font-semibold tracking-wider block">
-          Quick Sign In (Verified Accounts)
-        </span>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => handleQuickFill('reviewer@acme.com', 'ReviewerPass123!')}
-            className="flex items-center space-x-1.5 p-1.5 rounded-lg bg-white dark:bg-[#202020] hover:bg-slate-100 dark:hover:bg-[#282828] border border-slate-200 dark:border-[#333] text-left text-xs transition-colors cursor-pointer"
-          >
-            <UserCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-            <div>
-              <div className="font-medium text-slate-900 dark:text-white text-[11px]">Rachel (Reviewer)</div>
-              <div className="text-[9px] text-slate-500 dark:text-neutral-400 font-mono">reviewer@acme.com</div>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFill('admin@acme.com', 'AdminPass123!')}
-            className="flex items-center space-x-1.5 p-1.5 rounded-lg bg-white dark:bg-[#202020] hover:bg-slate-100 dark:hover:bg-[#282828] border border-slate-200 dark:border-[#333] text-left text-xs transition-colors cursor-pointer"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-            <div>
-              <div className="font-medium text-slate-900 dark:text-white text-[11px]">Alice (Admin)</div>
-              <div className="text-[9px] text-slate-500 dark:text-neutral-400 font-mono">admin@acme.com</div>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFill('agent.dev@acme.com', 'DeveloperPass123!')}
-            className="flex items-center space-x-1.5 p-1.5 rounded-lg bg-white dark:bg-[#202020] hover:bg-slate-100 dark:hover:bg-[#282828] border border-slate-200 dark:border-[#333] text-left text-xs transition-colors cursor-pointer"
-          >
-            <Code className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-            <div>
-              <div className="font-medium text-slate-900 dark:text-white text-[11px]">Dave (Developer)</div>
-              <div className="text-[9px] text-slate-500 dark:text-neutral-400 font-mono">agent.dev@acme.com</div>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleQuickFill('superadmin@arda.platform', 'SuperAdminPass123!')}
-            className="flex items-center space-x-1.5 p-1.5 rounded-lg bg-white dark:bg-[#202020] hover:bg-slate-100 dark:hover:bg-[#282828] border border-slate-200 dark:border-[#333] text-left text-xs transition-colors cursor-pointer"
-          >
-            <Shield className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <div>
-              <div className="font-medium text-slate-900 dark:text-white text-[11px]">Sam (Super Admin)</div>
-              <div className="text-[9px] text-slate-500 dark:text-neutral-400 font-mono">superadmin@...</div>
-            </div>
-          </button>
-        </div>
-      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
         <div>
