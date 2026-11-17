@@ -26,21 +26,31 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
   const [payloadTab, setPayloadTab] = useState<'input' | 'output' | 'reasoning'>('input');
   const [copied, setCopied] = useState(false);
 
-  const confidence =
-    run.confidence !== undefined && run.confidence > 0
-      ? run.confidence
-      : run.status === 'escalated'
-        ? 0.62
-        : 0.89;
+  const isRunning = run.status === 'running' || run.status === 'accepted';
+  const isFailed = run.status === 'failed';
+  const isReliabilitySkipped = Boolean(
+    (run.output as Record<string, unknown> | undefined)?.reliability_skipped
+  );
+  const actualConfidence =
+    !isRunning && !isFailed && !isReliabilitySkipped
+      ? typeof run.confidence === 'number'
+        ? run.confidence
+        : typeof (run.output as Record<string, unknown> | undefined)?.confidence === 'number'
+          ? ((run.output as Record<string, unknown>).confidence as number)
+          : undefined
+      : undefined;
   const threshold = run.reliability_threshold ?? 0.80;
-  const isEscalated = run.status === 'escalated' || confidence < threshold || Boolean(run.escalation?.case_id);
+  const isEscalated =
+    run.status === 'escalated' ||
+    (actualConfidence !== undefined && actualConfidence < threshold) ||
+    Boolean(run.escalation?.case_id);
   const isCalibrationSample = Boolean(
     (run.output as Record<string, unknown>)?.calibration_sampling ||
     (run.structured_output as Record<string, unknown>)?.calibration_sampling ||
     (run.output as Record<string, unknown>)?.reason_code === 'CALIBRATION_SAMPLE' ||
     (run.escalation as Record<string, unknown>)?.reason_code === 'CALIBRATION_SAMPLE'
   );
-  const margin = (confidence - threshold).toFixed(2);
+  const margin = actualConfidence !== undefined ? (actualConfidence - threshold).toFixed(2) : null;
   const reviewCaseId =
     run.escalation?.case_id ||
     (run.output?.case_id as string) ||
@@ -141,7 +151,7 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
             </div>
           </div>
 
-          {run.workflow_id && (
+          {run.mode === 'durable' && run.workflow_id && (
             <a
               href={`${TEMPORAL_UI_BASE_URL}/namespaces/default/workflows/${encodeURIComponent(run.workflow_id)}`}
               target="_blank"
@@ -269,33 +279,114 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
 
             {/* Node 4: Confidence Gate */}
             <div
-              className={`p-3.5 rounded-lg border bg-[#1b1b1b] space-y-1.5 shadow-xs ${isEscalated ? 'border-amber-500/40' : 'border-emerald-500/40'
-                }`}
+              className={`p-3.5 rounded-lg border bg-[#1b1b1b] space-y-1.5 shadow-xs ${
+                isRunning
+                  ? 'border-blue-500/40'
+                  : isFailed
+                    ? 'border-red-500/40'
+                    : isReliabilitySkipped
+                      ? 'border-neutral-600/50'
+                      : isEscalated
+                        ? 'border-amber-500/40'
+                        : actualConfidence !== undefined
+                          ? 'border-emerald-500/40'
+                          : 'border-[#282828]'
+              }`}
             >
               <div className="flex justify-between items-center text-[10px]">
                 <span
-                  className={`uppercase tracking-wider font-semibold ${isEscalated ? 'text-amber-400' : 'text-emerald-400'
-                    }`}
+                  className={`uppercase tracking-wider font-semibold ${
+                    isRunning
+                      ? 'text-blue-400'
+                      : isFailed
+                        ? 'text-red-400'
+                        : isReliabilitySkipped
+                          ? 'text-neutral-400'
+                          : isEscalated
+                            ? 'text-amber-400'
+                            : actualConfidence !== undefined
+                              ? 'text-emerald-400'
+                              : 'text-gray-400'
+                  }`}
                 >
                   Confidence Gate
                 </span>
                 <span
-                  className={`text-[9px] px-1.5 py-0.2 rounded border ${isEscalated
-                    ? 'bg-amber-950/40 text-amber-300 border-amber-800/40'
-                    : 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40'
-                    }`}
+                  className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                    isRunning
+                      ? 'bg-blue-950/40 text-blue-300 border-blue-800/40'
+                      : isFailed
+                        ? 'bg-red-950/40 text-red-300 border-red-800/40'
+                        : isReliabilitySkipped
+                          ? 'bg-neutral-900 text-neutral-300 border-neutral-700'
+                          : isEscalated
+                            ? 'bg-amber-950/40 text-amber-300 border-amber-800/40'
+                            : actualConfidence !== undefined
+                              ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/40'
+                              : 'bg-neutral-900 text-neutral-400 border-neutral-700'
+                  }`}
                 >
-                  {isEscalated ? 'p < τ' : 'p ≥ τ'}
+                  {isRunning
+                    ? 'PENDING'
+                    : isFailed
+                      ? 'FAILED'
+                      : isReliabilitySkipped
+                        ? 'SKIPPED'
+                        : actualConfidence === undefined
+                          ? 'N/A'
+                          : isEscalated
+                            ? 'p < τ'
+                            : 'p ≥ τ'}
                 </span>
               </div>
-              <div className="text-xs font-semibold text-white">
-                p {confidence.toFixed(2)} {isEscalated ? '<' : '≥'} τ {threshold.toFixed(2)}
-              </div>
-              <div className="text-[10px] text-gray-400">
-                {isEscalated
-                  ? `Margin: ${margin} (Governance limit breached · Escalated)`
-                  : `Margin: +${margin} (Reliability threshold met)`}
-              </div>
+              {isRunning ? (
+                <>
+                  <div className="text-xs font-semibold text-blue-300">
+                    Evaluating...
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    Confidence will appear once execution completes (τ = {threshold.toFixed(2)})
+                  </div>
+                </>
+              ) : isFailed ? (
+                <>
+                  <div className="text-xs font-semibold text-red-300">
+                    Not evaluated
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    Execution failed before completing reliability gate
+                  </div>
+                </>
+              ) : isReliabilitySkipped ? (
+                <>
+                  <div className="text-xs font-semibold text-neutral-300">
+                    Reliability check skipped
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    Precedent check bypassed for this run
+                  </div>
+                </>
+              ) : actualConfidence !== undefined ? (
+                <>
+                  <div className="text-xs font-semibold text-white">
+                    p {actualConfidence.toFixed(2)} {actualConfidence < threshold ? '<' : '≥'} τ {threshold.toFixed(2)}
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    {isEscalated
+                      ? `Margin: ${margin} (Governance limit breached · Escalated)`
+                      : `Margin: +${margin} (Reliability threshold met)`}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-xs font-semibold text-gray-300">
+                    Confidence unavailable
+                  </div>
+                  <div className="text-[10px] text-gray-400">
+                    No reliability score recorded (τ = {threshold.toFixed(2)})
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Node 5: Feedback / Calibration */}

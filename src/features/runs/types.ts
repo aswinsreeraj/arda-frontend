@@ -12,6 +12,7 @@ export interface SubmitExecutionRequest {
   execution_mode?: ExecutionMode;
   mode?: 'async' | 'sync';
   execution_id?: string;
+  skip_reliability_check?: boolean;
 }
 
 export interface EscalationInfo {

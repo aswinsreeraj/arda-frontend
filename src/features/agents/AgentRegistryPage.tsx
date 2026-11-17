@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from './agentApi';
 import type { AgentDetail } from './types';
 import { AgentsTable } from './components/AgentsTable';
@@ -14,11 +14,42 @@ type TabType = 'agents' | 'mcp' | 'llm';
 type ScreenViewType = 'table' | 'inspector';
 
 export const AgentRegistryPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const canDeleteAgent = user?.role === 'company_admin';
   const [activeTab, setActiveTab] = useState<TabType>('agents');
   const [screenView, setScreenView] = useState<ScreenViewType>('table');
   const [selectedAgent, setSelectedAgent] = useState<AgentDetail | null>(null);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [deletingAgentId, setDeletingAgentId] = useState<string | null>(null);
+
+  const deleteAgentMutation = useMutation({
+    mutationFn: (agentId: string) => agentApi.deleteAgent(agentId),
+    onMutate: (agentId) => {
+      setDeletingAgentId(agentId);
+    },
+    onSuccess: (_data, agentId) => {
+      if (selectedAgent?.agent.id === agentId) {
+        setSelectedAgent(null);
+        setScreenView('table');
+      }
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+    },
+    onSettled: () => {
+      setDeletingAgentId(null);
+    },
+  });
+
+  const handleDeleteAgent = (agent: AgentDetail) => {
+    if (!canDeleteAgent) return;
+    if (
+      confirm(
+        `Permanently delete agent "${agent.agent.name}" and all of its versions? This action cannot be undone.`
+      )
+    ) {
+      deleteAgentMutation.mutate(agent.agent.id);
+    }
+  };
 
   // Query agents
   const {
@@ -155,6 +186,8 @@ export const AgentRegistryPage: React.FC = () => {
               key={currentSelectedAgent.agent.id}
               agentDetail={currentSelectedAgent}
               onBackToList={() => setScreenView('table')}
+              onDeleteAgent={() => handleDeleteAgent(currentSelectedAgent)}
+              isDeletingAgent={deletingAgentId === currentSelectedAgent.agent.id}
             />
           ) : (
             <AgentsTable
@@ -164,6 +197,9 @@ export const AgentRegistryPage: React.FC = () => {
               onRefresh={() => refetchAgents()}
               onSelectAgent={handleSelectAgent}
               onOpenRegisterModal={() => setIsRegisterModalOpen(true)}
+              onDeleteAgent={handleDeleteAgent}
+              deletingAgentId={deletingAgentId}
+              canDeleteAgent={canDeleteAgent}
               selectedAgentId={currentSelectedAgent?.agent.id}
             />
           )}

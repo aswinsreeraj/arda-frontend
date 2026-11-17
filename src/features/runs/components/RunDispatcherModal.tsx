@@ -13,6 +13,85 @@ interface RunDispatcherModalProps {
   onRunCreated: (run: RunDetail) => void;
 }
 
+const buildRunRecord = (
+  effectiveAgentId: string,
+  agentName: string,
+  agentVersionNumber: number,
+  runMode: RunMode,
+  threshold: number,
+  configuredTools: string[],
+  parsedInput: Record<string, unknown>,
+  res: Awaited<ReturnType<typeof runsApi.executeAgent>>
+): RunDetail => {
+  const nowIso = new Date().toISOString();
+  const runId = res.run_id || `run_${Math.random().toString(36).substring(2, 9)}`;
+  const workflowId = res.workflow_id || `agent-exec-${effectiveAgentId}-${runId.slice(0, 8)}`;
+
+  let status: RunStatus = 'accepted';
+  if (res.status === 'SUCCESS') status = 'success';
+  else if (res.status === 'ESCALATED') status = 'escalated';
+  else if (res.status === 'FAILED') status = 'failed';
+  else if (runMode === 'durable') status = 'running';
+
+  const toolCalls = configuredTools.map((t) => ({
+    name: t,
+    classification: (t.includes('refund') || t.includes('reverse') ? 'write' : 'read') as
+      | 'read'
+      | 'write',
+    status: 'allow' as const,
+    duration_ms: 32,
+  }));
+
+  const actualConfidence =
+    status !== 'running' &&
+    status !== 'accepted' &&
+    typeof res.output?.confidence === 'number'
+      ? (res.output.confidence as number)
+      : undefined;
+
+  return {
+    id: workflowId || runId,
+    workflow_id: workflowId,
+    run_id: runId,
+    agent_id: effectiveAgentId,
+    agent_name: agentName,
+    agent_version_number: agentVersionNumber,
+    status,
+    mode: runMode,
+    execution_mode: runMode,
+    created_at: nowIso,
+    duration_ms: res.duration_ms || (runMode === 'durable' ? 185 : 420),
+    input: parsedInput,
+    output: res.output,
+    structured_output: res.structured_output,
+    reason: res.reason || 'Agent initiated with deterministic governance envelope.',
+    confidence: actualConfidence,
+    reliability_threshold: threshold,
+    escalation: res.escalation,
+    tool_calls: toolCalls,
+    spans: [
+      {
+        id: `span-init-${runId}`,
+        name: 'Workflow Initialization',
+        type: 'workflow',
+        status: 'completed',
+        timestamp: nowIso,
+        duration_ms: 15,
+        details: { mode: runMode, execution_mode: runMode },
+      },
+      {
+        id: `span-rt-${runId}`,
+        name: runMode === 'durable' ? 'Temporal Durable Execution' : 'Realtime Execution Loop',
+        type: 'runtime',
+        status: runMode === 'durable' ? 'running' : 'completed',
+        timestamp: nowIso,
+        duration_ms: res.duration_ms || 120,
+        details: { engine: runMode === 'durable' ? 'Temporal IO' : 'Go Runtime' },
+      },
+    ],
+  };
+};
+
 export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
   isOpen,
   onClose,
@@ -22,19 +101,8 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
   const { addRun } = useRunsStore();
 
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
-  const [runMode, setRunMode] = useState<RunMode>('durable');
-  const [inputText, setInputText] = useState<string>(
-    JSON.stringify(
-      {
-        transaction_id: 'tx_escalate_18500',
-        amount: 18500,
-        claim: 'Customer disputed $18,500 wire charge exceeding limit',
-        merchant: 'Global Luxury Electronics',
-      },
-      null,
-      2
-    )
-  );
+  const [inputText, setInputText] = useState<string>('');
+  const [skipReliabilityOverride, setSkipReliabilityOverride] = useState<boolean | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Fetch available agents
@@ -45,9 +113,34 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
 
   const agents = agentsData?.agents || [];
   const effectiveAgentId = selectedAgentId || (agents.length > 0 ? agents[0].agent.id : '');
+  const selectedAgent = agents.find((a) => a.agent.id === effectiveAgentId);
+
+  const configuredModeRaw = (
+    selectedAgent?.latest_published_version?.configuration.execution_mode ||
+    selectedAgent?.draft_version?.configuration.execution_mode ||
+    'durable'
+  ).toLowerCase();
+  const effectiveRunMode: RunMode =
+    configuredModeRaw === 'realtime' || configuredModeRaw === 'autonomous'
+      ? 'realtime'
+      : 'durable';
+
+  const registrySkipReliability = Boolean(
+    (
+      selectedAgent?.latest_published_version?.configuration.guardrails as
+        | Record<string, unknown>
+        | undefined
+    )?.skip_reliability_check
+  );
+  const effectiveSkipReliability =
+    skipReliabilityOverride !== null ? skipReliabilityOverride : registrySkipReliability;
 
   const dispatchMutation = useMutation({
     mutationFn: async () => {
+      if (!inputText.trim()) {
+        throw new Error('Input payload is required and must be valid JSON');
+      }
+
       let parsedInput: Record<string, unknown> = {};
       try {
         parsedInput = JSON.parse(inputText);
@@ -55,11 +148,12 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
         throw new Error('Input payload must be valid JSON');
       }
 
+      if (!parsedInput || typeof parsedInput !== 'object' || Array.isArray(parsedInput)) {
+        throw new Error('Input payload must be a JSON object');
+      }
+
       // If user provided a nested { "input": { ... } } structure, unwrap it to prevent double nesting
       if (
-        parsedInput &&
-        typeof parsedInput === 'object' &&
-        !Array.isArray(parsedInput) &&
         'input' in parsedInput &&
         typeof parsedInput.input === 'object' &&
         parsedInput.input !== null &&
@@ -73,83 +167,31 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
         throw new Error('Please select an agent to execute');
       }
 
-      const agent = agents.find((a) => a.agent.id === effectiveAgentId);
+      const agent = selectedAgent;
+      const runMode = effectiveRunMode;
       const res = await runsApi.executeAgent(effectiveAgentId, {
         input: parsedInput,
         mode: runMode === 'durable' ? 'async' : 'sync',
         execution_mode: runMode,
+        skip_reliability_check: effectiveSkipReliability,
       });
 
-      const runId = res.run_id || `run_${Math.random().toString(36).substring(2, 9)}`;
-      const workflowId = res.workflow_id || `agent-exec-${selectedAgentId}-${runId.slice(0, 8)}`;
-
-      let status: RunStatus = 'accepted';
-      if (res.status === 'SUCCESS') status = 'success';
-      else if (res.status === 'ESCALATED') status = 'escalated';
-      else if (res.status === 'FAILED') status = 'failed';
-      else if (runMode === 'durable') status = 'running';
-
-      const toolCalls = (agent?.latest_published_version?.configuration.tools || ['get_transaction']).map(
-        (t) => ({
-          name: t,
-          classification: (t.includes('refund') || t.includes('reverse') ? 'write' : 'read') as
-            | 'read'
-            | 'write',
-          status: 'allow' as const,
-          duration_ms: 32,
-        })
+      return buildRunRecord(
+        effectiveAgentId,
+        agent?.agent.name || 'Governed Agent',
+        agent?.latest_published_version?.version_number || 1,
+        runMode,
+        agent?.latest_published_version?.configuration.reliability_threshold ?? 0.85,
+        agent?.latest_published_version?.configuration.tools || [],
+        parsedInput,
+        res
       );
-
-      const threshold =
-        agent?.latest_published_version?.configuration.reliability_threshold ?? 0.85;
-
-      const newRun: RunDetail = {
-        id: workflowId || runId,
-        workflow_id: workflowId,
-        run_id: runId,
-        agent_id: selectedAgentId,
-        agent_name: agent?.agent.name || 'Governed Agent',
-        agent_version_number: agent?.latest_published_version?.version_number || 1,
-        status,
-        mode: runMode,
-        execution_mode: runMode,
-        created_at: new Date().toISOString(),
-        duration_ms: res.duration_ms || (runMode === 'durable' ? 185 : 420),
-        input: parsedInput,
-        output: res.output,
-        structured_output: res.structured_output,
-        reason: res.reason || 'Agent initiated with deterministic governance envelope.',
-        confidence: res.escalation ? 0.62 : 0.89,
-        reliability_threshold: threshold,
-        escalation: res.escalation,
-        tool_calls: toolCalls,
-        spans: [
-          {
-            id: `span-init-${runId}`,
-            name: 'Workflow Initialization',
-            type: 'workflow',
-            status: 'completed',
-            timestamp: new Date().toISOString(),
-            duration_ms: 15,
-            details: { mode: runMode, execution_mode: runMode },
-          },
-          {
-            id: `span-rt-${runId}`,
-            name: runMode === 'durable' ? 'Temporal Durable Execution' : 'Realtime Execution Loop',
-            type: 'runtime',
-            status: runMode === 'durable' ? 'running' : 'completed',
-            timestamp: new Date().toISOString(),
-            duration_ms: res.duration_ms || 120,
-            details: { engine: runMode === 'durable' ? 'Temporal IO' : 'Go Runtime' },
-          },
-        ],
-      };
-
-      return newRun;
     },
     onSuccess: (newRun) => {
       addRun(newRun);
       queryClient.invalidateQueries({ queryKey: ['runs'] });
+      setInputText('');
+      setSkipReliabilityOverride(null);
       onRunCreated(newRun);
       onClose();
     },
@@ -204,7 +246,10 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
             <div className="relative">
               <select
                 value={effectiveAgentId}
-                onChange={(e) => setSelectedAgentId(e.target.value)}
+                onChange={(e) => {
+                  setSelectedAgentId(e.target.value);
+                  setSkipReliabilityOverride(null);
+                }}
                 className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white focus:border-blue-500 focus:outline-none appearance-none pr-8 cursor-pointer"
               >
                 {agents.map((item) => (
@@ -216,50 +261,50 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
               </select>
               <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
+            {selectedAgent && (
+              <div className="flex items-center justify-between text-[11px] text-gray-400 pt-1">
+                <span>
+                  Registry mode:{' '}
+                  <strong className="font-mono text-gray-200 uppercase">{effectiveRunMode}</strong>
+                  {' · '}τ ={' '}
+                  <strong className="font-mono text-gray-200">
+                    {(
+                      selectedAgent.latest_published_version?.configuration.reliability_threshold ??
+                      selectedAgent.draft_version?.configuration.reliability_threshold ??
+                      0.85
+                    ).toFixed(2)}
+                  </strong>
+                </span>
+                {effectiveSkipReliability ? (
+                  <span className="text-[10px] text-amber-400 font-medium">
+                    Reliability Test Skipped
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-emerald-400 font-medium">
+                    Reliability Gate Enforced
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Execution Mode */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="font-medium text-gray-300">Execution Mode</label>
-              <span className="text-[10px] text-emerald-400 font-medium">
-                🛡️ Reliability Gate Enforced (p ≥ τ)
-              </span>
+          {/* Skip Reliability Test Option */}
+          <label className="flex items-start gap-2.5 p-3 rounded-lg bg-[#141414] border border-[#2a2a2a] hover:border-[#3a3a3a] transition cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={effectiveSkipReliability}
+              onChange={(e) => setSkipReliabilityOverride(e.target.checked)}
+              className="mt-0.5 rounded border-[#333] bg-[#1c1c1c] text-amber-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            />
+            <div className="space-y-0.5">
+              <div className="text-xs font-medium text-gray-200">
+                Skip reliability test for this run
+              </div>
+              <div className="text-[11px] text-gray-400 leading-snug">
+                Bypass precedent similarity &amp; cold-start confidence checks (e.g. for action agents like Obsidian).
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setRunMode('durable')}
-                className={`p-3 border rounded-lg text-left transition ${
-                  runMode === 'durable'
-                    ? 'border-blue-500 bg-blue-950/30 text-white'
-                    : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
-                }`}
-              >
-                <div className="font-semibold text-xs text-blue-300">Durable (Temporal Workflow)</div>
-                <div className="text-[10px] text-gray-400 mt-1">
-                  Asynchronous orchestration with checkpoints and durable pauses during review.
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRunMode('realtime')}
-                className={`p-3 border rounded-lg text-left transition ${
-                  runMode === 'realtime'
-                    ? 'border-emerald-500 bg-emerald-950/30 text-white'
-                    : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
-                }`}
-              >
-                <div className="font-semibold text-xs text-emerald-300">Realtime (Go Runtime)</div>
-                <div className="text-[10px] text-gray-400 mt-1">
-                  Synchronous in-process execution with instant sub-second response times.
-                </div>
-              </button>
-            </div>
-            <span className="text-[10px] text-gray-500 block">
-              Active learning: 1-in-10 autonomous decisions (p ≥ τ) will be sampled for human calibration review.
-            </span>
-          </div>
+          </label>
 
           {/* Input JSON Editor */}
           <div className="space-y-1.5">
@@ -274,7 +319,8 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
               rows={7}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none resize-none"
+              placeholder='{\n  "transaction_id": "tx_1001",\n  "amount": 5000\n}'
+              className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white placeholder-gray-600 font-mono text-xs leading-relaxed focus:border-blue-500 focus:outline-none resize-none"
             />
           </div>
 

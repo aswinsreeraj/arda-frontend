@@ -28,6 +28,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '../agentApi';
 import type {
   AgentDetail,
+  AgentVersion,
   AgentConfiguration,
   ExecutionMode,
   ToolDefinition,
@@ -58,11 +59,23 @@ export interface GuardrailRule {
 interface ConfigInspectorProps {
   agentDetail: AgentDetail;
   onBackToList: () => void;
+  onDeleteAgent?: () => void;
+  isDeletingAgent?: boolean;
 }
+
+const parseGuardrailsFromConfig = (cfg?: AgentConfiguration): GuardrailRule[] => {
+  const raw = cfg?.guardrails;
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { rules?: unknown }).rules)) {
+    return (raw as { rules: GuardrailRule[] }).rules;
+  }
+  return [];
+};
 
 export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
   agentDetail,
   onBackToList,
+  onDeleteAgent,
+  isDeletingAgent = false,
 }) => {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
@@ -75,7 +88,26 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
   // State
   const activeVersion = agentDetail.latest_published_version;
   const draftVersion = agentDetail.draft_version;
-  const initialConfig = (draftVersion || activeVersion)?.configuration || {
+  const defaultVersion = draftVersion || activeVersion;
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(
+    defaultVersion?.id || null
+  );
+
+  // Query full version history for this agent
+  const { data: versionHistory = [], isLoading: isLoadingVersions } = useQuery<AgentVersion[]>({
+    queryKey: ['agent-versions', agentDetail.agent.id],
+    queryFn: ({ signal }) => agentApi.listVersions(agentDetail.agent.id, signal),
+  });
+
+  const selectedVersion = useMemo(() => {
+    if (selectedVersionId) {
+      const found = versionHistory.find((v) => v.id === selectedVersionId);
+      if (found) return found;
+    }
+    return defaultVersion || versionHistory[0] || null;
+  }, [selectedVersionId, versionHistory, defaultVersion]);
+
+  const initialConfig = (defaultVersion)?.configuration || {
     prompt_template: '',
     tools: [],
     reliability_threshold: 0.85,
@@ -93,6 +125,9 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
   const [selectedTools, setSelectedTools] = useState<string[]>(initialConfig.tools || []);
   const [threshold, setThreshold] = useState<number>(
     initialConfig.reliability_threshold ?? 0.85
+  );
+  const [skipReliabilityCheck, setSkipReliabilityCheck] = useState<boolean>(
+    Boolean((initialConfig.guardrails as Record<string, unknown> | undefined)?.skip_reliability_check)
   );
   const [strictSchema, setStrictSchema] = useState<boolean>(
     initialConfig.output_schema?.strict ?? true
@@ -203,52 +238,30 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
     );
   }, [activeLlmCredentials, llmProvider]);
 
-  // Parse Initial Guardrail Rules
-  const parseInitialGuardrails = (): GuardrailRule[] => {
-    const raw = initialConfig.guardrails;
-    if (raw && typeof raw === 'object') {
-      if (Array.isArray((raw as any).rules) && (raw as any).rules.length > 0) {
-        return (raw as any).rules as GuardrailRule[];
-      }
-    }
-    const maxAmountVal = typeof (raw as any)?.max_amount === 'number' ? (raw as any).max_amount : 10000;
-    return [
-      {
-        id: 'amount_limit',
-        name: 'Amount Limit Threshold',
-        type: 'parameter_bounds',
-        parameter: 'amount',
-        operator: '>',
-        thresholdValue: maxAmountVal,
-        description: `Escalate any transaction exceeding $${maxAmountVal.toLocaleString()} USD to human review automatically.`,
-        enforced: true,
-      },
-      {
-        id: 'chargeback_check',
-        name: 'High-Risk Prior Chargeback Check',
-        type: 'conditional_check',
-        parameter: 'prior_chargebacks',
-        operator: '>',
-        thresholdValue: 0,
-        description: 'Require review if account tenure < 30 days and prior chargebacks > 0.',
-        enforced: true,
-      },
-      {
-        id: 'destructive_ops',
-        name: 'Destructive Operation Filter',
-        type: 'destructive_operation',
-        parameter: 'command',
-        operator: 'contains',
-        thresholdValue: 'DROP, rm -rf, TRUNCATE',
-        description: 'Block shell execution of destructive commands (DROP TABLE, rm -rf, etc.).',
-        enforced: true,
-      },
-    ];
-  };
-
-  const [guardrailRules, setGuardrailRules] = useState<GuardrailRule[]>(parseInitialGuardrails);
+  const [guardrailRules, setGuardrailRules] = useState<GuardrailRule[]>(() =>
+    parseGuardrailsFromConfig(initialConfig)
+  );
   const [isGuardrailModalOpen, setIsGuardrailModalOpen] = useState(false);
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+
+  const loadVersionIntoForm = (version: AgentVersion) => {
+    const cfg = version.configuration;
+    setSelectedVersionId(version.id);
+    setPromptTemplate(cfg.prompt_template || '');
+    setExecutionMode(cfg.execution_mode || 'durable');
+    setSelectedTools(cfg.tools || []);
+    setThreshold(cfg.reliability_threshold ?? 0.85);
+    setSkipReliabilityCheck(
+      Boolean((cfg.guardrails as Record<string, unknown> | undefined)?.skip_reliability_check)
+    );
+    setStrictSchema(cfg.output_schema?.strict ?? true);
+    setSchemaText(JSON.stringify(cfg.output_schema?.schema || {}, null, 2));
+    setGuardrailRules(parseGuardrailsFromConfig(cfg));
+    setSelectedProvider(cfg.llm_config?.provider || null);
+    setSelectedModel(cfg.llm_config?.model || null);
+    setSelectedCredentialId(null);
+    setIsCustomModel(false);
+  };
 
   // Form state for Guardrail Modal
   const [ruleFormName, setRuleFormName] = useState('');
@@ -354,14 +367,6 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
     };
   }, [availableTools, selectedTools]);
 
-  // Projected escalation calculation
-  const projectedEscalation = useMemo(() => {
-    // Model escalation percentage monotonically increasing with threshold
-    // e.g. at 0.50 -> ~2.1%, at 0.82 -> ~8.9%, at 0.95 -> ~22.4%
-    const rate = Math.min(99.9, Math.max(0.5, Math.pow((threshold - 0.4) / 0.6, 2.2) * 28));
-    return rate.toFixed(1);
-  }, [threshold]);
-
   // Build current configuration object
   const getCurrentConfiguration = (): AgentConfiguration => {
     let parsedSchema: Record<string, unknown> | undefined = undefined;
@@ -387,6 +392,7 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
 
     const guardrailsPayload: Record<string, unknown> = {
       rules: guardrailRules,
+      skip_reliability_check: skipReliabilityCheck,
       ...(maxAmountVal !== undefined ? { max_amount: maxAmountVal } : {}),
     };
 
@@ -436,8 +442,12 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
         return agentApi.createVersion(agentDetail.agent.id, { configuration: cfg });
       }
     },
-    onSuccess: () => {
+    onSuccess: (saved) => {
+      if (saved?.id) {
+        setSelectedVersionId(saved.id);
+      }
       queryClient.invalidateQueries({ queryKey: ['agents'] });
+      queryClient.invalidateQueries({ queryKey: ['agent-versions', agentDetail.agent.id] });
       setFeedbackMsg({ type: 'success', text: 'Draft configuration saved successfully' });
       setTimeout(() => setFeedbackMsg(null), 4000);
     },
@@ -458,8 +468,12 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
       }
       return agentApi.publishVersion(agentDetail.agent.id, draftVersion.id);
     },
-    onSuccess: () => {
+    onSuccess: (published) => {
+      if (published?.id) {
+        setSelectedVersionId(published.id);
+      }
       queryClient.invalidateQueries({ queryKey: ['agents'] });
+      queryClient.invalidateQueries({ queryKey: ['agent-versions', agentDetail.agent.id] });
       setFeedbackMsg({
         type: 'success',
         text: 'Agent version published successfully! Changes are now active.',
@@ -478,7 +492,13 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
       return agentApi.deleteDraftVersion(agentDetail.agent.id, draftVersion.id);
     },
     onSuccess: () => {
+      if (activeVersion) {
+        loadVersionIntoForm(activeVersion);
+      } else {
+        setSelectedVersionId(null);
+      }
       queryClient.invalidateQueries({ queryKey: ['agents'] });
+      queryClient.invalidateQueries({ queryKey: ['agent-versions', agentDetail.agent.id] });
       setFeedbackMsg({ type: 'success', text: 'Draft discarded' });
       setTimeout(() => setFeedbackMsg(null), 4000);
     },
@@ -552,7 +572,21 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {canDeleteDraft && onDeleteAgent && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDeleteAgent}
+              isLoading={isDeletingAgent}
+              className="text-red-400 hover:text-red-300 border-red-900/50 hover:border-red-700/60"
+              icon={<Trash2 className="w-3.5 h-3.5" />}
+              title="Permanently delete this agent and all its versions"
+            >
+              Delete Agent
+            </Button>
+          )}
+
           {draftVersion && canDeleteDraft && (
             <Button
               variant="outline"
@@ -595,6 +629,28 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
           </Button>
         </div>
       </div>
+
+      {/* Historical Version Banner */}
+      {selectedVersion && selectedVersion.published && selectedVersion.id !== activeVersion?.id && (
+        <div className="p-3 rounded-lg text-xs flex items-center justify-between border bg-blue-950/30 border-blue-800/50 text-blue-200">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-blue-400 shrink-0" />
+            <span>
+              Viewing historical published version <strong className="font-mono">v{selectedVersion.version_number}</strong>. Click{' '}
+              <strong>Save Draft</strong> to create a new draft from this configuration.
+            </span>
+          </div>
+          {(draftVersion || activeVersion) && (
+            <button
+              type="button"
+              onClick={() => loadVersionIntoForm((draftVersion || activeVersion)!)}
+              className="text-blue-300 hover:text-white underline text-[11px] shrink-0 ml-3 cursor-pointer"
+            >
+              Return to {draftVersion ? `Draft v${draftVersion.version_number}` : `Active v${activeVersion?.version_number}`}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Feedback Alert */}
       {feedbackMsg && (
@@ -1065,12 +1121,12 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
             </div>
           </section>
 
-          {/* Section 5: Reliability Policy & Calibration Curve */}
+          {/* Section 5: Reliability Policy */}
           <section id="section-reliability" className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-blue-400" />
-                <span>Reliability policy & calibration curve</span>
+                <span>Reliability policy</span>
               </h3>
               <p className="text-xs text-gray-400">
                 Decisions with calibrated confidence below the threshold τ are escalated to the human
@@ -1078,99 +1134,77 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
               </p>
             </div>
 
-            <div className="border border-[#282828] rounded-lg p-5 bg-[#181818] space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                {/* Slider control */}
-                <div className="md:col-span-7 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-medium text-gray-300">
-                      Confidence threshold τ
-                    </label>
-                    <span className="font-mono text-sm px-2.5 py-0.5 rounded bg-[#222] border border-[#333] text-blue-400 font-semibold">
-                      {threshold.toFixed(2)}
+            <div className="border border-[#282828] rounded-lg p-5 bg-[#181818] space-y-5">
+              {/* Skip Reliability Gate Toggle */}
+              <div className="flex items-start justify-between gap-4 pb-4 border-b border-[#262626]">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-white">
+                      Skip reliability gate (bypass precedent check)
                     </span>
+                    {skipReliabilityCheck && (
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-300 border border-amber-800/50">
+                        BYPASSED
+                      </span>
+                    )}
                   </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="0.99"
-                    step="0.01"
-                    value={threshold}
-                    onChange={(e) => setThreshold(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-[#2a2a2a] rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                  <div className="flex justify-between text-[11px] font-mono text-gray-500">
-                    <span>0.50 · fewer escalations</span>
-                    <span>0.99 · more review</span>
-                  </div>
-                  <div className="p-3 bg-[#1e1e1e] rounded border border-[#2b2b2b] text-[11px] text-gray-400 space-y-1">
-                    <div className="font-medium text-gray-300 flex items-center space-x-1">
-                      <Shield className="w-3.5 h-3.5 text-blue-400" />
-                      <span>What confidence means:</span>
-                    </div>
-                    <p className="leading-relaxed">
-                      The calibrated probability that the agent's decision matches what a human
-                      reviewer would decide. It's recalibrated from every reviewer verdict, so a
-                      score of {threshold.toFixed(2)} means roughly{' '}
-                      {(threshold * 100).toFixed(0)}% agreement on similar past cases.
-                    </p>
-                  </div>
+                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                    When enabled, this agent completes without querying past human-reviewed precedents
+                    (useful for action/assistant agents like Obsidian that do not require cold-start precedent verification).
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={skipReliabilityCheck}
+                  onClick={() => setSkipReliabilityCheck((prev) => !prev)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                    skipReliabilityCheck ? 'bg-amber-500' : 'bg-[#333]'
+                  }`}
+                  title="Toggle skipping reliability gate"
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${
+                      skipReliabilityCheck ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
 
-                {/* Projected Escalation Chart Preview */}
-                <div className="md:col-span-5 bg-[#141414] border border-[#2a2a2a] rounded-lg p-4 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold block">
-                      Projected escalation rate
-                    </span>
-                    <div className="flex items-baseline space-x-1.5 mt-1">
-                      <span className="text-2xl font-bold font-mono text-amber-400">
-                        {projectedEscalation}%
-                      </span>
-                      <span className="text-xs text-gray-400 font-mono">
-                        of decisions at τ {threshold.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* SVG Curve */}
-                  <div className="relative w-full h-24 my-2">
-                    <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 200 80">
-                      {/* Grid lines */}
-                      <line stroke="#222" strokeDasharray="2,2" x1="0" x2="200" y1="20" y2="20" />
-                      <line stroke="#222" strokeDasharray="2,2" x1="0" x2="200" y1="50" y2="50" />
-                      <line stroke="#333" x1="0" x2="200" y1="78" y2="78" />
-                      {/* Escalation curve */}
-                      <path
-                        d="M 0,75 Q 120,70 160,35 T 200,10"
-                        fill="none"
-                        stroke="#60a5fa"
-                        strokeWidth="2"
-                      />
-                      {/* Current point based on threshold */}
-                      {(() => {
-                        const x = ((threshold - 0.5) / 0.49) * 180 + 10;
-                        const y = 75 - (Math.pow((threshold - 0.5) / 0.49, 1.8) * 60);
-                        return (
-                          <>
-                            <line
-                              stroke="#f59e0b"
-                              strokeDasharray="2,2"
-                              strokeWidth="1.5"
-                              x1={x}
-                              x2={x}
-                              y1="0"
-                              y2="78"
-                            />
-                            <circle cx={x} cy={y} fill="#f59e0b" r="3.5" />
-                          </>
-                        );
-                      })()}
-                    </svg>
-                  </div>
-                  <span className="text-[10px] text-gray-500 font-mono">
-                    Based on seed examples and the last 30 days of runs.
+              <div className={`space-y-3 transition-opacity ${skipReliabilityCheck ? 'opacity-45 pointer-events-none' : ''}`}>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-gray-300">
+                    Confidence threshold τ
+                  </label>
+                  <span className="font-mono text-sm px-2.5 py-0.5 rounded bg-[#222] border border-[#333] text-blue-400 font-semibold">
+                    {threshold.toFixed(2)}
                   </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="0.99"
+                  step="0.01"
+                  disabled={skipReliabilityCheck}
+                  value={threshold}
+                  onChange={(e) => setThreshold(parseFloat(e.target.value))}
+                  className="w-full h-1.5 bg-[#2a2a2a] rounded-lg appearance-none cursor-pointer accent-blue-600"
+                />
+                <div className="flex justify-between text-[11px] font-mono text-gray-500">
+                  <span>0.50 · fewer escalations</span>
+                  <span>0.99 · more review</span>
+                </div>
+                <div className="p-3 bg-[#1e1e1e] rounded border border-[#2b2b2b] text-[11px] text-gray-400 space-y-1">
+                  <div className="font-medium text-gray-300 flex items-center space-x-1">
+                    <Shield className="w-3.5 h-3.5 text-blue-400" />
+                    <span>What confidence means:</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    The calibrated probability that the agent&apos;s decision matches what a human
+                    reviewer would decide. It is recalibrated from reviewer verdicts, so a
+                    threshold of {threshold.toFixed(2)} requires at least{' '}
+                    {(threshold * 100).toFixed(0)}% calibrated confidence for autonomous execution.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1323,14 +1357,14 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
           <div className="p-3.5 bg-[#181818] border border-[#282828] rounded-lg space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">
-                Version history
+                Version history ({versionHistory.length})
               </span>
               {!draftVersion && (
                 <button
                   type="button"
                   onClick={() => saveDraftMutation.mutate()}
-                  className="text-blue-400 hover:text-blue-300 text-[11px] flex items-center gap-1 font-medium transition"
-                  title="Create new draft from active version"
+                  className="text-blue-400 hover:text-blue-300 text-[11px] flex items-center gap-1 font-medium transition cursor-pointer"
+                  title="Create new draft from currently loaded configuration"
                 >
                   <Plus className="w-3 h-3" />
                   <span>New draft</span>
@@ -1338,49 +1372,75 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
               )}
             </div>
 
-            <div className="space-y-4">
-              {/* Draft Item */}
-              {draftVersion ? (
-                <div className="border-l-2 border-amber-500 pl-3 space-y-1">
-                  <div className="flex items-center space-x-1.5">
-                    <span className="text-xs font-semibold text-white">Draft</span>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                      unpublished
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-gray-400 font-mono">Editable · autosaved</div>
-                </div>
-              ) : (
-                <div className="border-l-2 border-gray-700 pl-3 space-y-1">
-                  <div className="text-[11px] text-gray-500 italic">No unpublished draft</div>
-                </div>
-              )}
+            {isLoadingVersions ? (
+              <div className="space-y-2 animate-pulse">
+                <div className="h-12 bg-[#222] rounded" />
+                <div className="h-12 bg-[#222] rounded" />
+              </div>
+            ) : versionHistory.length === 0 ? (
+              <div className="border-l-2 border-gray-700 pl-3 py-1">
+                <div className="text-[11px] text-gray-500 italic">No versions recorded yet</div>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[380px] overflow-y-auto pr-0.5">
+                {versionHistory.map((ver) => {
+                  const isDraft = !ver.published;
+                  const isActivePublished = activeVersion?.id === ver.id;
+                  const isSelected = selectedVersion?.id === ver.id;
 
-              {/* Active Published Version */}
-              {activeVersion ? (
-                <div className="border-l-2 border-emerald-500 pl-3 space-y-1">
-                  <div className="flex items-center space-x-1.5 font-mono text-xs">
-                    <span className="font-semibold text-white">v{activeVersion.version_number}</span>
-                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                      active
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-gray-400 leading-tight">
-                    Mode: {activeVersion.configuration.execution_mode} · τ:{' '}
-                    {activeVersion.configuration.reliability_threshold.toFixed(2)}
-                  </div>
-                  <div className="text-[10px] text-gray-500 font-mono">
-                    {new Date(
-                      activeVersion.published_at || activeVersion.created_at
-                    ).toLocaleDateString()}
-                  </div>
-                </div>
-              ) : (
-                <div className="border-l-2 border-gray-700 pl-3 space-y-1">
-                  <div className="text-[11px] text-gray-500 italic">No version published yet</div>
-                </div>
-              )}
-            </div>
+                  return (
+                    <button
+                      key={ver.id}
+                      type="button"
+                      onClick={() => loadVersionIntoForm(ver)}
+                      className={`w-full text-left pl-3 pr-2.5 py-2 rounded-r-md border-l-2 transition cursor-pointer space-y-1 ${
+                        isDraft
+                          ? 'border-l-amber-500'
+                          : isActivePublished
+                            ? 'border-l-emerald-500'
+                            : 'border-l-neutral-600'
+                      } ${
+                        isSelected
+                          ? 'bg-blue-950/35 ring-1 ring-inset ring-blue-500/40'
+                          : 'bg-[#141414]/60 hover:bg-[#1e1e1e]'
+                      }`}
+                      title={`Load v${ver.version_number} configuration into inspector`}
+                    >
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center space-x-1.5 font-mono text-xs">
+                          <span className="font-semibold text-white">v{ver.version_number}</span>
+                          {isDraft ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 whitespace-nowrap">
+                              draft
+                            </span>
+                          ) : isActivePublished ? (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 whitespace-nowrap">
+                              active
+                            </span>
+                          ) : (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-700/40 text-neutral-300 border border-neutral-600/50 whitespace-nowrap">
+                              published
+                            </span>
+                          )}
+                        </div>
+                        {isSelected && (
+                          <span className="text-[9px] font-mono text-blue-400 uppercase font-semibold">
+                            viewing
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-gray-400 leading-tight truncate">
+                        Mode: {ver.configuration.execution_mode} · τ:{' '}
+                        {(ver.configuration.reliability_threshold ?? 0.85).toFixed(2)}
+                      </div>
+                      <div className="text-[10px] text-gray-500 font-mono">
+                        {new Date(ver.published_at || ver.created_at).toLocaleString()}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </aside>
       </div>

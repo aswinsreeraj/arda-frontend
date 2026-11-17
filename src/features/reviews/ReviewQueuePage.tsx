@@ -749,16 +749,18 @@ export const ReviewQueuePage: React.FC = () => {
                         <Copy className="w-2.5 h-2.5" />
                         <span>Copy</span>
                       </button>
-                      <a
-                        href={`http://localhost:8233/namespaces/default/workflows/${encodeURIComponent(caseDetail.execution_id)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 hover:underline"
-                        title="Inspect in Temporal UI"
-                      >
-                        <ExternalLink className="w-2.5 h-2.5" />
-                        <span>Temporal</span>
-                      </a>
+                      {caseDetail.execution_mode === 'durable' && (
+                        <a
+                          href={`http://localhost:8233/namespaces/default/workflows/${encodeURIComponent(caseDetail.execution_id)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 hover:underline"
+                          title="Inspect in Temporal UI"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>Temporal</span>
+                        </a>
+                      )}
                     </div>
                   </div>
                 )}
@@ -989,11 +991,28 @@ export const ReviewQueuePage: React.FC = () => {
                       <span className="text-[11px] text-slate-500 dark:text-neutral-400">
                         Stated rationale
                       </span>
-                      <p className="text-xs text-slate-700 dark:text-neutral-300 leading-relaxed font-sans bg-slate-50 dark:bg-[#131313] p-2.5 rounded border border-slate-200 dark:border-[#222]">
-                        {caseDetail.frozen_evidence?.agent_reasoning ||
-                          caseDetail.escalation_reasons?.[0] ||
-                          'No explicit rationale string provided by runtime.'}
-                      </p>
+                      {(() => {
+                        const rawReasoning = caseDetail.frozen_evidence?.agent_reasoning?.trim() || '';
+                        const isReliabilityGateMessage =
+                          /^(reliability threshold not met|active learning calibration sample|confidence\s+[\d.]+\s+below)/i.test(
+                            rawReasoning
+                          );
+                        const agentRationale =
+                          rawReasoning && !isReliabilityGateMessage ? rawReasoning : '';
+                        return (
+                          <p
+                            className={clsx(
+                              'text-xs leading-relaxed font-sans bg-slate-50 dark:bg-[#131313] p-2.5 rounded border border-slate-200 dark:border-[#222]',
+                              agentRationale
+                                ? 'text-slate-700 dark:text-neutral-300'
+                                : 'italic text-slate-500 dark:text-neutral-500'
+                            )}
+                          >
+                            {agentRationale ||
+                              'No case rationale was provided by the agent for this decision.'}
+                          </p>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -1088,6 +1107,13 @@ export const ReviewQueuePage: React.FC = () => {
                             <span>1.00</span>
                           </div>
                         </div>
+
+                        {caseDetail.escalation_reasons && caseDetail.escalation_reasons.length > 0 && (
+                          <div className="p-2 rounded bg-[#131313] border border-[#222] text-[11px] font-mono text-amber-300/90 leading-relaxed">
+                            <span className="text-neutral-500">Escalation trigger: </span>
+                            {caseDetail.escalation_reasons[0]}
+                          </div>
+                        )}
                       </div>
                     )}
 

@@ -464,16 +464,19 @@ export const AuditCaseModal: React.FC<AuditCaseModalProps> = ({ isOpen, caseId, 
                 {activeTab === 'context' && (
                   <div className="space-y-3 text-xs">
                     {/* Agent Reasoning */}
-                    {caseDetail.frozen_evidence?.agent_reasoning && (
-                      <div className="p-3 rounded bg-[#111] border border-[#222] space-y-1">
-                        <div className="text-[10px] font-mono uppercase text-neutral-500">
-                          Agent Chain-of-Thought / Reasoning
+                    {caseDetail.frozen_evidence?.agent_reasoning &&
+                      !/^(reliability threshold not met|active learning calibration sample|confidence\s+[\d.]+\s+below)/i.test(
+                        caseDetail.frozen_evidence.agent_reasoning.trim()
+                      ) && (
+                        <div className="p-3 rounded bg-[#111] border border-[#222] space-y-1">
+                          <div className="text-[10px] font-mono uppercase text-neutral-500">
+                            Agent Chain-of-Thought / Reasoning
+                          </div>
+                          <p className="text-neutral-300 leading-relaxed text-xs">
+                            {caseDetail.frozen_evidence.agent_reasoning}
+                          </p>
                         </div>
-                        <p className="text-neutral-300 leading-relaxed text-xs">
-                          {caseDetail.frozen_evidence.agent_reasoning}
-                        </p>
-                      </div>
-                    )}
+                      )}
 
                     {/* Nearest Reference Neighbors */}
                     {caseDetail.frozen_evidence?.neighbors &&

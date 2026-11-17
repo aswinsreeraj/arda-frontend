@@ -32,7 +32,7 @@ export interface AuditEventItem {
   agent_id: string;
   agent_name: string;
   source: AuditSource;
-  action_type: 'tool_execution' | 'human_resolution' | 'escalation_event';
+  action_type: 'tool_execution' | 'human_resolution' | 'escalation_event' | 'agent_execution';
   decision: string;
   outcome: AuditOutcome;
   confidence?: number;
@@ -47,6 +47,17 @@ export interface AuditEventItem {
   reviewer_id?: string;
   case_id?: string;
   duration_ms?: number;
+  execution_mode?: string;
+  agent_reasoning?: string;
+  case_input?: Record<string, unknown>;
+  case_output?: Record<string, unknown>;
+  reliability_skipped?: boolean;
+  tool_calls?: Array<{
+    name: string;
+    classification?: 'read' | 'write';
+    status?: string;
+    duration_ms?: number;
+  }>;
 }
 
 export interface AuditBlockProof {

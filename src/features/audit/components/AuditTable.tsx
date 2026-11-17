@@ -20,12 +20,14 @@ interface AuditTableProps {
   items: AuditEventItem[];
   onInspectIntegrity: (item: AuditEventItem) => void;
   onViewCaseDetails?: (caseId: string) => void;
+  onViewAutonomousCase?: (item: AuditEventItem) => void;
 }
 
 export const AuditTable: React.FC<AuditTableProps> = ({
   items,
   onInspectIntegrity,
   onViewCaseDetails,
+  onViewAutonomousCase,
 }) => {
   const [expandedSeq, setExpandedSeq] = useState<number | null>(null);
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
@@ -226,12 +228,25 @@ export const AuditTable: React.FC<AuditTableProps> = ({
                                 <span>View Review Case</span>
                               </button>
                             )}
+                            {!item.case_id && item.action_type === 'agent_execution' && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onViewAutonomousCase?.(item);
+                                }}
+                                className="px-2.5 py-1.5 rounded bg-[#12241b] hover:bg-[#193326] text-emerald-300 hover:text-white text-xs border border-[#214231] flex items-center space-x-1.5 transition-colors cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>View Case Details</span>
+                              </button>
+                            )}
                           </div>
                         </div>
 
                         {/* Human Review Decision Banner */}
                         {item.case_id && (
-                          <div className="p-3.5 rounded-lg bg-[#141b24] border border-[#1e3044] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="p-3.5 rounded-lg bg-[#141b24] border border-[#1e3044] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 whitespace-normal">
                             <div className="flex items-start space-x-3">
                               <UserCheck className="w-5 h-5 text-sky-400 mt-0.5 shrink-0" />
                               <div className="space-y-1">
@@ -259,6 +274,55 @@ export const AuditTable: React.FC<AuditTableProps> = ({
                                 onViewCaseDetails?.(item.case_id!);
                               }}
                               className="px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium flex items-center space-x-1.5 shadow-sm transition-colors cursor-pointer shrink-0"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Inspect Case Details</span>
+                              <ChevronRight className="w-3 h-3 ml-0.5" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Autonomous Execution Case Banner */}
+                        {!item.case_id && item.action_type === 'agent_execution' && (
+                          <div className="p-3.5 rounded-lg bg-[#121d17] border border-[#1d3528] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 whitespace-normal">
+                            <div className="flex items-start space-x-3 min-w-0">
+                              <Bot className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                              <div className="space-y-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-xs font-semibold text-white">
+                                    Autonomous Execution Case:
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                                    {item.outcome}
+                                  </span>
+                                  {item.execution_mode && (
+                                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono uppercase bg-neutral-800 text-neutral-300 border border-neutral-700">
+                                      {item.execution_mode}
+                                    </span>
+                                  )}
+                                  <span className="text-[11px] font-mono text-neutral-400 truncate max-w-[260px]">
+                                    {item.execution_id}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-neutral-300">
+                                  <span className="text-neutral-400 font-medium">Autonomous Decision: </span>
+                                  <span className="text-white font-medium">{item.decision}</span>
+                                </div>
+                                {item.agent_reasoning && (
+                                  <div className="text-xs text-neutral-300 leading-relaxed">
+                                    <span className="text-neutral-400 font-medium">Case Description: </span>
+                                    <span>{item.agent_reasoning}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewAutonomousCase?.(item);
+                              }}
+                              className="px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center space-x-1.5 shadow-sm transition-colors cursor-pointer shrink-0"
                             >
                               <Eye className="w-3.5 h-3.5" />
                               <span>Inspect Case Details</span>

@@ -5,8 +5,102 @@ import type {
   BackendToolAuditEvent,
   ChainVerificationResult,
 } from './types';
-import type { ListReviewsResponse } from '@/features/reviews/types';
-import type { Agent } from '@/features/agents/types';
+import type { ListReviewsResponse, ReviewCaseDetail } from '@/features/reviews/types';
+import { reviewApi } from '@/features/reviews/reviewApi';
+import { agentApi } from '@/features/agents/agentApi';
+import { runsApi } from '@/features/runs/runsApi';
+import type { RunDetail } from '@/features/runs/types';
+
+function extractAutonomousDecisionSummary(run: RunDetail): {
+  decisionText: string;
+  outcome: AuditEventItem['outcome'];
+  reasoning: string;
+} {
+  const out = (run.output || {}) as Record<string, unknown>;
+  const rawContent =
+    typeof out.content === 'string'
+      ? out.content
+      : typeof out.response === 'string'
+        ? out.response
+        : '';
+
+  let parsedObj: Record<string, unknown> | null = null;
+  if (rawContent.trim()) {
+    let cleaned = rawContent.trim();
+    if (cleaned.startsWith('```')) {
+      const lines = cleaned.split('\n');
+      if (lines.length >= 2) cleaned = lines.slice(1).join('\n');
+      const lastFence = cleaned.lastIndexOf('```');
+      if (lastFence !== -1) cleaned = cleaned.slice(0, lastFence);
+      cleaned = cleaned.trim();
+    }
+    if (cleaned.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(cleaned);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          parsedObj = parsed as Record<string, unknown>;
+        }
+      } catch {
+        // Non-JSON text output
+      }
+    }
+  }
+
+  const rawDecision =
+    (typeof parsedObj?.decision === 'string' && parsedObj.decision) ||
+    (typeof parsedObj?.verdict === 'string' && parsedObj.verdict) ||
+    (typeof parsedObj?.status === 'string' && parsedObj.status) ||
+    '';
+  const rawReason =
+    (typeof parsedObj?.reason === 'string' && parsedObj.reason) ||
+    (typeof parsedObj?.summary === 'string' && parsedObj.summary) ||
+    (typeof parsedObj?.rationale === 'string' && parsedObj.rationale) ||
+    '';
+
+  const reasoning =
+    rawReason ||
+    rawContent.trim() ||
+    run.reason ||
+    'Autonomous execution completed and satisfied reliability policy.';
+
+  const upperDec = rawDecision.trim().toUpperCase();
+  const isSkipped = Boolean(out.reliability_skipped);
+
+  if (upperDec === 'REJECT' || upperDec === 'DENY') {
+    return {
+      decisionText: rawReason
+        ? `Autonomous Decision: REJECT · ${rawReason}`
+        : 'Autonomous Decision: REJECT',
+      outcome: 'rejected',
+      reasoning,
+    };
+  }
+  if (upperDec === 'APPROVE' || upperDec === 'ALLOW') {
+    return {
+      decisionText: rawReason
+        ? `Autonomous Decision: APPROVE · ${rawReason}`
+        : 'Autonomous Decision: APPROVE',
+      outcome: 'allowed',
+      reasoning,
+    };
+  }
+  if (rawReason) {
+    return {
+      decisionText: isSkipped
+        ? `Autonomous Execution (Reliability Skipped): ${rawReason}`
+        : `Autonomous Execution: ${rawReason}`,
+      outcome: 'allowed',
+      reasoning,
+    };
+  }
+  return {
+    decisionText: isSkipped
+      ? 'Autonomous Execution Succeeded (Reliability Skipped)'
+      : 'Autonomous Execution Succeeded',
+    outcome: 'allowed',
+    reasoning,
+  };
+}
 
 /**
  * Computes a standard SHA-256 hex digest using Web Crypto API.
@@ -71,23 +165,27 @@ export const auditApi = {
     // 3. Fetch agents map for human-readable agent names
     const agentMap = new Map<string, string>();
     try {
-      const resp = await apiClient.get<Agent[]>('/agents', { signal });
-      if (Array.isArray(resp.data)) {
-        for (const ag of resp.data) {
-          agentMap.set(ag.id, ag.name);
-        }
+      const agentsResp = await agentApi.listAgents(undefined, signal);
+      for (const item of agentsResp.agents || []) {
+        agentMap.set(item.agent.id, item.agent.name);
       }
     } catch {
       // Fallback
+    }
+
+    // 4. Fetch completed runs so autonomous SUCCESS executions are included in the audit trail
+    let allRuns: RunDetail[] = [];
+    try {
+      allRuns = await runsApi.fetchRuns(signal);
+    } catch {
+      // Runs list may be unavailable
     }
 
     // Convert live backend tool events
     const liveItems: Omit<AuditEventItem, 'seq' | 'prev_hash' | 'hash'>[] = [];
 
     for (const te of backendToolEvents) {
-      const agentName =
-        agentMap.get(te.agent_id) ||
-        (te.agent_id.includes('23b01f35') ? 'Transaction Reversal Agent' : 'Dispute Investigator');
+      const agentName = agentMap.get(te.agent_id) || `Agent ${te.agent_id.slice(0, 8)}`;
 
       let decisionText = `${te.allowed ? 'Allow' : 'Deny'} ${te.tool_name}`;
       if (!te.allowed && te.denial_reason) {
@@ -107,7 +205,7 @@ export const auditApi = {
         action_type: 'tool_execution',
         decision: decisionText,
         outcome: te.allowed ? 'allowed' : 'denied',
-        confidence: te.allowed ? 0.96 : 0.45,
+        confidence: undefined,
         tool_name: te.tool_name,
         classification: te.classification,
         sanitized_arguments: te.sanitized_arguments,
@@ -116,38 +214,98 @@ export const auditApi = {
       });
     }
 
+    // Convert autonomous SUCCESS agent executions
+    for (const run of allRuns) {
+      if (run.status !== 'success') continue;
+      const execId = run.workflow_id || run.id;
+      const { decisionText, outcome, reasoning } = extractAutonomousDecisionSummary(run);
+      const actualConfidence =
+        typeof run.confidence === 'number'
+          ? run.confidence
+          : typeof run.output?.confidence === 'number'
+            ? (run.output.confidence as number)
+            : undefined;
+
+      liveItems.push({
+        id: `exec-${execId}`,
+        timestamp: run.created_at,
+        execution_id: execId,
+        agent_id: run.agent_id,
+        agent_name: agentMap.get(run.agent_id) || run.agent_name || `Agent ${run.agent_id.slice(0, 8)}`,
+        source: 'agent',
+        action_type: 'agent_execution',
+        decision: decisionText,
+        outcome,
+        confidence: actualConfidence,
+        reliability_threshold: run.reliability_threshold,
+        duration_ms: run.duration_ms,
+        execution_mode: run.mode || run.execution_mode,
+        agent_reasoning: reasoning,
+        case_input: run.input,
+        case_output: run.output,
+        reliability_skipped: Boolean(run.output?.reliability_skipped),
+        tool_calls: (run.tool_calls || []).map((tc) => ({
+          name: tc.name,
+          classification: tc.classification,
+          status: tc.status,
+          duration_ms: tc.duration_ms,
+        })),
+      });
+    }
+
     // Convert processed human review cases (only adjudicated cases belong in the audit trail)
-    for (const rc of reviewCases) {
-      if (rc.status !== 'RESOLVED') {
-        continue;
-      }
+    const resolvedCases = reviewCases.filter((rc) => rc.status === 'RESOLVED');
+    const resolvedDetails = await Promise.all(
+      resolvedCases.map(async (rc) => {
+        try {
+          return await reviewApi.getReviewCase(rc.case_id, signal);
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    for (let i = 0; i < resolvedCases.length; i++) {
+      const rc = resolvedCases[i];
+      const detail: ReviewCaseDetail | null = resolvedDetails[i];
+      const resolution = detail?.resolution;
+      const finalDec = (resolution?.final_decision || rc.proposed_decision || 'Adjudicated').trim();
+      const resType = (resolution?.decision || '').toLowerCase();
 
       let outcome: AuditEventItem['outcome'] = 'approved';
-      const decUpper = (rc.proposed_decision || '').toUpperCase();
-      if (decUpper.includes('REJECT') || decUpper.includes('DENY')) {
-        outcome = 'denied';
-      } else if (decUpper.includes('OVERRIDE') || decUpper.includes('EXCEPTION')) {
+      const decUpper = finalDec.toUpperCase();
+      if (resType === 'override') {
         outcome = 'overridden';
+      } else if (decUpper.includes('REJECT') || decUpper.includes('DENY')) {
+        outcome = 'rejected';
       } else {
         outcome = 'approved';
       }
 
-      let decisionDesc = rc.proposed_decision || 'Adjudicated';
-      if (rc.escalation_reasons && rc.escalation_reasons.length > 0) {
-        decisionDesc = `${rc.proposed_decision || 'Adjudicated'}: ${rc.escalation_reasons[0]}`;
+      let decisionDesc =
+        resType === 'override'
+          ? `Override → ${finalDec}`
+          : `Accepted ${finalDec}`;
+      if (resolution?.resolution_reason) {
+        decisionDesc = `${decisionDesc}: ${resolution.resolution_reason}`;
+      } else if (rc.escalation_reasons && rc.escalation_reasons.length > 0) {
+        decisionDesc = `${decisionDesc}: ${rc.escalation_reasons[0]}`;
       }
 
       liveItems.push({
         id: rc.case_id,
-        timestamp: rc.created_at,
+        timestamp: resolution?.resolved_at || rc.created_at,
         execution_id: rc.execution_id,
         agent_id: rc.agent_id,
-        agent_name: rc.agent_name || agentMap.get(rc.agent_id) || 'Dispute Investigator',
+        agent_name: agentMap.get(rc.agent_id) || rc.agent_name || `Agent ${rc.agent_id.slice(0, 8)}`,
         source: 'human',
         action_type: 'human_resolution',
         decision: decisionDesc,
         outcome,
-        confidence: rc.confidence,
+        confidence: typeof rc.confidence === 'number' ? rc.confidence : undefined,
+        reliability_threshold: detail?.reliability_threshold,
+        audit_record_id: resolution?.audit_record_id,
+        reviewer_id: resolution?.reviewer_id,
         case_id: rc.case_id,
       });
     }

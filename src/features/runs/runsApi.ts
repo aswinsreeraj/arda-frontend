@@ -41,6 +41,85 @@ function mapTemporalStatus(status: string): RunStatus {
   }
 }
 
+const fetchCompletedWorkflowResult = async (
+  workflowId: string,
+  signal?: AbortSignal
+): Promise<{
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  confidence?: number;
+  reason?: string;
+} | null> => {
+  try {
+    const resp = await fetch(
+      `/temporal-api/v1/namespaces/default/workflows/${encodeURIComponent(workflowId)}/history`,
+      { signal }
+    );
+    if (!resp.ok) return null;
+    const data = (await resp.json()) as {
+      history?: {
+        events?: Array<{
+          eventType?: string;
+          workflowExecutionStartedEventAttributes?: {
+            input?: {
+              payloads?: Array<{ data?: string }>;
+            };
+          };
+          workflowExecutionCompletedEventAttributes?: {
+            result?: {
+              payloads?: Array<{ data?: string }>;
+            };
+          };
+        }>;
+      };
+    };
+
+    let originalInput: Record<string, unknown> | undefined;
+    const startedEv = data.history?.events?.find(
+      (e) => e.eventType === 'EVENT_TYPE_WORKFLOW_EXECUTION_STARTED'
+    );
+    const startB64 = startedEv?.workflowExecutionStartedEventAttributes?.input?.payloads?.[0]?.data;
+    if (startB64) {
+      try {
+        const startDecoded = JSON.parse(atob(startB64)) as {
+          execution_input?: Record<string, unknown>;
+        };
+        if (startDecoded.execution_input && typeof startDecoded.execution_input === 'object') {
+          const cleaned: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(startDecoded.execution_input)) {
+            if (k !== '__skip_reliability_check') cleaned[k] = v;
+          }
+          originalInput = cleaned;
+        }
+      } catch {
+        // ignore decode errors
+      }
+    }
+
+    const completedEv = data.history?.events?.find(
+      (e) => e.eventType === 'EVENT_TYPE_WORKFLOW_EXECUTION_COMPLETED'
+    );
+    const b64 = completedEv?.workflowExecutionCompletedEventAttributes?.result?.payloads?.[0]?.data;
+    if (!b64) {
+      return originalInput ? { input: originalInput } : null;
+    }
+    const decoded = JSON.parse(atob(b64)) as {
+      output?: Record<string, unknown>;
+      reason?: string;
+    };
+    const out = decoded.output;
+    const conf = typeof out?.confidence === 'number' ? (out.confidence as number) : undefined;
+    return {
+      input: originalInput,
+      output: out,
+      confidence: conf,
+      reason: decoded.reason,
+    };
+  } catch {
+    return null;
+  }
+};
+
 export const runsApi = {
   /**
    * Dispatches an agent execution.
@@ -218,8 +297,8 @@ export const runsApi = {
             c.status === 'RESOLVED'
               ? `Escalated to human review & resolved (${finalDecision || 'Approved'}): ${resolutionReason || 'Adjudicated by reviewer'}`
               : `Escalated to human review: ${reasonsText}`,
-          confidence: c.confidence || 0.62,
-          reliability_threshold: 0.85,
+          confidence: typeof c.confidence === 'number' ? c.confidence : undefined,
+          reliability_threshold: detail?.reliability_threshold ?? 0.85,
           escalation: {
             case_id: caseId,
             reason: reasonsText,
@@ -278,80 +357,116 @@ export const runsApi = {
         let cacheUpdated = false;
 
         // Reconcile and synchronize status for each local run
-        localRuns = localRuns.map((r) => {
-          const matched = tMap.get(r.workflow_id) || tMap.get(r.run_id) || tMap.get(r.id);
-          const reviewMatch =
-            revMap.get(r.workflow_id) ||
-            revMap.get(r.id) ||
-            revMap.get(r.run_id) ||
-            (r.escalation?.case_id ? revMap.get(r.escalation.case_id) : undefined);
+        localRuns = await Promise.all(
+          localRuns.map(async (r) => {
+            const matched = tMap.get(r.workflow_id) || tMap.get(r.run_id) || tMap.get(r.id);
+            const reviewMatch =
+              revMap.get(r.workflow_id) ||
+              revMap.get(r.id) ||
+              revMap.get(r.run_id) ||
+              (r.escalation?.case_id ? revMap.get(r.escalation.case_id) : undefined);
 
-          let duration = r.duration_ms;
-          if (matched && matched.closeTime && matched.startTime) {
-            const diff = new Date(matched.closeTime).getTime() - new Date(matched.startTime).getTime();
-            if (diff > 0) duration = diff;
-          }
-
-          if (reviewMatch) {
-            // Execution has an active or resolved human review case — this is authoritative!
-            if (r.status !== 'escalated' || !r.escalation || r.duration_ms !== duration) {
-              cacheUpdated = true;
-            }
-            return {
-              ...r,
-              id: r.workflow_id || reviewMatch.workflow_id || r.id,
-              status: 'escalated' as const,
-              duration_ms: duration,
-              escalation: reviewMatch.escalation || r.escalation,
-              reason: reviewMatch.reason || r.reason,
-              output: { ...r.output, ...reviewMatch.output },
-              confidence: reviewMatch.confidence ?? r.confidence,
-              spans: reviewMatch.spans || r.spans,
-            };
-          }
-
-          if (matched) {
-            const actualStatus = mapTemporalStatus(matched.status);
-
-            if (r.status !== actualStatus || r.duration_ms !== duration) {
-              cacheUpdated = true;
+            let duration = r.duration_ms;
+            if (matched && matched.closeTime && matched.startTime) {
+              const diff = new Date(matched.closeTime).getTime() - new Date(matched.startTime).getTime();
+              if (diff > 0) duration = diff;
             }
 
-            // If workflow failed in Temporal, update runtime spans to failed
-            const updatedSpans = (r.spans || []).map((span) => {
-              if (actualStatus === 'failed' && (span.type === 'runtime' || span.name.includes('Temporal'))) {
-                return {
-                  ...span,
-                  status: 'failed' as const,
-                  details: {
-                    ...span.details,
-                    temporal_status: matched.status,
-                    error: 'Temporal workflow execution failed (permanent runtime execution failure)',
-                  },
-                };
+            if (reviewMatch) {
+              // Execution has an active or resolved human review case — this is authoritative!
+              if (r.status !== 'escalated' || !r.escalation || r.duration_ms !== duration) {
+                cacheUpdated = true;
               }
-              if (actualStatus === 'success' && (span.type === 'runtime' || span.name.includes('Temporal'))) {
-                return {
-                  ...span,
-                  status: 'completed' as const,
-                };
-              }
-              return span;
-            });
+              return {
+                ...r,
+                id: r.workflow_id || reviewMatch.workflow_id || r.id,
+                status: 'escalated' as const,
+                duration_ms: duration,
+                escalation: reviewMatch.escalation || r.escalation,
+                reason: reviewMatch.reason || r.reason,
+                output: { ...r.output, ...reviewMatch.output },
+                confidence: reviewMatch.confidence ?? r.confidence,
+                spans: reviewMatch.spans || r.spans,
+              };
+            }
 
-            return {
-              ...r,
-              status: actualStatus,
-              duration_ms: duration,
-              reason:
+            if (matched) {
+              const actualStatus = mapTemporalStatus(matched.status);
+
+              if (r.status !== actualStatus || r.duration_ms !== duration) {
+                cacheUpdated = true;
+              }
+
+              // Fetch actual completed workflow output & confidence from Temporal history once completed
+              let nextOutput = r.output;
+              let nextConfidence =
+                actualStatus === 'running' || actualStatus === 'accepted' || actualStatus === 'failed'
+                  ? undefined
+                  : r.confidence;
+              let nextReason =
                 actualStatus === 'failed'
                   ? 'Temporal workflow execution failed: permanent runtime execution failure (check Temporal UI or worker logs for details).'
-                  : r.reason,
-              spans: updatedSpans,
-            };
-          }
-          return r;
-        });
+                  : r.reason;
+
+              const hasRealOutput = Boolean(
+                nextOutput &&
+                  (typeof nextOutput.confidence === 'number' ||
+                    nextOutput.reliability_skipped === true ||
+                    typeof nextOutput.content === 'string')
+              );
+              if (actualStatus === 'success' && !hasRealOutput && r.workflow_id) {
+                const wfRes = await fetchCompletedWorkflowResult(r.workflow_id, signal);
+                if (wfRes) {
+                  if (wfRes.output) {
+                    nextOutput = { ...nextOutput, ...wfRes.output };
+                  }
+                  if (typeof wfRes.confidence === 'number') {
+                    nextConfidence = wfRes.confidence;
+                  } else if (wfRes.output?.reliability_skipped) {
+                    nextConfidence = undefined;
+                  }
+                  if (wfRes.reason) {
+                    nextReason = wfRes.reason;
+                  }
+                  cacheUpdated = true;
+                }
+              }
+
+              // If workflow failed in Temporal, update runtime spans to failed
+              const updatedSpans = (r.spans || []).map((span) => {
+                if (actualStatus === 'failed' && (span.type === 'runtime' || span.name.includes('Temporal'))) {
+                  return {
+                    ...span,
+                    status: 'failed' as const,
+                    details: {
+                      ...span.details,
+                      temporal_status: matched.status,
+                      error: 'Temporal workflow execution failed (permanent runtime execution failure)',
+                    },
+                  };
+                }
+                if (actualStatus === 'success' && (span.type === 'runtime' || span.name.includes('Temporal'))) {
+                  return {
+                    ...span,
+                    status: 'completed' as const,
+                  };
+                }
+                return span;
+              });
+
+              return {
+                ...r,
+                status: actualStatus,
+                duration_ms: duration,
+                output: nextOutput,
+                confidence: nextConfidence,
+                reason: nextReason,
+                spans: updatedSpans,
+              };
+            }
+            return r;
+          })
+        );
 
         // Persist reconciled statuses back to cache
         if (cacheUpdated) {
@@ -397,6 +512,22 @@ export const runsApi = {
               agentId = wId.split('-')[2] || 'governed-agent';
             }
 
+            let discoveredInput: Record<string, unknown> = { workflow_id: wId };
+            let discoveredOutput: Record<string, unknown> = { status: tExec.status };
+            let discoveredConfidence: number | undefined = undefined;
+            if (status === 'success') {
+              const wfRes = await fetchCompletedWorkflowResult(wId, signal);
+              if (wfRes?.input) {
+                discoveredInput = wfRes.input;
+              }
+              if (wfRes?.output) {
+                discoveredOutput = { ...discoveredOutput, ...wfRes.output };
+              }
+              if (typeof wfRes?.confidence === 'number') {
+                discoveredConfidence = wfRes.confidence;
+              }
+            }
+
             const discoveredRun: RunDetail = {
               id: wId,
               workflow_id: wId,
@@ -409,13 +540,13 @@ export const runsApi = {
               execution_mode: 'supervised',
               created_at: tExec.startTime || new Date().toISOString(),
               duration_ms: duration,
-              input: { workflow_id: wId },
-              output: { status: tExec.status },
+              input: discoveredInput,
+              output: discoveredOutput,
               reason:
                 status === 'failed'
                   ? 'Temporal workflow execution failed: activity permanent runtime error'
                   : 'Workflow executed in Temporal cluster',
-              confidence: 0.85,
+              confidence: discoveredConfidence,
               reliability_threshold: 0.80,
               tool_calls: [
                 {

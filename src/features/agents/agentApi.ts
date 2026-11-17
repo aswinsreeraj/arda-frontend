@@ -59,6 +59,14 @@ export const agentApi = {
   },
 
   /**
+   * Permanently deletes an agent and all of its versions (company_admin only).
+   * Registered route: DELETE /api/v1/agents/:id
+   */
+  deleteAgent: async (id: string, signal?: AbortSignal): Promise<void> => {
+    await apiClient.delete(`/agents/${encodeURIComponent(id)}`, { signal });
+  },
+
+  /**
    * Creates a new draft version for an existing agent.
    * Registered route: POST /api/v1/agents/:id/versions
    */
@@ -73,6 +81,21 @@ export const agentApi = {
       { signal }
     );
     return response.data;
+  },
+
+  /**
+   * Retrieves all versions of an agent ordered newest-first.
+   * Registered route: GET /api/v1/agents/:id/versions
+   */
+  listVersions: async (
+    agentId: string,
+    signal?: AbortSignal
+  ): Promise<AgentVersion[]> => {
+    const response = await apiClient.get<{ versions: AgentVersion[] }>(
+      `/agents/${encodeURIComponent(agentId)}/versions`,
+      { signal }
+    );
+    return response.data.versions || [];
   },
 
   /**

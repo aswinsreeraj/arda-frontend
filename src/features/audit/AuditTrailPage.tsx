@@ -6,6 +6,7 @@ import type { AuditEventItem, AuditListFilters, ChainVerificationResult } from '
 import { AuditTable } from './components/AuditTable';
 import { ChainVerificationModal } from './components/ChainVerificationModal';
 import { AuditCaseModal } from './components/AuditCaseModal';
+import { AutonomousCaseModal } from './components/AutonomousCaseModal';
 import {
   Lock,
   Search,
@@ -35,6 +36,7 @@ export const AuditTrailPage: React.FC = () => {
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(
     () => searchParams.get('caseId') || null
   );
+  const [selectedAutonomousItem, setSelectedAutonomousItem] = useState<AuditEventItem | null>(null);
 
   const handleOpenCaseModal = (caseId: string) => {
     setSelectedCaseId(caseId);
@@ -99,6 +101,7 @@ export const AuditTrailPage: React.FC = () => {
           item.hash.toLowerCase().includes(query) ||
           item.agent_name.toLowerCase().includes(query) ||
           item.decision.toLowerCase().includes(query) ||
+          (item.agent_reasoning && item.agent_reasoning.toLowerCase().includes(query)) ||
           (item.denial_reason && item.denial_reason.toLowerCase().includes(query));
         if (!matchesSearch) return false;
       }
@@ -378,6 +381,7 @@ export const AuditTrailPage: React.FC = () => {
           items={filteredItems}
           onInspectIntegrity={handleInspectIntegrity}
           onViewCaseDetails={handleOpenCaseModal}
+          onViewAutonomousCase={setSelectedAutonomousItem}
         />
       )}
 
@@ -409,6 +413,12 @@ export const AuditTrailPage: React.FC = () => {
         isOpen={Boolean(selectedCaseId)}
         caseId={selectedCaseId}
         onClose={handleCloseCaseModal}
+      />
+
+      {/* Autonomous Execution Case Details Modal */}
+      <AutonomousCaseModal
+        item={selectedAutonomousItem}
+        onClose={() => setSelectedAutonomousItem(null)}
       />
     </main>
   );

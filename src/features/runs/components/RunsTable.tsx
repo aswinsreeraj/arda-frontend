@@ -265,7 +265,7 @@ export const RunsTable: React.FC<RunsTableProps> = ({
                       </div>
                       <div className="text-xs text-gray-400 max-w-xs mt-0.5 flex items-center gap-1.5">
                         <span className="truncate">{run.workflow_id}</span>
-                        {run.workflow_id && (
+                        {run.mode === 'durable' && run.workflow_id && (
                           <a
                             href={`${TEMPORAL_UI_BASE_URL}/namespaces/default/workflows/${encodeURIComponent(run.workflow_id)}`}
                             target="_blank"

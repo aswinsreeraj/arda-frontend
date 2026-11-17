@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, AlertCircle, RefreshCw, Bot } from 'lucide-react';
+import { Search, Plus, AlertCircle, RefreshCw, Bot, Trash2 } from 'lucide-react';
 import type { AgentDetail } from '../types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -11,6 +11,9 @@ interface AgentsTableProps {
   onRefresh: () => void;
   onSelectAgent: (agent: AgentDetail) => void;
   onOpenRegisterModal: () => void;
+  onDeleteAgent?: (agent: AgentDetail) => void;
+  deletingAgentId?: string | null;
+  canDeleteAgent?: boolean;
   selectedAgentId?: string | null;
 }
 
@@ -21,6 +24,9 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
   onRefresh,
   onSelectAgent,
   onOpenRegisterModal,
+  onDeleteAgent,
+  deletingAgentId,
+  canDeleteAgent = false,
   selectedAgentId,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -108,6 +114,7 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
               <th className="py-3 px-4 font-mono">Threshold τ</th>
               <th className="py-3 px-4">Status</th>
               <th className="py-3 px-4">Updated</th>
+              {canDeleteAgent && <th className="py-3 px-4 text-right">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-[#242424] text-xs sm:text-sm">
@@ -134,12 +141,13 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                   <td className="py-4 px-4">
                     <div className="h-4 bg-slate-100 dark:bg-[#202020] rounded w-24" />
                   </td>
+                  {canDeleteAgent && <td className="py-4 px-4" />}
                 </tr>
               ))
             ) : filteredAgents.length === 0 ? (
               // Empty State
               <tr>
-                <td colSpan={6} className="py-12 text-center">
+                <td colSpan={canDeleteAgent ? 7 : 6} className="py-12 text-center">
                   <Bot className="w-8 h-8 text-slate-400 dark:text-gray-600 mx-auto mb-2" />
                   <p className="text-slate-700 dark:text-gray-300 font-medium">No agents found</p>
                   <p className="text-xs text-slate-500 dark:text-gray-500 mt-1 max-w-sm mx-auto">
@@ -224,6 +232,23 @@ export const AgentsTable: React.FC<AgentsTableProps> = ({
                     <td className="py-3.5 px-4 text-slate-500 dark:text-gray-400 font-mono text-[11px]">
                       {formatDate(item.agent.updated_at || item.agent.created_at)}
                     </td>
+                    {canDeleteAgent && onDeleteAgent && (
+                      <td
+                        className="py-3.5 px-4 text-right"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={deletingAgentId !== null && deletingAgentId !== undefined}
+                          onClick={() => onDeleteAgent(item)}
+                          className="text-slate-400 hover:text-red-600 dark:hover:text-red-400 p-1"
+                          title="Delete agent"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 );
               })
