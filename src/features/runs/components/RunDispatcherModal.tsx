@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '@/features/agents/agentApi';
 import { runsApi } from '../runsApi';
 import { useRunsStore } from '../runsStore';
-import type { ExecutionMode } from '@/features/agents/types';
 import type { RunDetail, RunMode, RunStatus } from '../types';
 import { Button } from '@/components/ui/Button';
 
@@ -24,16 +23,13 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
 
   const [selectedAgentId, setSelectedAgentId] = useState<string>('');
   const [runMode, setRunMode] = useState<RunMode>('durable');
-  const [executionMode, setExecutionMode] = useState<ExecutionMode>('supervised');
   const [inputText, setInputText] = useState<string>(
     JSON.stringify(
       {
-        transaction_id: 'tx_9824_chargeback',
-        amount: 850.0,
-        currency: 'USD',
-        merchant_name: 'Acme High-Tech Goods',
-        customer_id: 'cust_48129',
-        prior_chargebacks: 0,
+        transaction_id: 'tx_escalate_18500',
+        amount: 18500,
+        claim: 'Customer disputed $18,500 wire charge exceeding limit',
+        merchant: 'Global Luxury Electronics',
       },
       null,
       2
@@ -59,6 +55,20 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
         throw new Error('Input payload must be valid JSON');
       }
 
+      // If user provided a nested { "input": { ... } } structure, unwrap it to prevent double nesting
+      if (
+        parsedInput &&
+        typeof parsedInput === 'object' &&
+        !Array.isArray(parsedInput) &&
+        'input' in parsedInput &&
+        typeof parsedInput.input === 'object' &&
+        parsedInput.input !== null &&
+        !Array.isArray(parsedInput.input) &&
+        Object.keys(parsedInput).length === 1
+      ) {
+        parsedInput = parsedInput.input as Record<string, unknown>;
+      }
+
       if (!effectiveAgentId) {
         throw new Error('Please select an agent to execute');
       }
@@ -67,7 +77,7 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
       const res = await runsApi.executeAgent(effectiveAgentId, {
         input: parsedInput,
         mode: runMode === 'durable' ? 'async' : 'sync',
-        execution_mode: executionMode,
+        execution_mode: runMode,
       });
 
       const runId = res.run_id || `run_${Math.random().toString(36).substring(2, 9)}`;
@@ -94,7 +104,7 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
         agent?.latest_published_version?.configuration.reliability_threshold ?? 0.85;
 
       const newRun: RunDetail = {
-        id: runId,
+        id: workflowId || runId,
         workflow_id: workflowId,
         run_id: runId,
         agent_id: selectedAgentId,
@@ -102,7 +112,7 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
         agent_version_number: agent?.latest_published_version?.version_number || 1,
         status,
         mode: runMode,
-        execution_mode: executionMode,
+        execution_mode: runMode,
         created_at: new Date().toISOString(),
         duration_ms: res.duration_ms || (runMode === 'durable' ? 185 : 420),
         input: parsedInput,
@@ -121,7 +131,7 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
             status: 'completed',
             timestamp: new Date().toISOString(),
             duration_ms: 15,
-            details: { mode: runMode, execution_mode: executionMode },
+            details: { mode: runMode, execution_mode: runMode },
           },
           {
             id: `span-rt-${runId}`,
@@ -208,49 +218,47 @@ export const RunDispatcherModal: React.FC<RunDispatcherModalProps> = ({
             </div>
           </div>
 
-          {/* Run Mode & Execution Profile */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="font-medium text-gray-300">Run Mode</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRunMode('durable')}
-                  className={`py-2 px-2 border rounded-md text-center transition font-medium ${runMode === 'durable'
-                    ? 'border-blue-500 bg-blue-950/30 text-blue-300'
-                    : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
-                    }`}
-                >
-                  Durable (Temporal)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRunMode('realtime')}
-                  className={`py-2 px-2 border rounded-md text-center transition font-medium ${runMode === 'realtime'
-                    ? 'border-blue-500 bg-blue-950/30 text-blue-300'
-                    : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
-                    }`}
-                >
-                  Realtime (Sync)
-                </button>
-              </div>
+          {/* Execution Mode */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="font-medium text-gray-300">Execution Mode</label>
+              <span className="text-[10px] text-emerald-400 font-medium">
+                🛡️ Reliability Gate Enforced (p ≥ τ)
+              </span>
             </div>
-
-            <div className="space-y-1.5">
-              <label className="font-medium text-gray-300">Governance Mode</label>
-              <div className="relative">
-                <select
-                  value={executionMode}
-                  onChange={(e) => setExecutionMode(e.target.value as ExecutionMode)}
-                  className="w-full bg-[#141414] border border-[#2f2f2f] rounded-md px-3 py-2 text-white focus:border-blue-500 focus:outline-none appearance-none pr-8 cursor-pointer"
-                >
-                  <option value="supervised">Supervised (Escalate on uncertainty)</option>
-                  <option value="autonomous">Autonomous</option>
-                  <option value="human_in_the_loop">Human-in-the-Loop (Always escalate)</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-neutral-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setRunMode('durable')}
+                className={`p-3 border rounded-lg text-left transition ${
+                  runMode === 'durable'
+                    ? 'border-blue-500 bg-blue-950/30 text-white'
+                    : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
+                }`}
+              >
+                <div className="font-semibold text-xs text-blue-300">Durable (Temporal Workflow)</div>
+                <div className="text-[10px] text-gray-400 mt-1">
+                  Asynchronous orchestration with checkpoints and durable pauses during review.
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRunMode('realtime')}
+                className={`p-3 border rounded-lg text-left transition ${
+                  runMode === 'realtime'
+                    ? 'border-emerald-500 bg-emerald-950/30 text-white'
+                    : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
+                }`}
+              >
+                <div className="font-semibold text-xs text-emerald-300">Realtime (Go Runtime)</div>
+                <div className="text-[10px] text-gray-400 mt-1">
+                  Synchronous in-process execution with instant sub-second response times.
+                </div>
+              </button>
             </div>
+            <span className="text-[10px] text-gray-500 block">
+              Active learning: 1-in-10 autonomous decisions (p ≥ τ) will be sampled for human calibration review.
+            </span>
           </div>
 
           {/* Input JSON Editor */}

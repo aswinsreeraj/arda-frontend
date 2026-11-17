@@ -13,10 +13,17 @@ export const AuthPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
 
   const isInvitePath = location.pathname.includes('invite');
   const isRegisterPath = location.pathname.includes('signup') || location.pathname.includes('register');
   const isVerifyPath = location.pathname.includes('verify');
+
+  React.useEffect(() => {
+    if (isAuthenticated && user && !isInvitePath) {
+      navigate(getDefaultDashboard(user.role), { replace: true });
+    }
+  }, [isAuthenticated, user, isInvitePath, navigate]);
 
   const mode: 'login' | 'invite' | 'register' | 'verify' =
     isVerifyPath || searchParams.get('mode') === 'verify'
@@ -30,15 +37,9 @@ export const AuthPage: React.FC = () => {
   const previewRole: UserRole = (searchParams.get('role') as UserRole) || 'agent_developer';
 
   const handleSuccess = (userRole?: UserRole) => {
-    const explicitRedirect = searchParams.get('redirect');
-    if (explicitRedirect) {
-      navigate(explicitRedirect);
-      return;
-    }
-
-    // Role-tailored destination routing
+    // Always navigate to the user's role-specific default dashboard
     const role = userRole || useAuthStore.getState().user?.role || previewRole;
-    navigate(getDefaultDashboard(role));
+    navigate(getDefaultDashboard(role), { replace: true });
   };
 
   return (

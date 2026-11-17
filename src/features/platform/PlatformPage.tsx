@@ -10,13 +10,11 @@ import type {
   TenantTier,
 } from './types';
 import { TenantsTable } from './components/TenantsTable';
-import { PlatformHealthPanel } from './components/PlatformHealthPanel';
-import { SystemActivityPanel } from './components/SystemActivityPanel';
-import { OnboardTenantModal } from './components/OnboardTenantModal';
+import { PlatformHealthTab } from './components/PlatformHealthTab';
 import { PlatformConfigTab } from './components/PlatformConfigTab';
 import { OperatorsTab } from './components/OperatorsTab';
-import { Search, Plus, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { PlatformAuditLogTab } from './components/PlatformAuditLogTab';
+import { Search, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
 
 export const PlatformPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -24,7 +22,6 @@ export const PlatformPage: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<PlatformTab>('tenants');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
 
   // Queries
   const {
@@ -48,7 +45,7 @@ export const PlatformPage: React.FC = () => {
   const { data: activityEvents = [] } = useQuery({
     queryKey: ['platform-activity'],
     queryFn: () => platformApi.fetchSystemActivity(),
-    staleTime: 30000,
+    staleTime: 15000,
   });
 
   const { data: platformConfigs = [] } = useQuery({
@@ -60,7 +57,7 @@ export const PlatformPage: React.FC = () => {
   const { data: operators = [] } = useQuery({
     queryKey: ['platform-operators'],
     queryFn: () => platformApi.fetchOperators(),
-    staleTime: 60000,
+    staleTime: 15000,
   });
 
   // Mutations
@@ -69,6 +66,8 @@ export const PlatformPage: React.FC = () => {
       platformApi.updateTenantStatus(tenant.id, newStatus),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-activity'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-health'] });
     },
   });
 
@@ -77,17 +76,23 @@ export const PlatformPage: React.FC = () => {
       platformApi.updateTenantTier(tenant.id, newTier),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-tenants'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-activity'] });
     },
   });
 
-  const handleOnboardTenant = async (name: string, slug: string, tier: TenantTier) => {
-    await platformApi.onboardTenant(name, slug, tier);
-    await queryClient.invalidateQueries({ queryKey: ['platform-tenants'] });
-  };
+  const addSuperAdminMutation = useMutation({
+    mutationFn: (data: { email: string; display_name: string; password: string }) =>
+      platformApi.createSuperAdmin(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['platform-operators'] });
+      queryClient.invalidateQueries({ queryKey: ['platform-activity'] });
+    },
+  });
 
   const handleSaveConfigs = async (newConfigs: PlatformConfigItem[]) => {
     await platformApi.savePlatformConfig(newConfigs);
     await queryClient.invalidateQueries({ queryKey: ['platform-config'] });
+    await queryClient.invalidateQueries({ queryKey: ['platform-activity'] });
   };
 
   // Stats
@@ -112,7 +117,7 @@ export const PlatformPage: React.FC = () => {
     return tenants.filter(
       (t) =>
         t.name.toLowerCase().includes(q) ||
-        t.slug.toLowerCase().includes(q) ||
+        (t.slug && t.slug.toLowerCase().includes(q)) ||
         t.id.toLowerCase().includes(q)
     );
   }, [tenants, searchQuery]);
@@ -157,39 +162,58 @@ export const PlatformPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('tenants')}
-              className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded font-medium text-[13px] transition-colors ${activeTab === 'tenants'
-                ? 'bg-[#1e1e1e] text-white'
-                : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
-                }`}
+              className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded font-medium text-[13px] transition-colors cursor-pointer ${
+                activeTab === 'tenants'
+                  ? 'bg-[#1e1e1e] text-white'
+                  : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
+              }`}
             >
               <span>Tenants</span>
             </button>
             <button
               type="button"
+              onClick={() => setActiveTab('health')}
+              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${
+                activeTab === 'health'
+                  ? 'bg-[#1e1e1e] text-white font-medium'
+                  : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
+              }`}
+            >
+              <span>Platform health</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setActiveTab('config')}
-              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors ${activeTab === 'config'
-                ? 'bg-[#1e1e1e] text-white font-medium'
-                : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
-                }`}
+              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${
+                activeTab === 'config'
+                  ? 'bg-[#1e1e1e] text-white font-medium'
+                  : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
+              }`}
             >
               <span>Platform config</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('operators')}
-              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors ${activeTab === 'operators'
-                ? 'bg-[#1e1e1e] text-white font-medium'
-                : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
-                }`}
+              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${
+                activeTab === 'operators'
+                  ? 'bg-[#1e1e1e] text-white font-medium'
+                  : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
+              }`}
             >
               <span>Operators</span>
             </button>
-            <Link
-              to="/audit"
-              className="flex items-center px-2.5 py-1.5 rounded text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4] transition-colors"
+            <button
+              type="button"
+              onClick={() => setActiveTab('audit')}
+              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${
+                activeTab === 'audit'
+                  ? 'bg-[#1e1e1e] text-white font-medium'
+                  : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
+              }`}
             >
-              Audit log
-            </Link>
+              <span>Audit log</span>
+            </button>
             <a
               href="http://localhost:3000"
               target="_blank"
@@ -208,7 +232,7 @@ export const PlatformPage: React.FC = () => {
           data-purpose="operator-identity"
         >
           <div className="text-[#a1a1aa] truncate font-sans">
-            {user?.email || 'm.ferreira@arbiter.systems'}
+            {user?.email || 'superadmin@arda.security'}
           </div>
           <div>role: super_admin</div>
         </div>
@@ -224,16 +248,25 @@ export const PlatformPage: React.FC = () => {
           <div className="flex items-center space-x-2 text-[13px] font-mono text-[#8b8b8b]">
             <span>platform</span>
             <span>/</span>
-            <span className="text-[#d4d4d4] capitalize">{activeTab}</span>
+            <span className="text-[#d4d4d4] capitalize">
+              {activeTab === 'health' ? 'Platform Health' : activeTab}
+            </span>
           </div>
-          <div>
+          <div className="flex items-center space-x-3">
             <button
-              onClick={() => setIsOnboardModalOpen(true)}
-              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 text-[12px] font-medium rounded-md bg-[#2563eb] text-white hover:bg-blue-600 transition shadow-xs"
+              onClick={() => {
+                refetchTenants();
+                queryClient.invalidateQueries({ queryKey: ['platform-health'] });
+                queryClient.invalidateQueries({ queryKey: ['platform-activity'] });
+                queryClient.invalidateQueries({ queryKey: ['platform-operators'] });
+                queryClient.invalidateQueries({ queryKey: ['platform-config'] });
+              }}
+              className="inline-flex items-center space-x-1.5 px-3 py-1.5 text-[12px] rounded-md bg-[#1c1c1c] border border-[#2b2b2b] text-[#a1a1aa] hover:text-white hover:bg-[#252525] transition cursor-pointer"
               type="button"
+              title="Refresh Platform Telemetry"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Onboard tenant</span>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Refresh</span>
             </button>
           </div>
         </header>
@@ -242,83 +275,75 @@ export const PlatformPage: React.FC = () => {
         <div className="p-8 max-w-[1400px] w-full mx-auto space-y-8">
           {/* TAB: TENANTS */}
           {activeTab === 'tenants' && (
-            <>
-              {/* Tenants Section */}
-              <section data-purpose="tenants-management-section">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                  <div>
-                    <h1 className="text-xl font-semibold text-white tracking-tight">Tenants</h1>
-                    <p className="text-[12px] text-[#737373] mt-0.5">
-                      {stats.total} organizations ·{' '}
-                      <span className="text-[#22c55e]">{stats.active} active</span> ·{' '}
-                      <span className="text-[#ef4444]">{stats.suspended} suspended</span>
-                    </p>
-                  </div>
-
-                  {/* Search box */}
-                  <div className="relative w-72">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#525252]" />
-                    <input
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-[#181818] border border-[#2b2b2b] text-[12px] rounded pl-8 pr-3 py-1.5 text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#404040]"
-                      placeholder="Name, slug, or org ID"
-                      type="text"
-                    />
-                  </div>
+            <section data-purpose="tenants-management-section">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                <div>
+                  <h1 className="text-xl font-semibold text-white tracking-tight">Tenants</h1>
+                  <p className="text-[12px] text-[#737373] mt-0.5">
+                    {stats.total} organizations ·{' '}
+                    <span className="text-[#22c55e]">{stats.active} active</span> ·{' '}
+                    <span className="text-[#ef4444]">{stats.suspended} suspended</span>
+                  </p>
                 </div>
 
-                {isTenantsLoading ? (
-                  <div className="p-12 text-center text-xs text-neutral-500 border border-[#262626] rounded-md bg-[#161616] flex flex-col items-center justify-center space-y-2">
-                    <RefreshCw className="w-5 h-5 animate-spin text-neutral-400" />
-                    <span>Loading platform organizations...</span>
-                  </div>
-                ) : isTenantsError ? (
-                  <div className="p-8 text-center text-xs text-rose-300 border border-rose-900/40 rounded-md bg-rose-950/20 space-y-2">
-                    <AlertCircle className="w-5 h-5 text-rose-400 mx-auto" />
-                    <div className="font-semibold">Unable to load platform tenants</div>
-                    <p className="text-rose-400/80 text-[11px]">
-                      {tenantsError instanceof Error ? tenantsError.message : 'Network error'}
-                    </p>
-                    <button
-                      onClick={() => refetchTenants()}
-                      className="px-3 py-1.5 rounded bg-rose-900/50 hover:bg-rose-900 text-white text-xs border border-rose-700/50"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : (
-                  <TenantsTable
-                    tenants={filteredTenants}
-                    onToggleStatus={(tenant, newStatus) =>
-                      toggleStatusMutation.mutateAsync({ tenant, newStatus })
-                    }
-                    onChangeTier={(tenant, newTier) =>
-                      changeTierMutation.mutateAsync({ tenant, newTier })
-                    }
+                {/* Search box */}
+                <div className="relative w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#525252]" />
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-[#181818] border border-[#2b2b2b] text-[12px] rounded pl-8 pr-3 py-1.5 text-[#d4d4d4] placeholder-[#555] focus:outline-none focus:border-[#404040]"
+                    placeholder="Name, slug, or org ID"
+                    type="text"
                   />
-                )}
+                </div>
+              </div>
 
-                <p className="text-[11px] text-[#525252] mt-3">
-                  Tenant agents, cases, and reliability data are not shown here. Use a logged
-                  support session when access is required.
-                </p>
-              </section>
-
-              {/* Telemetry Panels */}
-              {healthData && (
-                <section
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4 border-t border-[#212121]"
-                  data-purpose="telemetry-and-activity-panels"
-                >
-                  <PlatformHealthPanel
-                    metrics={healthData.metrics}
-                    services={healthData.services}
-                  />
-                  <SystemActivityPanel events={activityEvents} />
-                </section>
+              {isTenantsLoading ? (
+                <div className="p-12 text-center text-xs text-neutral-500 border border-[#262626] rounded-md bg-[#161616] flex flex-col items-center justify-center space-y-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-neutral-400" />
+                  <span>Loading platform organizations...</span>
+                </div>
+              ) : isTenantsError ? (
+                <div className="p-8 text-center text-xs text-rose-300 border border-rose-900/40 rounded-md bg-rose-950/20 space-y-2">
+                  <AlertCircle className="w-5 h-5 text-rose-400 mx-auto" />
+                  <div className="font-semibold">Unable to load platform tenants</div>
+                  <p className="text-rose-400/80 text-[11px]">
+                    {tenantsError instanceof Error ? tenantsError.message : 'Network error'}
+                  </p>
+                  <button
+                    onClick={() => refetchTenants()}
+                    className="px-3 py-1.5 rounded bg-rose-900/50 hover:bg-rose-900 text-white text-xs border border-rose-700/50 cursor-pointer"
+                    type="button"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : (
+                <TenantsTable
+                  tenants={filteredTenants}
+                  onToggleStatus={(tenant, newStatus) =>
+                    toggleStatusMutation.mutateAsync({ tenant, newStatus })
+                  }
+                  onChangeTier={(tenant, newTier) =>
+                    changeTierMutation.mutateAsync({ tenant, newTier })
+                  }
+                />
               )}
-            </>
+
+              <p className="text-[11px] text-[#525252] mt-3">
+                Tenant agent configurations, execution cases, and reliability metrics are isolated within each organization namespace.
+              </p>
+            </section>
+          )}
+
+          {/* TAB: PLATFORM HEALTH */}
+          {activeTab === 'health' && healthData && (
+            <PlatformHealthTab
+              metrics={healthData.metrics}
+              services={healthData.services}
+              stats={healthData.stats}
+            />
           )}
 
           {/* TAB: CONFIG */}
@@ -330,16 +355,19 @@ export const PlatformPage: React.FC = () => {
           )}
 
           {/* TAB: OPERATORS */}
-          {activeTab === 'operators' && <OperatorsTab operators={operators} />}
+          {activeTab === 'operators' && (
+            <OperatorsTab
+              operators={operators}
+              onAddSuperAdmin={(data) => addSuperAdminMutation.mutateAsync(data)}
+            />
+          )}
+
+          {/* TAB: AUDIT LOG */}
+          {activeTab === 'audit' && (
+            <PlatformAuditLogTab events={activityEvents} />
+          )}
         </div>
       </main>
-
-      {/* Onboard Tenant Modal */}
-      <OnboardTenantModal
-        isOpen={isOnboardModalOpen}
-        onClose={() => setIsOnboardModalOpen(false)}
-        onOnboard={handleOnboardTenant}
-      />
     </div>
   );
 };

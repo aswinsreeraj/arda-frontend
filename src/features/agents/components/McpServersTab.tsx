@@ -234,10 +234,6 @@ export const McpServersTab: React.FC = () => {
   };
 
   const handleDeleteServer = (server: McpServerDefinition) => {
-    if (server.id === 'mcp-tx-conn') {
-      alert('Cannot delete default system Transaction Gateway.');
-      return;
-    }
     if (confirm(`Remove MCP Server "${server.name}" (${server.id})? Existing tool mappings may become inactive.`)) {
       deleteMcpServerFromStorage(tenantId, server.id);
       if (selectedServerId === server.id) {
@@ -263,9 +259,9 @@ export const McpServersTab: React.FC = () => {
             <button
               type="button"
               onClick={() => setSelectedServerId(null)}
-              className="inline-flex items-center text-xs text-blue-600 dark:text-blue-400 hover:underline mb-1 gap-1 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-slate-300 dark:border-[#333] bg-slate-100 dark:bg-[#1a1a1a] hover:bg-slate-200 dark:hover:bg-[#262626] text-xs font-medium text-slate-700 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white mb-2 transition shadow-xs group cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 text-slate-500 dark:text-gray-400 group-hover:text-slate-900 dark:group-hover:text-white" />
               <span>Back to MCP Servers</span>
             </button>
             <div className="flex items-center gap-2.5">
@@ -297,7 +293,7 @@ export const McpServersTab: React.FC = () => {
                 Add Tool to Server
               </Button>
             )}
-            {canDeleteTools && selectedServer.id !== 'mcp-tx-conn' && (
+            {canDeleteTools && (
               <Button
                 variant="outline"
                 size="sm"
@@ -803,7 +799,7 @@ export const McpServersTab: React.FC = () => {
                         <span>Details & Tools</span>
                         <ChevronRight className="w-3.5 h-3.5 ml-1" />
                       </Button>
-                      {canDeleteTools && server.id !== 'mcp-tx-conn' && (
+                      {canDeleteTools && (
                         <Button
                           variant="ghost"
                           size="sm"

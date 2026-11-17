@@ -38,6 +38,7 @@ export interface SystemActivityEvent {
 
 export interface PlatformConfigItem {
   key: string;
+  label?: string;
   value: string;
   description: string;
   category: 'gateway' | 'runtime' | 'calibration' | 'storage';
@@ -51,4 +52,4 @@ export interface PlatformOperator {
   last_active: string;
 }
 
-export type PlatformTab = 'tenants' | 'config' | 'operators' | 'grafana';
+export type PlatformTab = 'tenants' | 'health' | 'config' | 'operators' | 'audit' | 'grafana';

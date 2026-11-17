@@ -57,7 +57,7 @@ export const TopNav: React.FC = () => {
     {
       label: 'Audit trail',
       path: '/audit',
-      visible: hasRole(['super_admin', 'company_admin', 'reviewer', 'agent_developer']),
+      visible: hasRole(['company_admin', 'reviewer', 'agent_developer']),
     },
     {
       label: 'API Reference',
@@ -91,7 +91,7 @@ export const TopNav: React.FC = () => {
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center space-x-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 dark:text-neutral-300 dark:hover:text-white dark:hover:bg-[#222] transition-colors py-1 px-2.5 rounded text-sm"
             >
-              <span className="font-medium">{user?.tenant_name || 'Acme Robotics'}</span>
+              <span className="font-medium">{user?.tenant_name || 'ARDA'}</span>
               <ChevronDown className="w-4 h-4 text-slate-400 dark:text-neutral-400" />
             </button>
 
@@ -101,7 +101,7 @@ export const TopNav: React.FC = () => {
                   Active Tenant
                 </div>
                 <div className="px-3 py-2 text-slate-900 dark:text-white">
-                  <div className="font-medium text-sm">{user?.tenant_name || 'Acme Robotics'}</div>
+                  <div className="font-medium text-sm">{user?.tenant_name || 'ARDA'}</div>
                   <div className="text-xs font-mono text-slate-500 dark:text-neutral-400 mt-1 truncate">
                     {user?.tenant_id}
                   </div>

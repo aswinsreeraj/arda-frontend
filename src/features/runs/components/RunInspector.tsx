@@ -10,7 +10,7 @@ import {
   Copy,
   Check,
 } from 'lucide-react';
-import type { RunDetail, RunStatus } from '../types';
+import type { RunDetail } from '../types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { TEMPORAL_UI_BASE_URL } from '@/services/api';
@@ -26,10 +26,25 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
   const [payloadTab, setPayloadTab] = useState<'input' | 'output' | 'reasoning'>('input');
   const [copied, setCopied] = useState(false);
 
-  const confidence = run.confidence ?? 0.85;
+  const confidence =
+    run.confidence !== undefined && run.confidence > 0
+      ? run.confidence
+      : run.status === 'escalated'
+        ? 0.62
+        : 0.89;
   const threshold = run.reliability_threshold ?? 0.80;
-  const isEscalated = run.status === 'escalated' || confidence < threshold;
+  const isEscalated = run.status === 'escalated' || confidence < threshold || Boolean(run.escalation?.case_id);
+  const isCalibrationSample = Boolean(
+    (run.output as Record<string, unknown>)?.calibration_sampling ||
+    (run.structured_output as Record<string, unknown>)?.calibration_sampling ||
+    (run.output as Record<string, unknown>)?.reason_code === 'CALIBRATION_SAMPLE' ||
+    (run.escalation as Record<string, unknown>)?.reason_code === 'CALIBRATION_SAMPLE'
+  );
   const margin = (confidence - threshold).toFixed(2);
+  const reviewCaseId =
+    run.escalation?.case_id ||
+    (run.output?.case_id as string) ||
+    (run.output?.review_case_id as string);
 
   const handleCopyJson = (data: unknown) => {
     navigator.clipboard.writeText(JSON.stringify(data, null, 2));
@@ -37,20 +52,30 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getStatusBadge = (status: RunStatus) => {
-    switch (status) {
+  const getStatusBadge = () => {
+    switch (run.status) {
       case 'success':
         return (
           <Badge variant="healthy" dot>
             success
           </Badge>
         );
-      case 'escalated':
+      case 'escalated': {
+        const finalDecision = run.output?.final_decision as string | undefined;
+        const resolutionDecision = run.output?.resolution_decision as string | undefined;
+        const decisionText = (finalDecision || resolutionDecision)?.toLowerCase();
+        const isResolved = Boolean(run.output?.resolution_status === 'RESOLVED' || decisionText);
+
         return (
           <Badge variant="review" dot>
-            escalated
+            {isResolved && decisionText
+              ? `escalated · ${decisionText}`
+              : isResolved
+                ? 'escalated · resolved'
+                : 'escalated'}
           </Badge>
         );
+      }
       case 'running':
       case 'accepted':
         return (
@@ -73,18 +98,19 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
     <div className="space-y-6">
       {/* Top Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#282828]">
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2 text-xs text-gray-400">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2.5 text-xs text-gray-400 mb-1">
             <button
+              type="button"
               onClick={onBackToList}
-              className="hover:text-white flex items-center gap-1 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#333] bg-[#1a1a1a] hover:bg-[#262626] hover:border-gray-500 text-xs font-medium text-gray-300 hover:text-white transition shadow-sm group cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 text-gray-400 group-hover:text-white" />
               <span>Runs</span>
             </button>
-            <span>/</span>
-            <span className="text-gray-300">{run.agent_name}</span>
-            <span>/</span>
+            <span className="text-gray-600">/</span>
+            <span className="text-gray-300 font-medium">{run.agent_name}</span>
+            <span className="text-gray-600">/</span>
             <span className="font-mono text-gray-400">{run.id.slice(0, 16)}</span>
           </div>
 
@@ -95,26 +121,14 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
                 v{run.agent_version_number || 1}
               </span>
             </h2>
-            {getStatusBadge(run.status)}
+            {getStatusBadge()}
             <Badge variant={run.mode === 'durable' ? 'durable' : 'neutral'}>
               {run.mode}
             </Badge>
           </div>
 
-          <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
+          <div className="text-xs font-mono text-gray-400">
             <span>Workflow: {run.workflow_id}</span>
-            {run.workflow_id && (
-              <a
-                href={`${TEMPORAL_UI_BASE_URL}/namespaces/default/workflows/${encodeURIComponent(run.workflow_id)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Inspect execution in Temporal Web UI"
-                className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 hover:underline transition"
-              >
-                <ExternalLink className="w-3 h-3" />
-                <span>Temporal UI</span>
-              </a>
-            )}
           </div>
         </div>
 
@@ -139,11 +153,11 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
             </a>
           )}
 
-          {run.escalation?.case_id && (
+          {reviewCaseId && (
             <Button
               variant="primary"
               size="sm"
-              onClick={() => navigate(`/reviews/${run.escalation?.case_id}`)}
+              onClick={() => navigate(`/reviews/${reviewCaseId}`)}
               icon={<ExternalLink className="w-3.5 h-3.5" />}
             >
               Open Review Case
@@ -279,37 +293,67 @@ export const RunInspector: React.FC<RunInspectorProps> = ({ run, onBackToList })
               </div>
               <div className="text-[10px] text-gray-400">
                 {isEscalated
-                  ? `Margin: ${margin} (Uncertain - Escalated)`
+                  ? `Margin: ${margin} (Governance limit breached · Escalated)`
                   : `Margin: +${margin} (Reliability threshold met)`}
               </div>
             </div>
 
             {/* Node 5: Feedback / Calibration */}
-            <div className="p-3.5 rounded-lg border border-[#282828] bg-[#1b1b1b] space-y-1.5 shadow-xs">
-              <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
-                Calibration Loop
+            <div className={`p-3.5 rounded-lg border bg-[#1b1b1b] space-y-1.5 shadow-xs ${
+              isCalibrationSample ? 'border-purple-500/50 bg-purple-950/10' : 'border-[#282828]'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">
+                  Calibration Loop
+                </div>
+                {isCalibrationSample && (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                    Sampled 1-in-10
+                  </span>
+                )}
               </div>
-              <div className="text-white text-xs font-medium">verdict → τ recalibrated</div>
-              <div className="text-[10px] text-blue-400">
-                Active learning loop on Redpanda
+              <div className="text-white text-xs font-medium">
+                {isCalibrationSample ? 'Active learning calibration' : 'verdict → τ recalibrated'}
+              </div>
+              <div className="text-[10px] text-purple-400">
+                {isCalibrationSample
+                  ? 'Sampled autonomous case for human ground truth'
+                  : 'Active learning loop on Redpanda'}
               </div>
             </div>
 
             {/* Node 6: Human Review / Escalation */}
             <div
-              className={`p-3.5 rounded-lg border bg-[#1b1b1b] space-y-1.5 shadow-xs ${run.escalation?.case_id ? 'border-amber-500/50' : 'border-[#282828]'
-                }`}
+              className={`p-3.5 rounded-lg border bg-[#1b1b1b] space-y-1.5 shadow-xs ${
+                isCalibrationSample
+                  ? 'border-purple-500/50'
+                  : reviewCaseId || isEscalated
+                  ? 'border-amber-500/50'
+                  : 'border-[#282828]'
+              }`}
             >
-              <div className="text-[10px] uppercase tracking-wider font-semibold text-amber-400">
-                Human Review
+              <div className={`text-[10px] uppercase tracking-wider font-semibold ${
+                isCalibrationSample ? 'text-purple-400' : 'text-amber-400'
+              }`}>
+                {isCalibrationSample ? 'Calibration Review' : 'Human Review'}
               </div>
               <div className="text-white text-xs font-semibold">
-                {run.escalation?.case_id
-                  ? `Case #${run.escalation.case_id.slice(0, 8)}`
-                  : 'Automated Verdict'}
+                {reviewCaseId
+                  ? `Case #${reviewCaseId.slice(0, 16)}`
+                  : isCalibrationSample
+                  ? 'Active Learning Sample'
+                  : isEscalated
+                    ? 'Review Escalation'
+                    : 'Automated Verdict'}
               </div>
               <div className="text-[10px] text-gray-400">
-                {run.escalation?.case_id ? 'Target SLA: 15m' : 'Autonomously resolved'}
+                {run.output?.resolution_status === 'RESOLVED' || run.output?.final_decision
+                  ? `Adjudicated: ${run.output.final_decision || run.output.resolution_decision || 'Resolved'}`
+                  : isCalibrationSample
+                  ? 'Target: Active learning calibration'
+                  : reviewCaseId
+                    ? 'Target SLA: 15m (Awaiting review)'
+                    : 'Autonomously resolved'}
               </div>
             </div>
           </div>

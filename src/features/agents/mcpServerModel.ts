@@ -24,17 +24,7 @@ export interface RegisterMcpServerRequest {
 
 const STORAGE_PREFIX = 'arda_mcp_servers_';
 
-const BASELINE_SERVERS: McpServerDefinition[] = [
-  {
-    id: 'mcp-tx-conn',
-    name: 'Transaction MCP Gateway',
-    description: 'Core financial ledger & transaction simulator with hard guardrail validation',
-    transport: 'inprocess',
-    endpoint: 'mcp://inprocess/mcp-tx-conn',
-    status: 'CONNECTED',
-    created_at: '2026-10-27T16:00:00Z',
-  },
-];
+const BASELINE_SERVERS: McpServerDefinition[] = [];
 
 export const parseMcpHandlerId = (handlerId: string): { serverId: string; toolName: string } | null => {
   if (!handlerId.startsWith('mcp:')) return null;

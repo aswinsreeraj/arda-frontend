@@ -48,7 +48,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('arda_runs_cache');
       localStorage.removeItem('arda_runs_store');
       if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/signup')) {
-        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+        window.location.href = '/login';
       }
     }
 

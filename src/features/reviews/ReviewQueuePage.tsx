@@ -23,6 +23,8 @@ import {
   Edit3,
   RefreshCw,
   ChevronRight,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -303,6 +305,18 @@ export const ReviewQueuePage: React.FC = () => {
     }
   };
 
+  const effectiveThreshold =
+    caseDetail && caseDetail.reliability_threshold > 0
+      ? caseDetail.reliability_threshold
+      : 0.85;
+
+  const isPolicyEscalation = Boolean(
+    caseDetail &&
+      caseDetail.escalation_reasons &&
+      caseDetail.escalation_reasons.length > 0 &&
+      caseDetail.confidence <= 0
+  );
+
   return (
     <main className="flex-1 flex overflow-hidden select-none bg-slate-100 dark:bg-[#141414] text-slate-900 dark:text-neutral-200">
       {/* Toast Notification */}
@@ -566,41 +580,51 @@ export const ReviewQueuePage: React.FC = () => {
           ) : (
             <>
               {/* Top Inspector Header */}
-              <div className="p-4 border-b border-slate-200 dark:border-[#232323] space-y-2 flex-none bg-white dark:bg-[#161616]">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
+              <div className="p-4 border-b border-slate-200 dark:border-[#232323] space-y-3 flex-none bg-white dark:bg-[#161616]">
+                {/* Row 1: Case ID, Status, Mode & Navigation */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
                     {getPriorityBadge(caseDetail.confidence)}
-                    <span className="font-mono text-sm font-semibold text-slate-900 dark:text-white">
+                    <span className="font-mono text-sm font-bold text-slate-900 dark:text-white tracking-tight">
                       {caseDetail.case_id || caseDetail.id}
-                    </span>
-                    <span className="font-mono text-xs text-slate-500 dark:text-neutral-400">
-                      {caseDetail.execution_id}
                     </span>
                     <span
                       className={clsx(
-                        'text-[10px] px-1.5 py-0.5 rounded font-mono uppercase font-semibold border',
+                        'text-[10px] px-2 py-0.5 rounded-full font-mono uppercase font-semibold border',
+                        caseDetail.status === 'RESOLVED'
+                          ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
+                          : 'bg-amber-950/40 text-amber-400 border-amber-800/40'
+                      )}
+                    >
+                      ● {caseDetail.status.toLowerCase()}
+                    </span>
+                    <span
+                      className={clsx(
+                        'text-[10px] px-2 py-0.5 rounded-full font-mono uppercase font-semibold border',
                         caseDetail.execution_mode === 'durable'
-                          ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-purple-300'
-                          : 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800/60 text-blue-700 dark:text-blue-300'
+                          ? 'bg-purple-950/50 border-purple-800/50 text-purple-300'
+                          : 'bg-blue-950/50 border-blue-800/50 text-blue-300'
                       )}
                     >
                       {caseDetail.execution_mode}
                     </span>
                   </div>
 
-                  {/* Navigation Shortcuts */}
-                  <div className="flex items-center space-x-3 text-xs text-slate-500 dark:text-neutral-400">
-                    <span>
-                      {currentIndex >= 0 ? currentIndex + 1 : 1} of {filteredCases.length}
-                    </span>
-                    <div className="flex items-center space-x-1">
+                  {/* Navigation Shortcuts & Close */}
+                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-neutral-400 shrink-0">
+                    <div className="flex items-center bg-[#1c1c1c] border border-[#2c2c2c] rounded-md px-2 py-1 gap-1.5">
+                      <span className="text-[11px] font-mono font-medium text-gray-300">
+                        {currentIndex >= 0 ? currentIndex + 1 : 1} of {filteredCases.length}
+                      </span>
+                      <div className="w-px h-3 bg-[#333] mx-0.5" />
                       <button
                         disabled={currentIndex <= 0}
                         onClick={() => {
                           if (currentIndex > 0)
                             handleSelectCase(filteredCases[currentIndex - 1].case_id);
                         }}
-                        className="p-1 hover:bg-[#222] rounded text-neutral-400 hover:text-white transition-colors disabled:opacity-30"
+                        className="p-0.5 hover:bg-[#282828] rounded text-neutral-400 hover:text-white transition disabled:opacity-30 cursor-pointer"
+                        title="Previous case (k)"
                       >
                         <ChevronUp className="w-3.5 h-3.5" />
                       </button>
@@ -610,7 +634,8 @@ export const ReviewQueuePage: React.FC = () => {
                           if (currentIndex < filteredCases.length - 1)
                             handleSelectCase(filteredCases[currentIndex + 1].case_id);
                         }}
-                        className="p-1 hover:bg-[#222] rounded text-neutral-400 hover:text-white transition-colors disabled:opacity-30"
+                        className="p-0.5 hover:bg-[#282828] rounded text-neutral-400 hover:text-white transition disabled:opacity-30 cursor-pointer"
+                        title="Next case (j)"
                       >
                         <ChevronDown className="w-3.5 h-3.5" />
                       </button>
@@ -620,27 +645,68 @@ export const ReviewQueuePage: React.FC = () => {
                     <button
                       onClick={() => navigate('/reviews')}
                       title="Close inspector (Esc)"
-                      className="p-1 hover:bg-slate-200 dark:hover:bg-[#222] rounded text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white transition-colors ml-1 cursor-pointer"
+                      className="p-1.5 hover:bg-slate-200 dark:hover:bg-[#242424] rounded-md text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer border border-transparent hover:border-[#333]"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-baseline space-x-2">
-                    <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                {/* Row 2: Agent Name, Version & Time */}
+                <div className="flex items-center justify-between text-xs pt-0.5">
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white">
                       {caseDetail.agent_name}
                     </h2>
-                    <span className="font-mono text-xs text-slate-500 dark:text-neutral-400">
+                    <span className="font-mono text-[11px] text-gray-300 px-2 py-0.5 rounded bg-[#222] border border-[#303030]">
                       v{caseDetail.agent_version_number || 1}
                     </span>
                     <span className="text-slate-400 dark:text-neutral-600">·</span>
-                    <span className="text-xs text-slate-500 dark:text-neutral-400">
-                      {new Date(caseDetail.created_at).toLocaleTimeString()}
+                    <span className="flex items-center gap-1 text-slate-500 dark:text-neutral-400 text-[11px]">
+                      <Clock className="w-3 h-3 text-gray-500" />
+                      {new Date(caseDetail.created_at).toLocaleString()}
                     </span>
                   </div>
                 </div>
+
+                {/* Row 3: Workflow / Execution Reference */}
+                {caseDetail.execution_id && (
+                  <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded bg-[#121212] border border-[#222] text-[11px] font-mono text-gray-400">
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="text-gray-500 uppercase tracking-wider text-[10px] shrink-0 font-semibold">
+                        Workflow:
+                      </span>
+                      <span className="truncate text-gray-300" title={caseDetail.execution_id}>
+                        {caseDetail.execution_id}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(caseDetail.execution_id);
+                          setToastNotice({ message: 'Workflow ID copied to clipboard', type: 'info' });
+                          setTimeout(() => setToastNotice(null), 2000);
+                        }}
+                        className="text-[10px] text-gray-400 hover:text-white px-1.5 py-0.5 rounded hover:bg-[#202020] transition cursor-pointer flex items-center gap-1"
+                        title="Copy workflow ID"
+                      >
+                        <Copy className="w-2.5 h-2.5" />
+                        <span>Copy</span>
+                      </button>
+                      <a
+                        href={`http://localhost:8233/namespaces/default/workflows/${encodeURIComponent(caseDetail.execution_id)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] text-blue-400 hover:text-blue-300 inline-flex items-center gap-1 hover:underline"
+                        title="Inspect in Temporal UI"
+                      >
+                        <ExternalLink className="w-2.5 h-2.5" />
+                        <span>Temporal</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Inspector Scrollable Content Area */}
@@ -862,6 +928,7 @@ export const ReviewQueuePage: React.FC = () => {
                       </span>
                       <p className="text-xs text-slate-700 dark:text-neutral-300 leading-relaxed font-sans bg-slate-50 dark:bg-[#131313] p-2.5 rounded border border-slate-200 dark:border-[#222]">
                         {caseDetail.frozen_evidence?.agent_reasoning ||
+                          caseDetail.escalation_reasons?.[0] ||
                           'No explicit rationale string provided by runtime.'}
                       </p>
                     </div>
@@ -874,61 +941,92 @@ export const ReviewQueuePage: React.FC = () => {
                         Reliability Calibration
                       </h3>
                       <span className="text-[10px] font-mono text-neutral-400">
-                        τ = {caseDetail.reliability_threshold.toFixed(2)}
+                        τ = {effectiveThreshold.toFixed(2)}
                       </span>
                     </div>
 
-                    {/* Score & Gauge Bar */}
-                    <div className="space-y-2">
-                      <div className="flex items-baseline space-x-2">
-                        <span
-                          className={clsx(
-                            'text-2xl font-bold font-mono',
-                            caseDetail.confidence >= caseDetail.reliability_threshold
-                              ? 'text-emerald-400'
-                              : 'text-amber-400'
-                          )}
-                        >
-                          {caseDetail.confidence.toFixed(2)}
-                        </span>
-                        <span className="text-xs text-neutral-400">
-                          calibrated confidence
-                        </span>
-                      </div>
-
-                      {/* Progress Bar with Tau Marker */}
-                      <div className="relative pt-1">
-                        <div className="h-2 w-full bg-[#252525] rounded-full overflow-hidden flex">
-                          <div
-                            className={clsx(
-                              'h-full rounded-full transition-all',
-                              caseDetail.confidence >= caseDetail.reliability_threshold
-                                ? 'bg-emerald-500'
-                                : 'bg-amber-500'
-                            )}
-                            style={{
-                              width: `${Math.min(100, Math.max(0, caseDetail.confidence * 100))}%`,
-                            }}
-                          />
-                        </div>
-                        {/* Threshold marker at tau */}
-                        <div
-                          className="absolute top-0 bottom-0 flex flex-col items-center"
-                          style={{
-                            left: `${Math.min(98, Math.max(2, caseDetail.reliability_threshold * 100))}%`,
-                          }}
-                        >
-                          <div className="w-0.5 h-3.5 bg-neutral-200 shadow" />
-                          <span className="text-[9px] font-mono text-neutral-400 mt-0.5 font-semibold">
-                            τ {caseDetail.reliability_threshold.toFixed(2)}
+                    {isPolicyEscalation ? (
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-950/50 text-amber-400 border border-amber-800/50">
+                              Policy Breach
+                            </span>
+                            <span className="text-xs text-neutral-400">
+                              Deterministic Override
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-mono text-gray-400">
+                            Threshold τ = {effectiveThreshold.toFixed(2)}
                           </span>
                         </div>
-                        <div className="flex justify-between text-[10px] font-mono text-neutral-500 mt-2">
-                          <span>0.00</span>
-                          <span>1.00</span>
+
+                        <div className="p-2.5 rounded bg-[#131313] border border-[#222] text-xs space-y-1">
+                          <div className="text-gray-400 text-[11px]">
+                            Confidence gate bypassed by governance rule:
+                          </div>
+                          <div className="text-amber-300 font-mono text-[11px] font-medium leading-relaxed">
+                            {caseDetail.escalation_reasons[0] || 'Governance limit exceeded'}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 pt-1 border-t border-[#222]">
+                          <span>Gate Status: <strong className="text-amber-400">ESCALATED</strong></span>
+                          <span>Evaluation: <strong className="text-gray-300">Policy Trigger</strong></span>
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="space-y-2.5">
+                        <div className="flex items-baseline justify-between">
+                          <div className="flex items-baseline gap-2">
+                            <span
+                              className={clsx(
+                                'text-2xl font-bold font-mono',
+                                caseDetail.confidence >= effectiveThreshold
+                                  ? 'text-emerald-400'
+                                  : 'text-amber-400'
+                              )}
+                            >
+                              {caseDetail.confidence.toFixed(2)}
+                            </span>
+                            <span className="text-xs text-neutral-400">
+                              calibrated confidence (p)
+                            </span>
+                          </div>
+                          <span className="text-xs font-mono">
+                            {caseDetail.confidence < effectiveThreshold ? (
+                              <span className="text-amber-400 font-medium">p &lt; τ (Escalated)</span>
+                            ) : (
+                              <span className="text-emerald-400 font-medium">p &ge; τ (Reliable)</span>
+                            )}
+                          </span>
+                        </div>
+
+                        {/* Progress Bar with Tau Marker */}
+                        <div className="space-y-1.5">
+                          <div className="relative h-2.5 w-full bg-[#202020] rounded-full overflow-hidden border border-[#2c2c2c]">
+                            <div
+                              className={clsx(
+                                'h-full rounded-full transition-all',
+                                caseDetail.confidence >= effectiveThreshold
+                                  ? 'bg-emerald-500'
+                                  : 'bg-amber-500'
+                              )}
+                              style={{
+                                width: `${Math.min(100, Math.max(3, caseDetail.confidence * 100))}%`,
+                              }}
+                            />
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] font-mono text-neutral-400">
+                            <span>0.00</span>
+                            <span className="text-amber-300 font-semibold bg-[#222] px-1.5 py-0.2 rounded border border-[#333]">
+                              τ = {effectiveThreshold.toFixed(2)}
+                            </span>
+                            <span>1.00</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Reference Neighbors (Similar Cases) */}
                     {caseDetail.frozen_evidence?.neighbors &&

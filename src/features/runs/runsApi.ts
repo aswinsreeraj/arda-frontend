@@ -67,13 +67,43 @@ export const runsApi = {
     // 1. Fetch escalated & adjudicated review cases from backend
     let reviewRuns: RunDetail[] = [];
     try {
-      const resp = await apiClient.get<ListReviewsResponse>('/reviews?page_size=50', {
+      // Query ALL review cases (both OPEN and RESOLVED) so escalated executions retain their governance classification
+      const resp = await apiClient.get<ListReviewsResponse>('/reviews?status=ALL&page_size=100', {
         signal,
       });
       const cases = resp.data.cases || [];
 
+      // Fetch resolution details for resolved cases
+      const detailsMap = new Map<string, any>();
+      const resolvedList = cases.filter((c) => c.status === 'RESOLVED');
+      await Promise.all(
+        resolvedList.map(async (c) => {
+          try {
+            const detailResp = await apiClient.get<any>(`/reviews/${c.case_id}`, { signal });
+            if (detailResp.data) {
+              detailsMap.set(c.case_id, detailResp.data);
+            }
+          } catch {
+            // ignore detail fetch errors
+          }
+        })
+      );
+
       reviewRuns = cases.map((c) => {
         const caseId = c.case_id;
+        const caseObj = c as any;
+        const detail = detailsMap.get(caseId);
+        const finalDecision =
+          detail?.resolution?.final_decision ||
+          detail?.resolution?.decision ||
+          caseObj.final_decision ||
+          caseObj.decision;
+        const resolutionReason =
+          detail?.resolution?.resolution_reason || caseObj.resolution_reason;
+        const reviewerId = detail?.resolution?.reviewer_id || caseObj.reviewer_id;
+        const auditRecordId =
+          detail?.resolution?.audit_record_id || caseObj.audit_record_id;
+
         const toolCalls: ToolCallTrace[] = [
           {
             name: 'get_transaction',
@@ -125,21 +155,38 @@ export const runsApi = {
           },
           {
             id: `span-esc-${caseId}`,
-            name: `Human Escalation (${c.escalation_reasons.join(', ') || 'Confidence review'})`,
+            name:
+              c.status === 'RESOLVED'
+                ? `Human Escalation: Resolved (${finalDecision || 'Approved'})`
+                : `Human Escalation: Pending Review (${(c.escalation_reasons || []).join(', ') || 'Confidence review'})`,
             type: 'escalation',
             status: c.status === 'RESOLVED' ? 'completed' : 'running',
             timestamp: c.created_at,
             duration_ms: 80,
-            details: { case_id: caseId, target_sla: '15m' },
+            details: {
+              case_id: caseId,
+              target_sla: '15m',
+              resolution_status: c.status,
+              final_decision: finalDecision,
+              resolution_reason: resolutionReason,
+            },
           },
         ];
 
-        const status: RunStatus = c.status === 'RESOLVED' ? 'success' : 'escalated';
+        // In ARDA AI governance, an execution that escalated MUST retain status 'escalated',
+        // distinguishing it from autonomous success even after human adjudication.
+        const status: RunStatus = 'escalated';
 
         const currentTenantId = localStorage.getItem(AUTH_TENANT_KEY) || '';
-        const workflowId = currentTenantId
-          ? `tenant-${currentTenantId}-agent-${c.agent_id}-${caseId.slice(0, 8)}`
-          : `agent-exec-${c.agent_id}-${caseId.slice(0, 8)}`;
+        const workflowId =
+          c.execution_id ||
+          (currentTenantId
+            ? `tenant-${currentTenantId}-agent-${c.agent_id}-${caseId.slice(0, 8)}`
+            : `agent-exec-${c.agent_id}-${caseId.slice(0, 8)}`);
+
+        const reasonsText = Array.isArray(c.escalation_reasons)
+          ? c.escalation_reasons.join(', ')
+          : c.escalation_reasons || 'Governance threshold exceeded';
 
         return {
           id: c.execution_id || caseId,
@@ -159,13 +206,23 @@ export const runsApi = {
           },
           output: {
             proposed_decision: c.proposed_decision,
+            final_decision: finalDecision,
+            resolution_decision: detail?.resolution?.decision,
+            resolution_status: c.status,
+            resolution_reason: resolutionReason,
+            reviewer_id: reviewerId,
+            audit_record_id: auditRecordId,
+            case_id: caseId,
           },
-          reason: `Escalated to human review: ${c.escalation_reasons.join(', ')}`,
-          confidence: c.confidence,
+          reason:
+            c.status === 'RESOLVED'
+              ? `Escalated to human review & resolved (${finalDecision || 'Approved'}): ${resolutionReason || 'Adjudicated by reviewer'}`
+              : `Escalated to human review: ${reasonsText}`,
+          confidence: c.confidence || 0.62,
           reliability_threshold: 0.85,
           escalation: {
             case_id: caseId,
-            reason: c.escalation_reasons.join(', '),
+            reason: reasonsText,
           },
           tool_calls: toolCalls,
           spans,
@@ -204,18 +261,57 @@ export const runsApi = {
           }
         }
 
+        // Build lookup map for review cases (authoritative for escalated/resolved cases)
+        const revMap = new Map<string, RunDetail>();
+        for (const rev of reviewRuns) {
+          if (rev.workflow_id) revMap.set(rev.workflow_id, rev);
+          if (rev.id) revMap.set(rev.id, rev);
+          if (rev.run_id) revMap.set(rev.run_id, rev);
+          if (rev.escalation?.case_id) revMap.set(rev.escalation.case_id, rev);
+          const parts = rev.workflow_id.split('-');
+          if (parts.length >= 5) {
+            const lastPart = rev.workflow_id.substring(rev.workflow_id.lastIndexOf('-') + 1);
+            if (lastPart) revMap.set(lastPart, rev);
+          }
+        }
+
         let cacheUpdated = false;
 
         // Reconcile and synchronize status for each local run
         localRuns = localRuns.map((r) => {
           const matched = tMap.get(r.workflow_id) || tMap.get(r.run_id) || tMap.get(r.id);
+          const reviewMatch =
+            revMap.get(r.workflow_id) ||
+            revMap.get(r.id) ||
+            revMap.get(r.run_id) ||
+            (r.escalation?.case_id ? revMap.get(r.escalation.case_id) : undefined);
+
+          let duration = r.duration_ms;
+          if (matched && matched.closeTime && matched.startTime) {
+            const diff = new Date(matched.closeTime).getTime() - new Date(matched.startTime).getTime();
+            if (diff > 0) duration = diff;
+          }
+
+          if (reviewMatch) {
+            // Execution has an active or resolved human review case — this is authoritative!
+            if (r.status !== 'escalated' || !r.escalation || r.duration_ms !== duration) {
+              cacheUpdated = true;
+            }
+            return {
+              ...r,
+              id: r.workflow_id || reviewMatch.workflow_id || r.id,
+              status: 'escalated' as const,
+              duration_ms: duration,
+              escalation: reviewMatch.escalation || r.escalation,
+              reason: reviewMatch.reason || r.reason,
+              output: { ...r.output, ...reviewMatch.output },
+              confidence: reviewMatch.confidence ?? r.confidence,
+              spans: reviewMatch.spans || r.spans,
+            };
+          }
+
           if (matched) {
             const actualStatus = mapTemporalStatus(matched.status);
-            let duration = r.duration_ms;
-            if (matched.closeTime && matched.startTime) {
-              const diff = new Date(matched.closeTime).getTime() - new Date(matched.startTime).getTime();
-              if (diff > 0) duration = diff;
-            }
 
             if (r.status !== actualStatus || r.duration_ms !== duration) {
               cacheUpdated = true;
@@ -273,7 +369,7 @@ export const runsApi = {
           if (!wId) continue;
 
           const existsLocally = localRuns.some((r) => r.workflow_id === wId || r.run_id === rId || r.id === wId);
-          const existsReview = reviewRuns.some((r) => r.workflow_id === wId || r.run_id === rId);
+          const existsReview = reviewRuns.some((r) => r.workflow_id === wId || r.run_id === rId || r.id === wId);
 
           const currentTenantId = localStorage.getItem(AUTH_TENANT_KEY) || '';
           if (currentTenantId && wId.startsWith('tenant-') && !wId.startsWith(`tenant-${currentTenantId}-`)) {
@@ -359,13 +455,28 @@ export const runsApi = {
       console.warn('Could not query live Temporal workflows:', err);
     }
 
-    // Combine and deduplicate by id
+    // Combine and deduplicate by canonical execution / workflow ID
     const map = new Map<string, RunDetail>();
     for (const r of localRuns) {
-      map.set(r.id, r);
+      const key = r.workflow_id || r.id;
+      map.set(key, r);
     }
-    for (const r of reviewRuns) {
-      map.set(r.id, r);
+    for (const rev of reviewRuns) {
+      const key = rev.workflow_id || rev.id;
+      const existing = map.get(key);
+      if (existing) {
+        map.set(key, {
+          ...existing,
+          status: rev.status,
+          escalation: rev.escalation,
+          reason: rev.reason,
+          output: { ...existing.output, ...rev.output },
+          confidence: rev.confidence ?? existing.confidence,
+          spans: rev.spans || existing.spans,
+        });
+      } else {
+        map.set(key, rev);
+      }
     }
 
     const allRuns = Array.from(map.values()).sort(

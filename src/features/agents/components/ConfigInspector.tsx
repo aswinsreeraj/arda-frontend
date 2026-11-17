@@ -20,6 +20,9 @@ import {
   Edit3,
   ChevronDown,
   X,
+  Sparkles,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '../agentApi';
@@ -28,7 +31,14 @@ import type {
   AgentConfiguration,
   ExecutionMode,
   ToolDefinition,
+  Credential,
 } from '../types';
+import {
+  ARDA_LLM_PROVIDERS,
+  getProviderDisplayName,
+  getProviderModels,
+  getDefaultModelForProvider,
+} from '../llmProviders';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -68,7 +78,7 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
     prompt_template: '',
     tools: [],
     reliability_threshold: 0.85,
-    execution_mode: 'supervised' as ExecutionMode,
+    execution_mode: 'durable' as ExecutionMode,
     guardrails: {},
     budgets: {},
     llm_config: { provider: 'groq', model: 'llama-3.3-70b-versatile' },
@@ -77,17 +87,11 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
 
   const [promptTemplate, setPromptTemplate] = useState(initialConfig.prompt_template || '');
   const [executionMode, setExecutionMode] = useState<ExecutionMode>(
-    initialConfig.execution_mode || 'supervised'
+    initialConfig.execution_mode || 'durable'
   );
   const [selectedTools, setSelectedTools] = useState<string[]>(initialConfig.tools || []);
   const [threshold, setThreshold] = useState<number>(
     initialConfig.reliability_threshold ?? 0.85
-  );
-  const [llmProvider, setLlmProvider] = useState<string>(
-    initialConfig.llm_config?.provider || 'groq'
-  );
-  const [llmModel, setLlmModel] = useState<string>(
-    initialConfig.llm_config?.model || 'llama-3.3-70b-versatile'
   );
   const [strictSchema, setStrictSchema] = useState<boolean>(
     initialConfig.output_schema?.strict ?? true
@@ -101,6 +105,102 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
     text: string;
   } | null>(null);
   const [copiedId, setCopiedId] = useState(false);
+
+  // Fetch active credentials from Vault
+  const { data: credentials = [] } = useQuery<Credential[]>({
+    queryKey: ['credentials'],
+    queryFn: ({ signal }) => agentApi.listCredentials(signal),
+  });
+
+  const activeLlmCredentials = useMemo(
+    () => credentials.filter((c) => c.category === 'llm'),
+    [credentials]
+  );
+
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [selectedCredentialId, setSelectedCredentialId] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const [isCustomModel, setIsCustomModel] = useState<boolean>(false);
+
+  // Active LLM provider: user selection > initial config > first active key in Vault > 'google'
+  const llmProvider = useMemo(() => {
+    if (selectedProvider) return selectedProvider;
+    if (initialConfig.llm_config?.provider && initialConfig.llm_config.provider !== 'groq') {
+      return initialConfig.llm_config.provider;
+    }
+    if (activeLlmCredentials.length > 0) {
+      return activeLlmCredentials[0].provider;
+    }
+    return initialConfig.llm_config?.provider || 'google';
+  }, [selectedProvider, initialConfig.llm_config, activeLlmCredentials]);
+
+  // Active credential selected or matching current provider
+  const matchingCredential = useMemo(() => {
+    if (selectedCredentialId) {
+      const match = activeLlmCredentials.find((c) => c.id === selectedCredentialId);
+      if (match) return match;
+    }
+    return activeLlmCredentials.find(
+      (c) =>
+        c.provider.toLowerCase() === llmProvider.toLowerCase() ||
+        (llmProvider.toLowerCase() === 'gemini' && c.provider.toLowerCase() === 'google') ||
+        (llmProvider.toLowerCase() === 'google' && c.provider.toLowerCase() === 'gemini')
+    );
+  }, [activeLlmCredentials, llmProvider, selectedCredentialId]);
+
+  // Query live models from API key if matchingCredential exists
+  const {
+    data: liveModelsData,
+    isLoading: isFetchingModels,
+    isError: isModelsError,
+    refetch: refetchLiveModels,
+  } = useQuery({
+    queryKey: ['credentialModels', matchingCredential?.id],
+    queryFn: ({ signal }) =>
+      matchingCredential
+        ? agentApi.listCredentialModels(matchingCredential.id, signal)
+        : Promise.resolve({ credential_id: '', provider: '', models: [] }),
+    enabled: !!matchingCredential?.id,
+    staleTime: 60 * 1000,
+  });
+
+  const liveModelIds = useMemo(() => {
+    if (!liveModelsData?.models || liveModelsData.models.length === 0) return [];
+    return liveModelsData.models.map((m) => m.id);
+  }, [liveModelsData]);
+
+  const availableModels = useMemo(() => {
+    if (liveModelIds.length > 0) {
+      return liveModelIds;
+    }
+    return getProviderModels(llmProvider);
+  }, [liveModelIds, llmProvider]);
+
+  const llmModel = useMemo(() => {
+    if (selectedModel) return selectedModel;
+    if (
+      initialConfig.llm_config?.model &&
+      initialConfig.llm_config.provider === llmProvider
+    ) {
+      return initialConfig.llm_config.model;
+    }
+    if (liveModelIds.length > 0) {
+      if (liveModelIds.includes('gemini-3.5-flash-lite')) {
+        return 'gemini-3.5-flash-lite';
+      }
+      return liveModelIds[0];
+    }
+    return getDefaultModelForProvider(llmProvider) || 'gemini-3.5-flash-lite';
+  }, [selectedModel, initialConfig.llm_config, llmProvider, liveModelIds]);
+
+  const hasActiveKey = useMemo(() => {
+    return activeLlmCredentials.some(
+      (c) =>
+        c.provider.toLowerCase() === llmProvider.toLowerCase() ||
+        (llmProvider.toLowerCase() === 'gemini' && c.provider.toLowerCase() === 'google') ||
+        (llmProvider.toLowerCase() === 'google' && c.provider.toLowerCase() === 'gemini')
+    );
+  }, [activeLlmCredentials, llmProvider]);
 
   // Parse Initial Guardrail Rules
   const parseInitialGuardrails = (): GuardrailRule[] => {
@@ -404,16 +504,17 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
     <div className="space-y-6">
       {/* Top Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-[#282828]">
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2 text-xs text-gray-400">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2.5 text-xs text-gray-400 mb-1">
             <button
+              type="button"
               onClick={onBackToList}
-              className="hover:text-white flex items-center gap-1 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#333] bg-[#1a1a1a] hover:bg-[#262626] hover:border-gray-500 text-xs font-medium text-gray-300 hover:text-white transition shadow-sm group cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5 text-gray-400 group-hover:text-white" />
               <span>Agents</span>
             </button>
-            <span>/</span>
+            <span className="text-gray-600">/</span>
             <span className="text-gray-200 font-medium">{agentDetail.agent.name}</span>
           </div>
           <div className="flex items-center space-x-3">
@@ -570,73 +671,233 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
 
               {/* Execution Mode Selector */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-300">Execution mode</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-gray-300">Execution mode</label>
+                  <span className="text-[10px] text-emerald-400/90 font-medium flex items-center gap-1">
+                    <span>🛡️ Reliability Service Gate Enforced (p ≥ τ) on both modes</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => setExecutionMode('supervised')}
-                    className={`p-3 rounded-lg border text-left transition ${executionMode === 'supervised'
-                      ? 'border-blue-500 bg-blue-950/20 text-white'
-                      : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
-                      }`}
+                    onClick={() => setExecutionMode('durable')}
+                    className={`p-3 rounded-lg border text-left transition ${
+                      executionMode === 'durable' || executionMode === 'supervised' || executionMode === 'gated' || executionMode === 'human_in_the_loop'
+                        ? 'border-blue-500 bg-blue-950/20 text-white'
+                        : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
+                    }`}
                   >
-                    <div className="font-semibold text-xs text-blue-300">Supervised / Durable</div>
-                    <div className="text-[11px] text-gray-400 mt-0.5">
-                      Orchestrated via Temporal with human escalation safety net.
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold text-xs text-blue-300">Durable (Temporal Workflow)</div>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono">
+                        temporal
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-gray-400 mt-1">
+                      Asynchronous stateful execution with event replay, checkpointing, and durable suspension during human review.
                     </div>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setExecutionMode('autonomous')}
-                    className={`p-3 rounded-lg border text-left transition ${executionMode === 'autonomous'
-                      ? 'border-blue-500 bg-blue-950/20 text-white'
-                      : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
-                      }`}
+                    onClick={() => setExecutionMode('realtime')}
+                    className={`p-3 rounded-lg border text-left transition ${
+                      executionMode === 'realtime' || executionMode === 'autonomous'
+                        ? 'border-emerald-500 bg-emerald-950/20 text-white'
+                        : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
+                    }`}
                   >
-                    <div className="font-semibold text-xs text-emerald-300">Autonomous</div>
-                    <div className="text-[11px] text-gray-400 mt-0.5">
-                      Direct automated resolution above the reliability threshold.
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold text-xs text-emerald-300">Realtime (Go Runtime)</div>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-mono">
+                        sync
+                      </span>
                     </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setExecutionMode('human_in_the_loop')}
-                    className={`p-3 rounded-lg border text-left transition ${executionMode === 'human_in_the_loop'
-                      ? 'border-blue-500 bg-blue-950/20 text-white'
-                      : 'border-[#282828] bg-[#141414] text-gray-400 hover:text-white'
-                      }`}
-                  >
-                    <div className="font-semibold text-xs text-amber-300">Human-in-the-Loop</div>
-                    <div className="text-[11px] text-gray-400 mt-0.5">
-                      Every proposed decision routes through the human review queue.
+                    <div className="text-[11px] text-gray-400 mt-1">
+                      Low-latency in-process execution via direct Go AgentRuntime for instant API responses (no Temporal overhead).
                     </div>
                   </button>
                 </div>
+                <p className="text-[11px] text-gray-500 leading-relaxed">
+                  Every 10th autonomous decision (p ≥ τ) is automatically escalated to human review as an active learning calibration sample to continuously refine the Reliability Service vector embeddings.
+                </p>
               </div>
 
               {/* LLM Runtime Configuration */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-[#242424]">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-300">LLM Provider</label>
-                  <input
-                    type="text"
-                    value={llmProvider}
-                    onChange={(e) => setLlmProvider(e.target.value)}
-                    placeholder="e.g. groq, openai, anthropic"
-                    className="w-full bg-[#141414] border border-[#2e2e2e] rounded-md px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none"
-                  />
+              <div className="space-y-3 pt-3 border-t border-[#242424]">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="text-xs font-semibold text-white flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+                      <span>LLM Runtime Configuration</span>
+                    </h4>
+                    <p className="text-[11px] text-gray-400">
+                      Select the model provider and model version for this agent.
+                    </p>
+                  </div>
+                  {hasActiveKey ? (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-950/40 text-emerald-400 border border-emerald-800/50">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Key Configured (Vault)
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-950/40 text-amber-400 border border-amber-800/50">
+                      <AlertTriangle className="w-3 h-3 text-amber-500" />
+                      No Vault Key Configured
+                    </span>
+                  )}
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-300">Model Identifier</label>
-                  <input
-                    type="text"
-                    value={llmModel}
-                    onChange={(e) => setLlmModel(e.target.value)}
-                    placeholder="e.g. llama-3.3-70b-versatile"
-                    className="w-full bg-[#141414] border border-[#2e2e2e] rounded-md px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none font-mono"
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* LLM Provider Selection Dropdown */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-gray-300 flex items-center justify-between">
+                      <span>LLM Provider & Key</span>
+                      {activeLlmCredentials.length > 0 && (
+                        <span className="text-[10px] text-emerald-400 font-mono">
+                          {activeLlmCredentials.length} active key{activeLlmCredentials.length > 1 ? 's' : ''} in Vault
+                        </span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={matchingCredential ? `key:${matchingCredential.id}` : `provider:${llmProvider}`}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val.startsWith('key:')) {
+                            const credId = val.replace('key:', '');
+                            const cred = activeLlmCredentials.find((c) => c.id === credId);
+                            if (cred) {
+                              setSelectedCredentialId(cred.id);
+                              setSelectedProvider(cred.provider);
+                              const defaultModel = getDefaultModelForProvider(cred.provider);
+                              setSelectedModel(defaultModel);
+                              setIsCustomModel(false);
+                            }
+                          } else {
+                            const newProvider = val.replace('provider:', '');
+                            setSelectedCredentialId(null);
+                            setSelectedProvider(newProvider);
+                            const defaultModel = getDefaultModelForProvider(newProvider);
+                            setSelectedModel(defaultModel);
+                            setIsCustomModel(false);
+                          }
+                        }}
+                        className="w-full bg-[#141414] border border-[#2e2e2e] rounded-md px-3 py-1.5 text-xs text-white focus:border-blue-500 focus:outline-none appearance-none pr-8 cursor-pointer"
+                      >
+                        {activeLlmCredentials.length > 0 && (
+                          <optgroup label="Active Keys in Vault (Configured & Ready)">
+                            {activeLlmCredentials.map((c) => (
+                              <option key={c.id} value={`key:${c.id}`}>
+                                ● {getProviderDisplayName(c.provider)} ({c.provider}) — Key #{c.id.slice(0, 8)}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="All Supported Providers (Without Vault Key)">
+                          {ARDA_LLM_PROVIDERS.filter(
+                            (p) =>
+                              !activeLlmCredentials.some(
+                                (c) => c.provider.toLowerCase() === p.id.toLowerCase()
+                              )
+                          ).map((p) => (
+                            <option key={p.id} value={`provider:${p.id}`}>
+                              {p.name} ({p.id})
+                            </option>
+                          ))}
+                        </optgroup>
+                      </select>
+                      <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Model Identifier Selection Dropdown / Input */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-gray-300">Model Identifier</label>
+                      {matchingCredential && (
+                        <div className="flex items-center gap-1.5">
+                          {isFetchingModels ? (
+                            <span className="flex items-center gap-1 text-[10px] text-blue-400 font-mono">
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <span>Fetching live models...</span>
+                            </span>
+                          ) : liveModelIds.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => void refetchLiveModels()}
+                              title="Click to refresh live models from provider API"
+                              className="flex items-center gap-1 text-[10px] text-emerald-400 hover:text-emerald-300 font-mono transition"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>{liveModelIds.length} live models</span>
+                              <RefreshCw className="w-2.5 h-2.5 ml-0.5 opacity-70 hover:opacity-100" />
+                            </button>
+                          ) : isModelsError ? (
+                            <button
+                              type="button"
+                              onClick={() => void refetchLiveModels()}
+                              title="Failed to fetch live models; click to retry"
+                              className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 font-mono transition"
+                            >
+                              <span>Static defaults (retry)</span>
+                              <RefreshCw className="w-2.5 h-2.5" />
+                            </button>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                    {availableModels.length > 0 ? (
+                      <div className="relative">
+                        <select
+                          value={availableModels.includes(llmModel) ? llmModel : '__custom__'}
+                          onChange={(e) => {
+                            if (e.target.value === '__custom__') {
+                              setIsCustomModel(true);
+                            } else {
+                              setIsCustomModel(false);
+                              setSelectedModel(e.target.value);
+                            }
+                          }}
+                          className="w-full bg-[#141414] border border-[#2e2e2e] rounded-md px-3 py-1.5 text-xs text-white focus:border-blue-500 focus:outline-none appearance-none pr-8 font-mono cursor-pointer"
+                        >
+                          {availableModels.map((m, idx) => {
+                            const meta = liveModelsData?.models?.find((x) => x.id === m);
+                            const label =
+                              meta && meta.display_name && meta.display_name !== m
+                                ? `${meta.display_name} (${m})`
+                                : m;
+                            return (
+                              <option key={m} value={m}>
+                                {label} {idx === 0 ? '(Recommended)' : ''}
+                              </option>
+                            );
+                          })}
+                          <option value="__custom__">Custom model identifier...</option>
+                        </select>
+                        <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        value={llmModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        placeholder="e.g. gemini-3.5-flash-lite"
+                        className="w-full bg-[#141414] border border-[#2e2e2e] rounded-md px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:border-blue-500 focus:outline-none font-mono"
+                      />
+                    )}
+
+                    {isCustomModel && (
+                      <input
+                        type="text"
+                        value={llmModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        placeholder="Enter custom model identifier"
+                        className="w-full bg-[#141414] border border-blue-500 rounded-md px-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none font-mono mt-1.5"
+                        autoFocus
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

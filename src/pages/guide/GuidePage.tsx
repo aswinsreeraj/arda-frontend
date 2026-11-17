@@ -536,7 +536,7 @@ Status: 200 OK
               </p>
             </div>
 
-            {/* Mock Escalation Case Card */}
+            {/* Example Escalation Case Card */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
               <div className="md:col-span-8 bg-[#1b1b1b] border border-[#2a2a2a] rounded-lg overflow-hidden text-[12px] shadow-lg">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#282828] bg-[#1f1f1f]">

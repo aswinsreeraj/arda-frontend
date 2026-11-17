@@ -8,7 +8,7 @@ import {
   ChevronDown,
   ExternalLink,
 } from 'lucide-react';
-import type { RunDetail, RunStatus } from '../types';
+import type { RunDetail } from '../types';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { TEMPORAL_UI_BASE_URL } from '@/services/api';
@@ -50,20 +50,30 @@ export const RunsTable: React.FC<RunsTableProps> = ({
     });
   }, [runs, searchQuery, statusFilter, modeFilter]);
 
-  const getStatusBadge = (status: RunStatus) => {
-    switch (status) {
+  const getStatusBadge = (run: RunDetail) => {
+    switch (run.status) {
       case 'success':
         return (
           <Badge variant="healthy" dot>
             success
           </Badge>
         );
-      case 'escalated':
+      case 'escalated': {
+        const finalDecision = run.output?.final_decision as string | undefined;
+        const resolutionDecision = run.output?.resolution_decision as string | undefined;
+        const decisionText = (finalDecision || resolutionDecision)?.toLowerCase();
+        const isResolved = Boolean(run.output?.resolution_status === 'RESOLVED' || decisionText);
+
         return (
           <Badge variant="review" dot>
-            escalated
+            {isResolved && decisionText
+              ? `escalated · ${decisionText}`
+              : isResolved
+                ? 'escalated · resolved'
+                : 'escalated'}
           </Badge>
         );
+      }
       case 'running':
       case 'accepted':
         return (
@@ -283,7 +293,7 @@ export const RunsTable: React.FC<RunsTableProps> = ({
                       </Badge>
                     </td>
 
-                    <td className="py-3.5 px-4">{getStatusBadge(run.status)}</td>
+                    <td className="py-3.5 px-4">{getStatusBadge(run)}</td>
 
                     <td className="py-3.5 px-4 font-mono text-gray-200 text-xs sm:text-sm">
                       {run.duration_ms}ms

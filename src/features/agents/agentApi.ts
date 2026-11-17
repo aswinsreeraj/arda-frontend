@@ -13,6 +13,7 @@ import type {
   ToolDefinition,
   UpdateVersionRequest,
   VerifyCredentialResponse,
+  CredentialModelsResponse,
 } from './types';
 
 export const agentApi = {
@@ -245,5 +246,20 @@ export const agentApi = {
    */
   deleteCredential: async (id: string, signal?: AbortSignal): Promise<void> => {
     await apiClient.delete(`/credentials/${encodeURIComponent(id)}`, { signal });
+  },
+
+  /**
+   * Fetches real-time models available for a specific vaulted credential API key.
+   * Registered route: GET /api/v1/credentials/:id/models
+   */
+  listCredentialModels: async (
+    id: string,
+    signal?: AbortSignal
+  ): Promise<CredentialModelsResponse> => {
+    const response = await apiClient.get<CredentialModelsResponse>(
+      `/credentials/${encodeURIComponent(id)}/models`,
+      { signal }
+    );
+    return response.data;
   },
 };

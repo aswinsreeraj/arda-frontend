@@ -148,7 +148,7 @@ export const router = createBrowserRouter([
       {
         path: '/audit',
         element: (
-          <RoleGuard allowedRoles={['super_admin', 'company_admin', 'reviewer', 'agent_developer']}>
+          <RoleGuard allowedRoles={['company_admin', 'reviewer', 'agent_developer']}>
             <AuditTrailPage />
           </RoleGuard>
         ),

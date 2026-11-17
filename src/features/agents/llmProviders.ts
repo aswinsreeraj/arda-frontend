@@ -35,7 +35,17 @@ export const ARDA_LLM_PROVIDERS: LLMProviderMeta[] = [
     id: 'google',
     name: 'Google Gemini',
     aliases: ['gemini'],
-    models: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-2.0-flash'],
+    models: [
+      'gemini-3.5-flash-lite',
+      'gemini-3.8-flash',
+      'gemini-3.5-flash',
+      'gemini-flash-latest',
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-pro-latest',
+    ],
     description: 'Google DeepMind Gemini API for multimodal reasoning and fast execution',
     placeholderKey: 'AIzaSy...',
   },
@@ -63,14 +73,6 @@ export const ARDA_LLM_PROVIDERS: LLMProviderMeta[] = [
     description: 'Unified routing gateway to open-source and proprietary models',
     placeholderKey: 'sk-or-v1-...',
   },
-  {
-    id: 'mock',
-    name: 'Mock LLM (Runtime)',
-    aliases: [],
-    models: ['mock-model'],
-    description: 'In-memory deterministic test provider for simulated execution and verification',
-    placeholderKey: 'mock-secret-key-123',
-  },
 ];
 
 export const getProviderDisplayName = (providerId: string): string => {
@@ -80,3 +82,17 @@ export const getProviderDisplayName = (providerId: string): string => {
   );
   return match ? `${match.name} (${match.id})` : providerId;
 };
+
+export const getProviderModels = (providerId: string): string[] => {
+  const clean = providerId.trim().toLowerCase();
+  const match = ARDA_LLM_PROVIDERS.find(
+    (p) => p.id === clean || p.aliases.includes(clean)
+  );
+  return match ? match.models : [];
+};
+
+export const getDefaultModelForProvider = (providerId: string): string => {
+  const models = getProviderModels(providerId);
+  return models.length > 0 ? models[0] : '';
+};
+

@@ -18,7 +18,7 @@ export const RegisterAgentModal: React.FC<RegisterAgentModalProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
-  const [executionMode, setExecutionMode] = useState<ExecutionMode>('supervised');
+  const [executionMode, setExecutionMode] = useState<ExecutionMode>('durable');
   const [promptTemplate, setPromptTemplate] = useState('');
   const [threshold, setThreshold] = useState(0.85);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export const RegisterAgentModal: React.FC<RegisterAgentModalProps> = ({
 
   const resetForm = () => {
     setName('');
-    setExecutionMode('supervised');
+    setExecutionMode('durable');
     setPromptTemplate('');
     setThreshold(0.85);
     setErrorMsg(null);
@@ -115,29 +115,31 @@ export const RegisterAgentModal: React.FC<RegisterAgentModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => setExecutionMode('supervised')}
-                className={`py-2 px-3 border rounded-md text-center transition font-medium ${
-                  executionMode === 'supervised'
+                onClick={() => setExecutionMode('durable')}
+                className={`py-2 px-3 border rounded-md text-left transition ${
+                  executionMode === 'durable' || executionMode === 'supervised' || executionMode === 'gated'
                     ? 'border-blue-500 bg-blue-950/30 text-blue-300'
                     : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
                 }`}
               >
-                Durable / Supervised
+                <div className="font-medium text-xs">Durable (Temporal)</div>
+                <div className="text-[10px] text-gray-400 mt-0.5">Asynchronous workflow with replay & checkpoints</div>
               </button>
               <button
                 type="button"
-                onClick={() => setExecutionMode('autonomous')}
-                className={`py-2 px-3 border rounded-md text-center transition font-medium ${
-                  executionMode === 'autonomous'
-                    ? 'border-blue-500 bg-blue-950/30 text-blue-300'
+                onClick={() => setExecutionMode('realtime')}
+                className={`py-2 px-3 border rounded-md text-left transition ${
+                  executionMode === 'realtime' || executionMode === 'autonomous'
+                    ? 'border-emerald-500 bg-emerald-950/30 text-emerald-300'
                     : 'border-[#2f2f2f] bg-[#141414] text-gray-400 hover:text-white'
                 }`}
               >
-                Autonomous
+                <div className="font-medium text-xs">Realtime (In-Process)</div>
+                <div className="text-[10px] text-gray-400 mt-0.5">Sub-second synchronous Go runtime (no Temporal)</div>
               </button>
             </div>
-            <span className="text-[10px] text-gray-500 block">
-              Durable agents execute within the governed Temporal workflow engine with full audit trails.
+            <span className="text-[10px] text-gray-400 flex items-center gap-1 mt-1">
+              <span>🛡️ Reliability Service Gate Enforced (p ≥ τ) on both modes · 1-in-10 sampled for calibration</span>
             </span>
           </div>
 

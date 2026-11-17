@@ -54,7 +54,7 @@ export const OrgPage: React.FC = () => {
 
   const deleteMemberMutation = useMutation({
     mutationFn: (member: TenantMember) =>
-      orgApi.deleteMember(tenantId, member.user_id, member.email),
+      orgApi.deleteMember(tenantId, member),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenant-members', tenantId] });
     },

@@ -3,7 +3,7 @@
  * Matching ARDA Go backend models and database schemas strictly.
  */
 
-export type ExecutionMode = 'supervised' | 'autonomous' | 'human_in_the_loop' | 'gated';
+export type ExecutionMode = 'durable' | 'realtime' | 'supervised' | 'autonomous' | 'human_in_the_loop' | 'gated';
 
 export interface LLMConfig {
   provider?: string;
@@ -151,4 +151,15 @@ export interface VerifyCredentialResponse {
   verified: boolean;
   reference: string;
   message: string;
+}
+
+export interface CredentialModelInfo {
+  id: string;
+  display_name: string;
+}
+
+export interface CredentialModelsResponse {
+  credential_id: string;
+  provider: string;
+  models: CredentialModelInfo[];
 }

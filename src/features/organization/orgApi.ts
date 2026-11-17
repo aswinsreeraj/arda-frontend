@@ -190,25 +190,100 @@ export const orgApi = {
   },
 
   /**
-   * Removes or deletes a member from the organization.
+   * Removes or deletes a member or revokes a pending invitation.
    */
-  deleteMember: async (tenantId: string, userId: string, email: string): Promise<void> => {
-    try {
-      await apiClient.delete(
-        `/tenants/${encodeURIComponent(tenantId)}/members/${encodeURIComponent(userId)}`
-      );
-    } catch {
-      // Ignored for seeds
+  deleteMember: async (
+    tenantId: string,
+    userIdOrMember: string | TenantMember,
+    email?: string
+  ): Promise<void> => {
+    let member: { id?: string; user_id?: string; email: string; status?: string };
+    if (typeof userIdOrMember === 'object' && userIdOrMember !== null) {
+      member = userIdOrMember;
+    } else {
+      member = {
+        user_id: userIdOrMember,
+        email: email || '',
+      };
     }
 
+    const emailParam = member.email ? encodeURIComponent(member.email) : '';
+    const isInvited =
+      member.status === 'invited' ||
+      !member.user_id ||
+      member.user_id === '00000000-0000-0000-0000-000000000000' ||
+      member.user_id.startsWith('usr_inv_');
+
+    if (isInvited) {
+      let revoked = false;
+      // 1. If valid invitation ID (not placeholder), try deleting by inviteId
+      if (
+        member.id &&
+        member.id !== '00000000-0000-0000-0000-000000000000' &&
+        !member.id.startsWith('mem_inv_')
+      ) {
+        try {
+          await apiClient.delete(
+            `/tenants/${encodeURIComponent(tenantId)}/invites/${encodeURIComponent(member.id)}${emailParam ? `?email=${emailParam}` : ''}`
+          );
+          revoked = true;
+        } catch {
+          // fallback to email
+        }
+      }
+
+      // 2. Try deleting invitation by query email
+      if (!revoked && emailParam) {
+        try {
+          await apiClient.delete(`/tenants/${encodeURIComponent(tenantId)}/invites?email=${emailParam}`);
+          revoked = true;
+        } catch {
+          // fallback
+        }
+      }
+
+      // 3. Fallback to members endpoint
+      if (!revoked) {
+        try {
+          const targetId = member.id || member.user_id || '00000000-0000-0000-0000-000000000000';
+          await apiClient.delete(
+            `/tenants/${encodeURIComponent(tenantId)}/members/${encodeURIComponent(targetId)}${emailParam ? `?email=${emailParam}` : ''}`
+          );
+        } catch {
+          // Ignored
+        }
+      }
+    } else {
+      const targetId = member.user_id || member.id || '';
+      try {
+        await apiClient.delete(
+          `/tenants/${encodeURIComponent(tenantId)}/members/${encodeURIComponent(targetId)}${emailParam ? `?email=${emailParam}` : ''}`
+        );
+      } catch {
+        // Fallback to invites endpoint if user was only invited
+        if (emailParam) {
+          try {
+            await apiClient.delete(`/tenants/${encodeURIComponent(tenantId)}/invites?email=${emailParam}`);
+          } catch {
+            // Ignored
+          }
+        }
+      }
+    }
+
+    // Clean up local caches
     const currentInvites = getLocalInvites().filter(
-      (m) => m.user_id !== userId && m.email.toLowerCase() !== email.toLowerCase()
+      (m) =>
+        (member.id ? m.id !== member.id : true) &&
+        (member.user_id ? m.user_id !== member.user_id : true) &&
+        (member.email ? m.email.toLowerCase() !== member.email.toLowerCase() : true)
     );
     saveLocalInvites(currentInvites);
 
     const overrides = getLocalOverrides();
-    delete overrides[userId];
-    delete overrides[email.toLowerCase()];
+    if (member.user_id) delete overrides[member.user_id];
+    if (member.id) delete overrides[member.id];
+    if (member.email) delete overrides[member.email.toLowerCase()];
     saveLocalOverrides(overrides);
   },
 };

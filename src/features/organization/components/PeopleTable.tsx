@@ -3,7 +3,7 @@ import type { MemberStatus, TenantMember, TenantRole } from '../types';
 import { Mail, ChevronDown, MoreHorizontal, UserX, UserCheck, Trash2, Send, Copy } from 'lucide-react';
 import { useAuthStore } from '@/features/auth/authStore';
 import { apiClient } from '@/services/api';
-
+import { ConfirmDeleteMemberModal } from './ConfirmDeleteMemberModal';
 
 interface PeopleTableProps {
   members: TenantMember[];
@@ -19,6 +19,7 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
   onDeleteMember,
 }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [memberToDelete, setMemberToDelete] = useState<TenantMember | null>(null);
   const user = useAuthStore((s) => s.user);
 
   const getInitials = (name: string, email: string) => {
@@ -231,16 +232,16 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
                                           email: member.email,
                                           role: member.role,
                                         });
-                                        alert(`Invitation email resent to ${member.email} via Mailtrap!`);
+                                        alert(`Invitation email resent to ${member.email}`);
                                       } catch {
-                                        alert(`Invitation email dispatched to Mailtrap inbox for ${member.email}`);
+                                        alert(`Invitation email resent to ${member.email}`);
                                       }
                                     }
                                   }}
                                   className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-slate-700 dark:text-neutral-300 cursor-pointer"
                                 >
                                   <Send className="w-3.5 h-3.5 text-sky-500" />
-                                  <span>Resend via Mailtrap</span>
+                                  <span>Resend mail invitation</span>
                                 </button>
                               </>
                             )}
@@ -274,14 +275,12 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
                             <button
                               onClick={() => {
                                 setActiveMenuId(null);
-                                if (confirm(`Remove ${member.email} from the organization?`)) {
-                                  onDeleteMember(member);
-                                }
+                                setMemberToDelete(member);
                               }}
                               className="w-full px-3 py-1.5 text-left hover:bg-slate-50 dark:hover:bg-[#252525] flex items-center space-x-2 text-rose-600 dark:text-rose-400 border-t border-slate-100 dark:border-[#262626] mt-1 pt-1 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              <span>Remove member</span>
+                              <span>{isInvited ? 'Revoke invitation' : 'Remove member'}</span>
                             </button>
                           </div>
                         </>
@@ -295,6 +294,14 @@ export const PeopleTable: React.FC<PeopleTableProps> = ({
           })}
         </tbody>
       </table>
+
+      {/* Confirmation Modal for Permanent Member Removal / Invite Revocation */}
+      <ConfirmDeleteMemberModal
+        isOpen={Boolean(memberToDelete)}
+        member={memberToDelete}
+        onClose={() => setMemberToDelete(null)}
+        onConfirm={onDeleteMember}
+      />
     </div>
   );
 };
