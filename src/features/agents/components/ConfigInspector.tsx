@@ -39,6 +39,7 @@ import {
   getProviderModels,
   getDefaultModelForProvider,
 } from '../llmProviders';
+import { isMcpServerMetaTool } from '../mcpServerModel';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/features/auth/authStore';
@@ -329,10 +330,11 @@ export const ConfigInspector: React.FC<ConfigInspectorProps> = ({
     setIsGuardrailModalOpen(false);
   };
 
-  // Fetch registered tools
+  // Fetch registered tools (excluding hidden MCP server metadata records)
   const { data: availableTools = [] } = useQuery<ToolDefinition[]>({
     queryKey: ['tools'],
     queryFn: ({ signal }) => agentApi.listTools(signal),
+    select: (data) => data.filter((t) => !isMcpServerMetaTool(t)),
   });
 
   // Extract detected template variables

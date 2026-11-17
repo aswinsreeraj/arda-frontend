@@ -27,10 +27,13 @@ import { useAuthStore } from '@/features/auth/authStore';
 import type { McpServerDefinition, McpTransport } from '../mcpServerModel';
 import {
   getStoredMcpServers,
-  saveMcpServer,
   deleteMcpServerFromStorage,
   formatMcpHandlerId,
+  formatMcpServerMetaHandlerId,
+  formatMcpServerMetaToolName,
+  isMcpServerMetaTool,
   parseMcpHandlerId,
+  serializeMcpServerMeta,
 } from '../mcpServerModel';
 
 export const McpServersTab: React.FC = () => {
@@ -67,7 +70,14 @@ export const McpServersTab: React.FC = () => {
   // Copied indicator state
   const [copiedEndpoint, setCopiedEndpoint] = useState(false);
 
+  // Server register / delete async states
+  const [isRegisteringServer, setIsRegisteringServer] = useState(false);
+  const [deletingServerId, setDeletingServerId] = useState<string | null>(null);
+  const [serverActionError, setServerActionError] = useState<string | null>(null);
+
   // RBAC permissions
+  // Only company_admin can register or delete MCP servers.
+  const canManageServers = user?.role === 'company_admin';
   const canManageTools = user?.role === 'company_admin' || user?.role === 'agent_developer';
   const canDeleteTools = user?.role === 'company_admin';
 
@@ -93,9 +103,10 @@ export const McpServersTab: React.FC = () => {
   const mcpServers = getStoredMcpServers(tenantId, tools, credentials);
   const selectedServer = mcpServers.find((s) => s.id === selectedServerId) || null;
 
-  // Filter tools belonging to the selected MCP server
+  // Filter tools belonging to the selected MCP server (excluding hidden server metadata records)
   const serverTools = selectedServer
     ? tools.filter((t) => {
+        if (isMcpServerMetaTool(t)) return false;
         const parsed = parseMcpHandlerId(t.handler_id);
         if (parsed) return parsed.serverId.toLowerCase() === selectedServer.id.toLowerCase();
         return t.handler_id.toLowerCase().includes(selectedServer.id.toLowerCase());
@@ -152,9 +163,14 @@ export const McpServersTab: React.FC = () => {
     },
   });
 
-  // Register MCP Server Handler
+  // Register MCP Server Handler (company_admin only)
   const handleRegisterServerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canManageServers) {
+      setServerModalError('Only Company Admins can register MCP servers');
+      return;
+    }
+
     const cleanId = serverFormId.trim().toLowerCase();
     if (!cleanId) {
       setServerModalError('Server identifier is required (e.g. postgres-mcp)');
@@ -162,6 +178,10 @@ export const McpServersTab: React.FC = () => {
     }
     if (!/^[a-z0-9_-]+$/.test(cleanId)) {
       setServerModalError('Server ID must contain only lowercase letters, numbers, hyphens, and underscores');
+      return;
+    }
+    if (mcpServers.some((s) => s.id.toLowerCase() === cleanId)) {
+      setServerModalError(`An MCP server with identifier "${cleanId}" is already registered`);
       return;
     }
     if (!serverFormName.trim()) {
@@ -173,7 +193,18 @@ export const McpServersTab: React.FC = () => {
       return;
     }
 
+    setIsRegisteringServer(true);
+    setServerModalError(null);
+    setServerActionError(null);
+
     try {
+      const endpointValue =
+        serverFormTransport === 'inprocess'
+          ? `mcp://inprocess/${cleanId}`
+          : serverFormEndpoint.trim();
+
+      const descriptionValue = serverFormDesc.trim() || 'Custom Model Context Protocol server';
+
       // 1. If an auth token was provided, save to Vault credentials under category 'mcp'
       if (serverFormToken.trim()) {
         await agentApi.saveCredential({
@@ -181,24 +212,36 @@ export const McpServersTab: React.FC = () => {
           provider: cleanId,
           secret_value: serverFormToken.trim(),
         });
-        queryClient.invalidateQueries({ queryKey: ['credentials'] });
       }
 
-      // 2. Persist the MCP server definition
-      const newServer: McpServerDefinition = {
-        id: cleanId,
-        name: serverFormName.trim(),
-        description: serverFormDesc.trim() || 'Custom Model Context Protocol server',
-        transport: serverFormTransport,
-        endpoint:
-          serverFormTransport === 'inprocess'
-            ? `mcp://inprocess/${cleanId}`
-            : serverFormEndpoint.trim(),
-        status: 'CONNECTED',
-        created_at: new Date().toISOString(),
-      };
+      // 2. Persist the MCP server metadata record in PostgreSQL via a disabled sentinel tool
+      // so all tenant members (company_admin and agent_developer) see it across any browser/session.
+      const metaTool = await agentApi.registerTool({
+        name: formatMcpServerMetaToolName(cleanId),
+        description: serializeMcpServerMeta({
+          name: serverFormName.trim(),
+          description: descriptionValue,
+          transport: serverFormTransport,
+          endpoint: endpointValue,
+        }),
+        classification: 'read',
+        handler_id: formatMcpServerMetaHandlerId(cleanId),
+        input_schema: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
+        enabled: false,
+      });
 
-      saveMcpServer(tenantId, newServer);
+      // Keep the sentinel metadata record disabled so it is never exposed as an executable tool
+      await agentApi.setToolEnabled(metaTool.id, false);
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tools'] }),
+        queryClient.invalidateQueries({ queryKey: ['credentials'] }),
+      ]);
+      await queryClient.refetchQueries({ queryKey: ['tools'] });
 
       // Reset form & navigate into details view
       setIsRegisterServerOpen(false);
@@ -213,6 +256,8 @@ export const McpServersTab: React.FC = () => {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to register MCP server';
       setServerModalError(msg);
+    } finally {
+      setIsRegisteringServer(false);
     }
   };
 
@@ -233,13 +278,55 @@ export const McpServersTab: React.FC = () => {
     setTimeout(() => setCopiedEndpoint(false), 2000);
   };
 
-  const handleDeleteServer = (server: McpServerDefinition) => {
-    if (confirm(`Remove MCP Server "${server.name}" (${server.id})? Existing tool mappings may become inactive.`)) {
+  const handleDeleteServer = async (server: McpServerDefinition) => {
+    if (!canManageServers) return;
+    if (
+      !confirm(
+        `Delete MCP Server "${server.name}" (${server.id})? This will also delete all tools registered under this server and its vaulted credential (if any).`
+      )
+    ) {
+      return;
+    }
+
+    setDeletingServerId(server.id);
+    setServerActionError(null);
+
+    try {
+      // 1. Delete all backend tools belonging to this server (including sentinel metadata record)
+      const toolsToDelete = tools.filter((t) => {
+        const parsed = parseMcpHandlerId(t.handler_id);
+        return parsed !== null && parsed.serverId.toLowerCase() === server.id.toLowerCase();
+      });
+
+      for (const tool of toolsToDelete) {
+        await agentApi.deleteTool(tool.id);
+      }
+
+      // 2. Delete any Vault credential associated with this server
+      const credsToDelete = credentials.filter(
+        (c) => c.category === 'mcp' && c.provider.toLowerCase() === server.id.toLowerCase()
+      );
+
+      for (const cred of credsToDelete) {
+        await agentApi.deleteCredential(cred.id);
+      }
+
+      // 3. Remove any legacy localStorage cache entry
       deleteMcpServerFromStorage(tenantId, server.id);
+
       if (selectedServerId === server.id) {
         setSelectedServerId(null);
       }
-      queryClient.invalidateQueries({ queryKey: ['tools'] });
+
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['tools'] }),
+        queryClient.invalidateQueries({ queryKey: ['credentials'] }),
+      ]);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete MCP server';
+      setServerActionError(msg);
+    } finally {
+      setDeletingServerId(null);
     }
   };
 
@@ -293,11 +380,13 @@ export const McpServersTab: React.FC = () => {
                 Add Tool to Server
               </Button>
             )}
-            {canDeleteTools && (
+            {canManageServers && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleDeleteServer(selectedServer)}
+                isLoading={deletingServerId === selectedServer.id}
+                disabled={deletingServerId !== null}
                 className="text-red-600 hover:text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/40"
               >
                 Delete Server
@@ -305,6 +394,22 @@ export const McpServersTab: React.FC = () => {
             )}
           </div>
         </div>
+
+        {serverActionError && (
+          <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />
+              <span>{serverActionError}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setServerActionError(null)}
+              className="text-red-500 hover:text-red-700 dark:hover:text-red-200 p-1"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Server Metadata Grid */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -682,11 +787,14 @@ export const McpServersTab: React.FC = () => {
           >
             Refresh
           </Button>
-          {canManageTools && (
+          {canManageServers && (
             <Button
               variant="primary"
               size="sm"
-              onClick={() => setIsRegisterServerOpen(true)}
+              onClick={() => {
+                setServerModalError(null);
+                setIsRegisterServerOpen(true);
+              }}
               icon={<Plus className="w-3.5 h-3.5" />}
             >
               Register MCP Server
@@ -695,7 +803,7 @@ export const McpServersTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Error state */}
+      {/* Error states */}
       {toolsError && (
         <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -705,6 +813,22 @@ export const McpServersTab: React.FC = () => {
           <Button variant="outline" size="sm" onClick={() => refetchTools()}>
             Retry
           </Button>
+        </div>
+      )}
+
+      {serverActionError && (
+        <div className="p-3.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-300 text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500 dark:text-red-400" />
+            <span>{serverActionError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setServerActionError(null)}
+            className="text-red-500 hover:text-red-700 dark:hover:text-red-200 p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
@@ -722,105 +846,152 @@ export const McpServersTab: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-[#242424]">
-            {mcpServers.map((server) => {
-              const count = tools.filter((t) => {
-                const parsed = parseMcpHandlerId(t.handler_id);
-                if (parsed) return parsed.serverId.toLowerCase() === server.id.toLowerCase();
-                return t.handler_id.toLowerCase().includes(server.id.toLowerCase());
-              }).length;
+            {isLoadingTools && mcpServers.length === 0 ? (
+              Array.from({ length: 2 }).map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  <td className="py-4 px-4">
+                    <div className="h-4 bg-slate-200 dark:bg-[#282828] rounded w-36 mb-1" />
+                    <div className="h-3 bg-slate-100 dark:bg-[#202020] rounded w-48" />
+                  </td>
+                  <td className="py-4 px-4"><div className="h-4 bg-slate-200 dark:bg-[#252525] rounded w-20" /></td>
+                  <td className="py-4 px-4"><div className="h-4 bg-slate-200 dark:bg-[#252525] rounded w-36" /></td>
+                  <td className="py-4 px-4"><div className="h-4 bg-slate-200 dark:bg-[#252525] rounded w-16" /></td>
+                  <td className="py-4 px-4"><div className="h-4 bg-slate-200 dark:bg-[#252525] rounded w-20" /></td>
+                  <td className="py-4 px-4" />
+                </tr>
+              ))
+            ) : mcpServers.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="py-12 text-center">
+                  <Server className="w-8 h-8 text-slate-400 dark:text-gray-600 mx-auto mb-2" />
+                  <p className="text-slate-800 dark:text-gray-300 font-medium text-sm">
+                    No MCP servers registered
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-gray-500 mt-1 max-w-sm mx-auto">
+                    {canManageServers
+                      ? 'Register an MCP server to connect external tool providers for your organization.'
+                      : 'No MCP servers have been configured yet. Contact your Company Admin to register an MCP server.'}
+                  </p>
+                  {canManageServers && (
+                    <div className="mt-4">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => {
+                          setServerModalError(null);
+                          setIsRegisterServerOpen(true);
+                        }}
+                        icon={<Plus className="w-3.5 h-3.5" />}
+                      >
+                        Register MCP Server
+                      </Button>
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ) : (
+              mcpServers.map((server) => {
+                const count = tools.filter((t) => {
+                  if (isMcpServerMetaTool(t)) return false;
+                  const parsed = parseMcpHandlerId(t.handler_id);
+                  if (parsed) return parsed.serverId.toLowerCase() === server.id.toLowerCase();
+                  return t.handler_id.toLowerCase().includes(server.id.toLowerCase());
+                }).length;
 
-              const hasVaultSecret = credentials.some(
-                (c) => c.category === 'mcp' && c.provider.toLowerCase() === server.id.toLowerCase()
-              );
+                const hasVaultSecret = credentials.some(
+                  (c) => c.category === 'mcp' && c.provider.toLowerCase() === server.id.toLowerCase()
+                );
 
-              return (
-                <tr
-                  key={server.id}
-                  onClick={() => setSelectedServerId(server.id)}
-                  className="hover:bg-slate-50 dark:hover:bg-[#1d1d1d] transition cursor-pointer group"
-                >
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-2">
-                      <Server className="w-4 h-4 text-blue-500 shrink-0" />
-                      <div>
-                        <div className="font-semibold text-slate-900 dark:text-white text-xs flex items-center gap-1.5">
-                          <span>{server.name}</span>
-                          <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-[#252525] text-slate-600 dark:text-neutral-400 border border-slate-200 dark:border-[#333]">
-                            {server.id}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 line-clamp-1">
-                          {server.description}
+                return (
+                  <tr
+                    key={server.id}
+                    onClick={() => setSelectedServerId(server.id)}
+                    className="hover:bg-slate-50 dark:hover:bg-[#1d1d1d] transition cursor-pointer group"
+                  >
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2">
+                        <Server className="w-4 h-4 text-blue-500 shrink-0" />
+                        <div>
+                          <div className="font-semibold text-slate-900 dark:text-white text-xs flex items-center gap-1.5">
+                            <span>{server.name}</span>
+                            <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-slate-100 dark:bg-[#252525] text-slate-600 dark:text-neutral-400 border border-slate-200 dark:border-[#333]">
+                              {server.id}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 line-clamp-1">
+                            {server.description}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  <td className="py-3.5 px-4 font-mono text-xs">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-slate-100 dark:bg-[#242424] text-slate-700 dark:text-neutral-300 border border-slate-200 dark:border-[#333] capitalize">
-                      {server.transport.replace('_', ' ')}
-                    </span>
-                  </td>
-
-                  <td className="py-3.5 px-4 font-mono text-[11px] text-slate-600 dark:text-neutral-400 max-w-[200px] truncate">
-                    {server.endpoint}
-                  </td>
-
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 dark:text-neutral-200">
-                        <Wrench className="w-3.5 h-3.5 text-blue-500" />
-                        <span>{count} {count === 1 ? 'tool' : 'tools'}</span>
+                    <td className="py-3.5 px-4 font-mono text-xs">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] bg-slate-100 dark:bg-[#242424] text-slate-700 dark:text-neutral-300 border border-slate-200 dark:border-[#333] capitalize">
+                        {server.transport.replace('_', ' ')}
                       </span>
-                      {hasVaultSecret && (
-                        <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40">
-                          <ShieldCheck className="w-3 h-3" />
-                          <span>Vault</span>
+                    </td>
+
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-slate-600 dark:text-neutral-400 max-w-[200px] truncate">
+                      {server.endpoint}
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-800 dark:text-neutral-200">
+                          <Wrench className="w-3.5 h-3.5 text-blue-500" />
+                          <span>{count} {count === 1 ? 'tool' : 'tools'}</span>
                         </span>
-                      )}
-                    </div>
-                  </td>
+                        {hasVaultSecret && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40">
+                            <ShieldCheck className="w-3 h-3" />
+                            <span>Vault</span>
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                  <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{server.status}</span>
-                    </span>
-                  </td>
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span>{server.status}</span>
+                      </span>
+                    </td>
 
-                  <td className="py-3.5 px-4 text-right">
-                    <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setSelectedServerId(server.id)}
-                        className="text-xs group-hover:border-blue-500"
-                      >
-                        <span>Details & Tools</span>
-                        <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                      </Button>
-                      {canDeleteTools && (
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button
-                          variant="ghost"
+                          variant="secondary"
                           size="sm"
-                          onClick={() => handleDeleteServer(server)}
-                          className="text-slate-400 hover:text-red-600 dark:hover:text-red-400 p-1"
-                          title="Delete MCP server"
+                          onClick={() => setSelectedServerId(server.id)}
+                          className="text-xs group-hover:border-blue-500"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Details & Tools</span>
+                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
                         </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        {canManageServers && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={deletingServerId !== null}
+                            onClick={() => handleDeleteServer(server)}
+                            className="text-slate-400 hover:text-red-600 dark:hover:text-red-400 p-1"
+                            title="Delete MCP server"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* Modal: Register MCP Server */}
-      {isRegisterServerOpen && (
+      {/* Modal: Register MCP Server (company_admin only) */}
+      {canManageServers && isRegisterServerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4">
           <div className="bg-white dark:bg-[#1c1c1c] border border-slate-200 dark:border-[#2e2e2e] rounded-xl shadow-2xl max-w-lg w-full overflow-hidden text-xs">
             <div className="px-5 py-4 border-b border-slate-200 dark:border-[#282828] flex items-center justify-between">
@@ -948,6 +1119,7 @@ export const McpServersTab: React.FC = () => {
                   type="submit"
                   variant="primary"
                   size="md"
+                  isLoading={isRegisteringServer}
                 >
                   Register Server
                 </Button>

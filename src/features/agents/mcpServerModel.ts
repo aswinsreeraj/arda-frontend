@@ -22,9 +22,8 @@ export interface RegisterMcpServerRequest {
   authToken?: string;
 }
 
+export const MCP_SERVER_META_TOOL_SUFFIX = '__server_meta__';
 const STORAGE_PREFIX = 'arda_mcp_servers_';
-
-const BASELINE_SERVERS: McpServerDefinition[] = [];
 
 export const parseMcpHandlerId = (handlerId: string): { serverId: string; toolName: string } | null => {
   if (!handlerId.startsWith('mcp:')) return null;
@@ -40,55 +39,142 @@ export const formatMcpHandlerId = (serverId: string, toolName: string): string =
   return `mcp:${serverId.trim().toLowerCase()}:${toolName.trim()}`;
 };
 
+export const formatMcpServerMetaHandlerId = (serverId: string): string => {
+  return formatMcpHandlerId(serverId, MCP_SERVER_META_TOOL_SUFFIX);
+};
+
+export const formatMcpServerMetaToolName = (serverId: string): string => {
+  return `mcp_server_${serverId.trim().toLowerCase()}`;
+};
+
+export const isMcpServerMetaTool = (tool: Pick<ToolDefinition, 'handler_id' | 'name'>): boolean => {
+  const parsed = parseMcpHandlerId(tool.handler_id);
+  return parsed !== null && parsed.toolName === MCP_SERVER_META_TOOL_SUFFIX;
+};
+
+export const serializeMcpServerMeta = (
+  server: Pick<McpServerDefinition, 'name' | 'description' | 'transport' | 'endpoint'>
+): string => {
+  return JSON.stringify({
+    name: server.name,
+    description: server.description,
+    transport: server.transport,
+    endpoint: server.endpoint,
+  });
+};
+
+const parseMcpServerMeta = (
+  raw: string
+): Partial<Pick<McpServerDefinition, 'name' | 'description' | 'transport' | 'endpoint'>> => {
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      return {
+        name: typeof parsed.name === 'string' ? parsed.name : undefined,
+        description: typeof parsed.description === 'string' ? parsed.description : undefined,
+        transport:
+          parsed.transport === 'streamable_http' ||
+          parsed.transport === 'sse' ||
+          parsed.transport === 'inprocess'
+            ? parsed.transport
+            : undefined,
+        endpoint: typeof parsed.endpoint === 'string' ? parsed.endpoint : undefined,
+      };
+    }
+  } catch {
+    // Fallback to defaults if description is not valid JSON
+  }
+  return {};
+};
+
+const getLegacyCachedServers = (tenantId: string): Map<string, McpServerDefinition> => {
+  const map = new Map<string, McpServerDefinition>();
+  try {
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${tenantId}`);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        for (const s of parsed) {
+          if (s && typeof s.id === 'string') {
+            map.set(s.id.toLowerCase(), s as McpServerDefinition);
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore malformed cache
+  }
+  return map;
+};
+
+/**
+ * Derives the tenant's MCP servers strictly from backend-persisted records:
+ * 1. Backend sentinel metadata tools (`mcp:<id>:__server_meta__`)
+ * 2. Registered MCP tool handlers (`mcp:<id>:<tool>`)
+ * 3. Vaulted MCP credentials (`category === 'mcp'`)
+ *
+ * Unpersisted browser-local entries are ignored so all tenant users see the
+ * exact same authoritative MCP server list across sessions.
+ */
 export const getStoredMcpServers = (
   tenantId: string,
   tools: ToolDefinition[] = [],
   credentials: Credential[] = []
 ): McpServerDefinition[] => {
-  let customServers: McpServerDefinition[] = [];
-  try {
-    const raw = localStorage.getItem(`${STORAGE_PREFIX}${tenantId}`);
-    if (raw) {
-      customServers = JSON.parse(raw);
-    }
-  } catch {
-    customServers = [];
-  }
-
-  // Merge baseline and custom servers
   const serverMap = new Map<string, McpServerDefinition>();
-  for (const s of BASELINE_SERVERS) {
-    serverMap.set(s.id, s);
-  }
-  for (const s of customServers) {
-    serverMap.set(s.id, s);
+  const legacyCache = getLegacyCachedServers(tenantId);
+
+  // 1. Authoritative backend sentinel metadata records
+  for (const t of tools) {
+    if (!isMcpServerMetaTool(t)) continue;
+    const parsed = parseMcpHandlerId(t.handler_id);
+    if (!parsed) continue;
+    const serverId = parsed.serverId.toLowerCase();
+    const meta = parseMcpServerMeta(t.description);
+    serverMap.set(serverId, {
+      id: serverId,
+      name: meta.name || `${serverId.charAt(0).toUpperCase() + serverId.slice(1)} MCP`,
+      description: meta.description || 'Custom Model Context Protocol server',
+      transport: meta.transport || 'streamable_http',
+      endpoint: meta.endpoint || `http://${serverId}.internal:8080/mcp`,
+      status: 'CONNECTED',
+      created_at: t.created_at || new Date().toISOString(),
+      updated_at: t.updated_at,
+    });
   }
 
-  // Also discover any server IDs found in tool handlers
+  // 2. Discover any server IDs found in regular tool handlers
   for (const t of tools) {
+    if (isMcpServerMetaTool(t)) continue;
     const parsed = parseMcpHandlerId(t.handler_id);
-    if (parsed && !serverMap.has(parsed.serverId)) {
-      serverMap.set(parsed.serverId, {
-        id: parsed.serverId,
-        name: `${parsed.serverId.charAt(0).toUpperCase() + parsed.serverId.slice(1)} MCP`,
-        description: `Discovered from registered tool handler ${t.handler_id}`,
-        transport: 'streamable_http',
-        endpoint: `http://${parsed.serverId}.internal:8080/mcp`,
+    if (!parsed) continue;
+    const serverId = parsed.serverId.toLowerCase();
+    if (!serverMap.has(serverId)) {
+      const cached = legacyCache.get(serverId);
+      serverMap.set(serverId, {
+        id: serverId,
+        name: cached?.name || `${serverId.charAt(0).toUpperCase() + serverId.slice(1)} MCP`,
+        description: cached?.description || `Discovered from registered tool handler ${t.handler_id}`,
+        transport: cached?.transport || 'streamable_http',
+        endpoint: cached?.endpoint || `http://${serverId}.internal:8080/mcp`,
         status: 'CONNECTED',
         created_at: t.created_at || new Date().toISOString(),
       });
     }
   }
 
-  // Also discover any server IDs found in credentials with category 'mcp'
+  // 3. Discover any server IDs found in credentials with category 'mcp'
   for (const c of credentials) {
-    if (c.category === 'mcp' && !serverMap.has(c.provider)) {
-      serverMap.set(c.provider, {
-        id: c.provider,
-        name: `${c.provider.charAt(0).toUpperCase() + c.provider.slice(1)} Server`,
-        description: 'Vault-secured MCP server endpoint',
-        transport: 'streamable_http',
-        endpoint: `https://${c.provider}.internal.acme.com/mcp`,
+    if (c.category !== 'mcp') continue;
+    const serverId = c.provider.toLowerCase();
+    if (!serverMap.has(serverId)) {
+      const cached = legacyCache.get(serverId);
+      serverMap.set(serverId, {
+        id: serverId,
+        name: cached?.name || `${serverId.charAt(0).toUpperCase() + serverId.slice(1)} Server`,
+        description: cached?.description || 'Vault-secured MCP server endpoint',
+        transport: cached?.transport || 'streamable_http',
+        endpoint: cached?.endpoint || `https://${serverId}.internal.acme.com/mcp`,
         status: 'CONNECTED',
         created_at: c.created_at || new Date().toISOString(),
       });
@@ -98,21 +184,16 @@ export const getStoredMcpServers = (
   return Array.from(serverMap.values());
 };
 
-export const saveMcpServer = (tenantId: string, server: McpServerDefinition): void => {
-  try {
-    const current = getStoredMcpServers(tenantId);
-    const updated = current.filter((s) => s.id !== server.id);
-    updated.push(server);
-    localStorage.setItem(`${STORAGE_PREFIX}${tenantId}`, JSON.stringify(updated));
-  } catch (err) {
-    console.error('Failed to save MCP server to storage:', err);
-  }
-};
-
 export const deleteMcpServerFromStorage = (tenantId: string, serverId: string): void => {
   try {
-    const current = getStoredMcpServers(tenantId);
-    const updated = current.filter((s) => s.id !== serverId);
+    const raw = localStorage.getItem(`${STORAGE_PREFIX}${tenantId}`);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+    const updated = parsed.filter(
+      (s: { id?: string }) =>
+        typeof s?.id === 'string' && s.id.toLowerCase() !== serverId.toLowerCase()
+    );
     localStorage.setItem(`${STORAGE_PREFIX}${tenantId}`, JSON.stringify(updated));
   } catch (err) {
     console.error('Failed to delete MCP server from storage:', err);

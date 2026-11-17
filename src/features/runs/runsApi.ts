@@ -345,7 +345,7 @@ export const runsApi = {
               duration_ms: duration,
               reason:
                 actualStatus === 'failed'
-                  ? 'Temporal workflow execution failed: permanent runtime execution failure (check model credentials in Vault).'
+                  ? 'Temporal workflow execution failed: permanent runtime execution failure (check Temporal UI or worker logs for details).'
                   : r.reason,
               spans: updatedSpans,
             };

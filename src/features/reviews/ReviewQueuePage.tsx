@@ -28,6 +28,15 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 
+const getAgentProposedDecision = (raw?: string | null): 'APPROVE' | 'REJECT' | null => {
+  if (!raw) return null;
+  const normalized = raw.trim().toUpperCase();
+  if (normalized === 'APPROVE' || normalized === 'REJECT') {
+    return normalized;
+  }
+  return null;
+};
+
 export const ReviewQueuePage: React.FC = () => {
   const { caseId } = useParams<{ caseId?: string }>();
   const navigate = useNavigate();
@@ -39,9 +48,9 @@ export const ReviewQueuePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeEvidenceTab, setActiveEvidenceTab] = useState<'tools' | 'input' | 'context'>('tools');
 
-  // Adjudication Modal State
+  // Adjudication Modal State (Accept agent's decision or Override with a different decision)
   const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
-  const [resolveDecision, setResolveDecision] = useState<'approve' | 'reject' | 'override'>('approve');
+  const [resolveDecision, setResolveDecision] = useState<'approve' | 'override'>('approve');
   const [resolveReason, setResolveReason] = useState('');
   const [resolveFinalDecision, setResolveFinalDecision] = useState('');
   const [resolutionError, setResolutionError] = useState<string | null>(null);
@@ -153,8 +162,12 @@ export const ReviewQueuePage: React.FC = () => {
       return await reviewApi.resolveReviewCase(caseIdToResolve, payload);
     },
     onSuccess: (res, variables) => {
+      const actionLabel =
+        variables.payload.decision === 'approve'
+          ? `ACCEPTED (${variables.payload.final_decision || 'AGENT DECISION'})`
+          : `OVERRIDDEN (${variables.payload.final_decision || 'CUSTOM'})`;
       setToastNotice({
-        message: `Case ${res.case_id} adjudicated with ${variables.payload.decision.toUpperCase()}. Audit: ${res.audit_record_id}`,
+        message: `Case ${res.case_id} ${actionLabel}. Audit: ${res.audit_record_id}`,
         type: 'success',
       });
       setIsResolveModalOpen(false);
@@ -191,9 +204,11 @@ export const ReviewQueuePage: React.FC = () => {
     },
   });
 
+  const agentProposedDecision = getAgentProposedDecision(caseDetail?.proposed_decision);
+
   // Open modal for decision
   const triggerAdjudicate = useCallback(
-    (decision: 'approve' | 'reject' | 'override') => {
+    (decision: 'approve' | 'override') => {
       if (!caseDetail) return;
       if (caseDetail.status === 'RESOLVED') {
         setToastNotice({
@@ -203,9 +218,23 @@ export const ReviewQueuePage: React.FC = () => {
         setTimeout(() => setToastNotice(null), 3000);
         return;
       }
+      const proposed = getAgentProposedDecision(caseDetail.proposed_decision);
+      if (decision === 'approve' && !proposed) {
+        return;
+      }
       setResolveDecision(decision);
       setResolveReason('');
-      setResolveFinalDecision(decision === 'override' ? '' : caseDetail.proposed_decision);
+      if (decision === 'override') {
+        if (proposed === 'APPROVE') {
+          setResolveFinalDecision('REJECT');
+        } else if (proposed === 'REJECT') {
+          setResolveFinalDecision('APPROVE');
+        } else {
+          setResolveFinalDecision('');
+        }
+      } else {
+        setResolveFinalDecision(proposed || '');
+      }
       setResolutionError(null);
       setIsResolveModalOpen(true);
     },
@@ -221,9 +250,23 @@ export const ReviewQueuePage: React.FC = () => {
       return;
     }
 
-    if (resolveDecision === 'override' && !resolveFinalDecision.trim()) {
-      setResolutionError('Authoritative final decision is required when overriding.');
+    if (resolveDecision === 'approve' && !agentProposedDecision) {
+      setResolutionError('No agent decision is available to accept. Please override with an authoritative decision.');
       return;
+    }
+
+    if (resolveDecision === 'override') {
+      const trimmedFinal = resolveFinalDecision.trim();
+      if (!trimmedFinal) {
+        setResolutionError('Authoritative final decision is required when overriding.');
+        return;
+      }
+      if (agentProposedDecision && trimmedFinal.toUpperCase() === agentProposedDecision) {
+        setResolutionError(
+          `Override decision must differ from the agent's proposed decision (${agentProposedDecision}). Use Accept instead.`
+        );
+        return;
+      }
     }
 
     setResolutionError(null);
@@ -234,8 +277,8 @@ export const ReviewQueuePage: React.FC = () => {
         reason: resolveReason.trim(),
         final_decision:
           resolveDecision === 'override'
-            ? resolveFinalDecision.trim()
-            : caseDetail.proposed_decision,
+            ? resolveFinalDecision.trim().toUpperCase()
+            : agentProposedDecision || '',
       },
     });
   };
@@ -265,13 +308,8 @@ export const ReviewQueuePage: React.FC = () => {
         }
       } else if (e.key === 'a' || e.key === 'A') {
         e.preventDefault();
-        if (caseDetail?.status !== 'RESOLVED') {
+        if (caseDetail?.status !== 'RESOLVED' && agentProposedDecision) {
           triggerAdjudicate('approve');
-        }
-      } else if (e.key === 'r' || e.key === 'R') {
-        e.preventDefault();
-        if (caseDetail?.status !== 'RESOLVED') {
-          triggerAdjudicate('reject');
         }
       } else if (e.key === 'o' || e.key === 'O') {
         e.preventDefault();
@@ -283,7 +321,15 @@ export const ReviewQueuePage: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, filteredCases, handleSelectCase, triggerAdjudicate, isResolveModalOpen, caseDetail?.status]);
+  }, [
+    currentIndex,
+    filteredCases,
+    handleSelectCase,
+    triggerAdjudicate,
+    isResolveModalOpen,
+    caseDetail?.status,
+    agentProposedDecision,
+  ]);
 
   // Derive priority badge based on confidence and threshold
   const getPriorityBadge = (confidence: number) => {
@@ -515,9 +561,18 @@ export const ReviewQueuePage: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-3 px-3 align-top">
-                        <div className="font-medium text-slate-800 dark:text-neutral-200">
-                          {c.proposed_decision}
-                        </div>
+                        {(() => {
+                          const proposed = getAgentProposedDecision(c.proposed_decision);
+                          return proposed ? (
+                            <div className="font-mono font-semibold text-slate-800 dark:text-neutral-200">
+                              {proposed}
+                            </div>
+                          ) : (
+                            <div className="italic text-slate-400 dark:text-neutral-500">
+                              No decision proposed
+                            </div>
+                          );
+                        })()}
                         <div className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5 line-clamp-1">
                           {c.escalation_reasons[0] || 'Escalation threshold breached'}
                         </div>
@@ -917,8 +972,16 @@ export const ReviewQueuePage: React.FC = () => {
                       <span className="text-[11px] text-slate-500 dark:text-neutral-400">
                         Proposed decision
                       </span>
-                      <div className="font-mono font-semibold text-slate-900 dark:text-white text-xs bg-slate-100 dark:bg-[#222] px-2 py-1 rounded inline-block">
-                        {caseDetail.proposed_decision}
+                      <div>
+                        {agentProposedDecision ? (
+                          <div className="font-mono font-semibold text-slate-900 dark:text-white text-xs bg-slate-100 dark:bg-[#222] px-2 py-1 rounded inline-block">
+                            {agentProposedDecision}
+                          </div>
+                        ) : (
+                          <div className="text-xs italic text-slate-500 dark:text-neutral-400 bg-slate-100 dark:bg-[#222] px-2 py-1 rounded inline-block">
+                            No decision proposed (requires reviewer override)
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1093,35 +1156,38 @@ export const ReviewQueuePage: React.FC = () => {
                 ) : (
                   <>
                     <div className="flex items-center space-x-3">
-                      <button
-                        disabled={resolveMutation.isPending}
-                        onClick={() => triggerAdjudicate('approve')}
-                        className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-200 dark:disabled:bg-[#202020] disabled:text-slate-400 dark:disabled:text-neutral-500 text-white font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 shadow-xs transition-colors cursor-pointer"
-                      >
-                        <span>✓ Approve</span>
-                        <span className="bg-blue-700 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono">
-                          A
-                        </span>
-                      </button>
-
-                      <button
-                        disabled={resolveMutation.isPending}
-                        onClick={() => triggerAdjudicate('reject')}
-                        className="bg-slate-100 dark:bg-[#1f1f1f] hover:bg-slate-200 dark:hover:bg-[#252525] disabled:bg-slate-200 dark:disabled:bg-[#202020] disabled:text-slate-400 dark:disabled:text-neutral-500 border border-rose-300 dark:border-red-900/50 text-rose-600 dark:text-red-400 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer"
-                      >
-                        <span>✕ Reject</span>
-                        <span className="bg-slate-200 dark:bg-[#2a2a2a] text-slate-600 dark:text-neutral-400 px-1.5 py-0.5 rounded text-xs font-mono">
-                          R
-                        </span>
-                      </button>
+                      {agentProposedDecision && (
+                        <button
+                          disabled={resolveMutation.isPending}
+                          onClick={() => triggerAdjudicate('approve')}
+                          className="bg-blue-600 hover:bg-blue-500 disabled:bg-slate-200 dark:disabled:bg-[#202020] disabled:text-slate-400 dark:disabled:text-neutral-500 text-white font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 shadow-xs transition-colors cursor-pointer"
+                        >
+                          <span>✓ Accept ({agentProposedDecision})</span>
+                          <span className="bg-blue-700 text-blue-200 px-1.5 py-0.5 rounded text-xs font-mono">
+                            A
+                          </span>
+                        </button>
+                      )}
 
                       <button
                         disabled={resolveMutation.isPending}
                         onClick={() => triggerAdjudicate('override')}
-                        className="bg-slate-100 dark:bg-[#1f1f1f] hover:bg-slate-200 dark:hover:bg-[#252525] disabled:bg-slate-200 dark:disabled:bg-[#202020] disabled:text-slate-400 dark:disabled:text-neutral-500 border border-slate-300 dark:border-[#333333] hover:border-slate-400 dark:hover:border-neutral-500 text-slate-800 dark:text-neutral-300 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer"
+                        className={clsx(
+                          'disabled:bg-slate-200 dark:disabled:bg-[#202020] disabled:text-slate-400 dark:disabled:text-neutral-500 font-medium px-4 py-2 rounded-md text-sm flex items-center space-x-2 transition-colors cursor-pointer',
+                          agentProposedDecision
+                            ? 'bg-slate-100 dark:bg-[#1f1f1f] hover:bg-slate-200 dark:hover:bg-[#252525] border border-slate-300 dark:border-[#333333] hover:border-slate-400 dark:hover:border-neutral-500 text-slate-800 dark:text-neutral-300'
+                            : 'bg-amber-600 hover:bg-amber-500 text-white shadow-xs'
+                        )}
                       >
-                        <span>✎ Override</span>
-                        <span className="bg-slate-200 dark:bg-[#2a2a2a] text-slate-600 dark:text-neutral-400 px-1.5 py-0.5 rounded text-xs font-mono">
+                        <span>{agentProposedDecision ? '✎ Override' : '✎ Override (Decide)'}</span>
+                        <span
+                          className={clsx(
+                            'px-1.5 py-0.5 rounded text-xs font-mono',
+                            agentProposedDecision
+                              ? 'bg-slate-200 dark:bg-[#2a2a2a] text-slate-600 dark:text-neutral-400'
+                              : 'bg-amber-700 text-amber-100'
+                          )}
+                        >
                           O
                         </span>
                       </button>
@@ -1146,7 +1212,7 @@ export const ReviewQueuePage: React.FC = () => {
       ) : null}
 
       {/* ========================================================= */}
-      {/* ADJUDICATION MODAL (Approve, Reject, Override) */}
+      {/* ADJUDICATION MODAL (Accept Agent Decision or Override) */}
       {/* ========================================================= */}
       {isResolveModalOpen && caseDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
@@ -1155,10 +1221,13 @@ export const ReviewQueuePage: React.FC = () => {
             <div className="px-5 py-3.5 border-b border-[#282828] flex items-center justify-between bg-[#151515]">
               <div className="flex items-center space-x-2">
                 {resolveDecision === 'approve' && <Check className="w-4 h-4 text-emerald-400" />}
-                {resolveDecision === 'reject' && <X className="w-4 h-4 text-red-400" />}
                 {resolveDecision === 'override' && <Edit3 className="w-4 h-4 text-amber-400" />}
-                <h3 className="text-sm font-semibold text-white capitalize">
-                  {resolveDecision} Decision Adjudication
+                <h3 className="text-sm font-semibold text-white">
+                  {resolveDecision === 'approve'
+                    ? `Accept Agent Decision (${agentProposedDecision})`
+                    : agentProposedDecision
+                      ? 'Override Agent Decision'
+                      : 'Provide Authoritative Decision (Override)'}
                 </h3>
               </div>
               <button
@@ -1182,27 +1251,73 @@ export const ReviewQueuePage: React.FC = () => {
                 <div className="text-white font-bold">{caseDetail.case_id || caseDetail.id}</div>
                 <div className="text-neutral-300">
                   Agent Proposal:{' '}
-                  <span className="text-emerald-400">{caseDetail.proposed_decision}</span>
+                  {agentProposedDecision ? (
+                    <span className="text-emerald-400 font-semibold">{agentProposedDecision}</span>
+                  ) : (
+                    <span className="text-neutral-400 italic font-sans">
+                      No decision proposed by agent
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {/* Override requires final_decision */}
+              {/* Override requires selecting or entering an authoritative final decision */}
               {resolveDecision === 'override' && (
-                <div>
-                  <label className="block text-xs font-medium text-neutral-300 mb-1">
+                <div className="space-y-2">
+                  <label className="block text-xs font-medium text-neutral-300">
                     Authoritative Final Decision <span className="text-red-400">*</span>
                   </label>
+
+                  {/* Quick-select contrasting decisions */}
+                  <div className="flex items-center gap-2">
+                    {agentProposedDecision !== 'APPROVE' && (
+                      <button
+                        type="button"
+                        onClick={() => setResolveFinalDecision('APPROVE')}
+                        className={clsx(
+                          'flex-1 px-3 py-2 rounded text-xs font-mono font-semibold border transition-colors cursor-pointer',
+                          resolveFinalDecision.trim().toUpperCase() === 'APPROVE'
+                            ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300'
+                            : 'bg-[#121212] border-[#2e2e2e] text-neutral-300 hover:border-neutral-500'
+                        )}
+                      >
+                        APPROVE
+                      </button>
+                    )}
+                    {agentProposedDecision !== 'REJECT' && (
+                      <button
+                        type="button"
+                        onClick={() => setResolveFinalDecision('REJECT')}
+                        className={clsx(
+                          'flex-1 px-3 py-2 rounded text-xs font-mono font-semibold border transition-colors cursor-pointer',
+                          resolveFinalDecision.trim().toUpperCase() === 'REJECT'
+                            ? 'bg-rose-600/20 border-rose-500 text-rose-300'
+                            : 'bg-[#121212] border-[#2e2e2e] text-neutral-300 hover:border-neutral-500'
+                        )}
+                      >
+                        REJECT
+                      </button>
+                    )}
+                  </div>
+
                   <input
                     type="text"
                     value={resolveFinalDecision}
                     onChange={(e) => setResolveFinalDecision(e.target.value)}
-                    placeholder="e.g. HOLD, MANUAL_PAYOUT, CANCEL_ESCROW"
+                    placeholder={
+                      agentProposedDecision === 'APPROVE'
+                        ? 'e.g. REJECT'
+                        : agentProposedDecision === 'REJECT'
+                          ? 'e.g. APPROVE'
+                          : 'Select APPROVE or REJECT above, or enter custom decision'
+                    }
                     className="w-full bg-[#121212] border border-[#2e2e2e] rounded px-3 py-1.5 text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 font-mono"
                     autoFocus
                   />
-                  <p className="text-[10px] text-neutral-400 mt-1">
-                    This authoritative value replaces the agent's proposed decision in the
-                    temporal workflow and append-only audit trail.
+                  <p className="text-[10px] text-neutral-400">
+                    {agentProposedDecision
+                      ? `Select a decision other than ${agentProposedDecision}. This authoritative value replaces the agent's proposal in Temporal and the audit trail.`
+                      : 'The agent escalated without a decision. Choose the authoritative final decision to commit to Temporal and the audit trail.'}
                   </p>
                 </div>
               )}
@@ -1239,9 +1354,8 @@ export const ReviewQueuePage: React.FC = () => {
                   type="submit"
                   disabled={resolveMutation.isPending}
                   className={clsx(
-                    'px-4 py-1.5 rounded text-white text-xs font-medium transition-colors shadow flex items-center space-x-1.5',
+                    'px-4 py-1.5 rounded text-white text-xs font-medium transition-colors shadow flex items-center space-x-1.5 cursor-pointer',
                     resolveDecision === 'approve' && 'bg-blue-600 hover:bg-blue-500',
-                    resolveDecision === 'reject' && 'bg-red-600 hover:bg-red-500',
                     resolveDecision === 'override' && 'bg-amber-600 hover:bg-amber-500',
                     resolveMutation.isPending && 'opacity-60 cursor-not-allowed'
                   )}
@@ -1249,7 +1363,13 @@ export const ReviewQueuePage: React.FC = () => {
                   {resolveMutation.isPending ? (
                     <span className="inline-block w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <span>Confirm {resolveDecision.toUpperCase()}</span>
+                    <span>
+                      {resolveDecision === 'approve'
+                        ? `Confirm Accept (${agentProposedDecision})`
+                        : resolveFinalDecision.trim()
+                          ? `Confirm Override (${resolveFinalDecision.trim().toUpperCase()})`
+                          : 'Confirm Override'}
+                    </span>
                   )}
                 </button>
               </div>
