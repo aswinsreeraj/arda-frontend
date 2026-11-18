@@ -1,6 +1,8 @@
 import { apiClient } from '@/services/api';
 import type {
   PlatformConfigItem,
+  PlatformConfigSaveResult,
+  PlatformDefaults,
   PlatformHealthMetric,
   PlatformOperator,
   PlatformServiceStatus,
@@ -11,7 +13,6 @@ import type {
 } from './types';
 
 const LOCAL_TENANT_TIERS_KEY = 'arda_platform_tenant_tiers';
-const LOCAL_PLATFORM_CONFIG_KEY = 'arda_platform_global_configs';
 const LOCAL_PLATFORM_AUDIT_KEY = 'arda_platform_audit_logs';
 
 function getCurrentOperatorEmail(): string {
@@ -268,53 +269,72 @@ export const platformApi = {
   },
 
   fetchSystemActivity: async (): Promise<SystemActivityEvent[]> => {
+    try {
+      const res = await apiClient.get<{
+        events: Array<{
+          id: string;
+          title: string;
+          detail: string;
+          operator: string;
+          created_at: string;
+        }>;
+      }>('/platform/activity');
+
+      if (Array.isArray(res.data?.events)) {
+        return res.data.events.map((ev) => ({
+          id: ev.id,
+          timestamp: ev.created_at
+            ? new Date(ev.created_at).toISOString().replace('T', ' ').slice(0, 19) + ' UTC'
+            : '—',
+          title: ev.title,
+          detail: ev.detail,
+          operator: ev.operator || 'system',
+        }));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch platform activity from gateway:', err);
+    }
     return getPlatformAuditEvents();
   },
 
   fetchPlatformConfig: async (): Promise<PlatformConfigItem[]> => {
-    try {
-      const raw = localStorage.getItem(LOCAL_PLATFORM_CONFIG_KEY);
-      if (raw) {
-        const stored: PlatformConfigItem[] = JSON.parse(raw);
-        return DEFAULT_CONFIGS.map((def) => {
-          const match = stored.find((s) => s.key === def.key);
-          return match ? { ...def, value: match.value } : def;
-        });
-      }
-    } catch {
-      // ignore
-    }
-    return DEFAULT_CONFIGS;
+    const res = await apiClient.get<{
+      configs: PlatformConfigItem[];
+    }>('/platform/config');
+    return Array.isArray(res.data?.configs) ? res.data.configs : DEFAULT_CONFIGS;
   },
 
-  savePlatformConfig: async (configs: PlatformConfigItem[]): Promise<void> => {
+  savePlatformConfig: async (
+    configs: PlatformConfigItem[]
+  ): Promise<PlatformConfigSaveResult> => {
+    const res = await apiClient.put<{
+      configs: PlatformConfigItem[];
+      applied?: string[];
+      warnings?: string[];
+    }>('/platform/config', {
+      configs: configs.map((c) => ({ key: c.key, value: c.value })),
+    });
+    return {
+      configs: Array.isArray(res.data?.configs) ? res.data.configs : configs,
+      applied: Array.isArray(res.data?.applied) ? res.data.applied : [],
+      warnings: Array.isArray(res.data?.warnings) ? res.data.warnings : [],
+    };
+  },
+
+  fetchPlatformDefaults: async (): Promise<PlatformDefaults> => {
     try {
-      const oldConfigs = await platformApi.fetchPlatformConfig();
-      localStorage.setItem(LOCAL_PLATFORM_CONFIG_KEY, JSON.stringify(configs));
-
-      // Identify each changed setting and record explicit audit events with old and new values
-      const changes: Array<{ key: string; label: string; oldVal: string; newVal: string }> = [];
-      for (const item of configs) {
-        const oldItem = oldConfigs.find((o) => o.key === item.key);
-        if (oldItem && oldItem.value !== item.value) {
-          changes.push({
-            key: item.key,
-            label: item.label || item.key,
-            oldVal: oldItem.value,
-            newVal: item.value,
-          });
-        }
-      }
-
-      for (const c of changes) {
-        recordPlatformAudit(
-          `Changed config ${c.key}`,
-          `${c.label}: "${c.oldVal}" → "${c.newVal}"`
-        );
+      const res = await apiClient.get<PlatformDefaults>('/platform/defaults');
+      if (res.data && typeof res.data.reliability_default_threshold === 'number') {
+        return res.data;
       }
     } catch {
-      // ignore
+      // Fallback to canonical defaults if unavailable
     }
+    return {
+      reliability_default_threshold: 0.85,
+      calibration_sampling_interval: 10,
+      retrieval_top_k: 5,
+    };
   },
 
   fetchOperators: async (): Promise<PlatformOperator[]> => {

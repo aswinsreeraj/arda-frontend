@@ -90,9 +90,10 @@ export const PlatformPage: React.FC = () => {
   });
 
   const handleSaveConfigs = async (newConfigs: PlatformConfigItem[]) => {
-    await platformApi.savePlatformConfig(newConfigs);
+    const result = await platformApi.savePlatformConfig(newConfigs);
     await queryClient.invalidateQueries({ queryKey: ['platform-config'] });
     await queryClient.invalidateQueries({ queryKey: ['platform-activity'] });
+    return result;
   };
 
   // Stats

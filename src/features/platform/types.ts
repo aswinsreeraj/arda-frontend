@@ -42,6 +42,20 @@ export interface PlatformConfigItem {
   value: string;
   description: string;
   category: 'gateway' | 'runtime' | 'calibration' | 'storage';
+  updated_by?: string;
+  updated_at?: string;
+}
+
+export interface PlatformConfigSaveResult {
+  configs: PlatformConfigItem[];
+  applied: string[];
+  warnings: string[];
+}
+
+export interface PlatformDefaults {
+  reliability_default_threshold: number;
+  calibration_sampling_interval: number;
+  retrieval_top_k: number;
 }
 
 export interface PlatformOperator {

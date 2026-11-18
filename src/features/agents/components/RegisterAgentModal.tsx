@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { X, Sparkles, AlertCircle } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { agentApi } from '../agentApi';
+import { platformApi } from '@/features/platform/platformApi';
 import type { AgentDetail, ExecutionMode } from '../types';
 import { Button } from '@/components/ui/Button';
 
@@ -17,11 +18,23 @@ export const RegisterAgentModal: React.FC<RegisterAgentModalProps> = ({
   onSuccess,
 }) => {
   const queryClient = useQueryClient();
+  const { data: platformDefaults } = useQuery({
+    queryKey: ['platform-defaults'],
+    queryFn: () => platformApi.fetchPlatformDefaults(),
+    enabled: isOpen,
+    staleTime: 30000,
+  });
+
+  const defaultThreshold = platformDefaults?.reliability_default_threshold ?? 0.85;
+
   const [name, setName] = useState('');
   const [executionMode, setExecutionMode] = useState<ExecutionMode>('durable');
   const [promptTemplate, setPromptTemplate] = useState('');
-  const [threshold, setThreshold] = useState(0.85);
+  const [customThreshold, setCustomThreshold] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const threshold = customThreshold ?? defaultThreshold;
+  const setThreshold = (val: number) => setCustomThreshold(val);
 
   const createMutation = useMutation({
     mutationFn: (payload: {
@@ -45,7 +58,7 @@ export const RegisterAgentModal: React.FC<RegisterAgentModalProps> = ({
     setName('');
     setExecutionMode('durable');
     setPromptTemplate('');
-    setThreshold(0.85);
+    setCustomThreshold(null);
     setErrorMsg(null);
   };
 
