@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewApi } from './reviewApi';
+import { useReviewWebSocket, type ReviewWSNotification } from './useReviewWebSocket';
 import type {
   ReviewCaseSummary,
   ReviewCaseDetail,
@@ -60,6 +61,39 @@ export const ReviewQueuePage: React.FC = () => {
     message: string;
     type: 'success' | 'error' | 'info';
   } | null>(null);
+
+  // Live tenant-scoped WebSocket notifications (REST API remains single source of truth)
+  const handleReviewWSEvent = useCallback(
+    (event: ReviewWSNotification) => {
+      queryClient.invalidateQueries({ queryKey: ['reviews'] });
+      if (event.case_id) {
+        queryClient.invalidateQueries({ queryKey: ['reviewDetail', event.case_id] });
+      }
+      if (event.type === 'review.resolved') {
+        queryClient.invalidateQueries({ queryKey: ['audit-events'] });
+      } else if (event.type === 'review.created' && event.case_id) {
+        setToastNotice((prev) =>
+          prev
+            ? prev
+            : {
+                message: `New escalated case ${event.case_id} arrived.`,
+                type: 'info',
+              }
+        );
+        window.setTimeout(() => {
+          setToastNotice((prev) =>
+            prev?.message === `New escalated case ${event.case_id} arrived.` ? null : prev
+          );
+        }, 4000);
+      }
+    },
+    [queryClient]
+  );
+
+  const { status: wsStatus } = useReviewWebSocket({
+    enabled: true,
+    onEvent: handleReviewWSEvent,
+  });
 
   // Filter params sent to backend
   const queryFilters: ReviewListFilters = useMemo(() => {
@@ -394,9 +428,47 @@ export const ReviewQueuePage: React.FC = () => {
         {/* Queue Header & Filter Toolbar */}
         <div className="p-3.5 border-b border-slate-200 dark:border-[#232323] space-y-3 flex-none bg-white dark:bg-[#141414]">
           <div className="flex items-center justify-between">
-            <h1 className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">
-              Escalation Queue
-            </h1>
+            <div className="flex items-center space-x-2.5">
+              <h1 className="text-base font-semibold text-slate-900 dark:text-white tracking-tight">
+                Escalation Queue
+              </h1>
+              <span
+                title={
+                  wsStatus === 'connected'
+                    ? 'Connected to tenant-scoped live review updates'
+                    : wsStatus === 'reconnecting' || wsStatus === 'connecting'
+                      ? 'Reconnecting to live review updates'
+                      : 'Live updates disconnected (use Refresh to sync)'
+                }
+                className={clsx(
+                  'inline-flex items-center space-x-1.5 px-2 py-0.5 rounded-full text-[10px] font-mono border',
+                  wsStatus === 'connected' &&
+                    'bg-emerald-950/50 text-emerald-300 border-emerald-800/60',
+                  (wsStatus === 'connecting' || wsStatus === 'reconnecting') &&
+                    'bg-amber-950/50 text-amber-300 border-amber-800/60',
+                  wsStatus === 'offline' && 'bg-neutral-900 text-neutral-400 border-neutral-700'
+                )}
+              >
+                <span
+                  className={clsx(
+                    'w-1.5 h-1.5 rounded-full',
+                    wsStatus === 'connected' && 'bg-emerald-400 animate-pulse',
+                    (wsStatus === 'connecting' || wsStatus === 'reconnecting') &&
+                      'bg-amber-400 animate-pulse',
+                    wsStatus === 'offline' && 'bg-neutral-500'
+                  )}
+                />
+                <span>
+                  {wsStatus === 'connected'
+                    ? 'Live'
+                    : wsStatus === 'reconnecting'
+                      ? 'Reconnecting'
+                      : wsStatus === 'connecting'
+                        ? 'Connecting'
+                        : 'Offline'}
+                </span>
+              </span>
+            </div>
 
             {/* Status Tabs: OPEN vs RESOLVED */}
             <div className="flex items-center bg-slate-100 dark:bg-[#1b1b1b] p-0.5 rounded border border-slate-200 dark:border-[#2c2c2c] text-xs">
