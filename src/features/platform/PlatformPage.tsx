@@ -163,55 +163,50 @@ export const PlatformPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('tenants')}
-              className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded font-medium text-[13px] transition-colors cursor-pointer ${
-                activeTab === 'tenants'
+              className={`w-full text-left flex items-center justify-between px-2.5 py-1.5 rounded font-medium text-[13px] transition-colors cursor-pointer ${activeTab === 'tenants'
                   ? 'bg-[#1e1e1e] text-white'
                   : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
-              }`}
+                }`}
             >
               <span>Tenants</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('health')}
-              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${
-                activeTab === 'health'
+              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${activeTab === 'health'
                   ? 'bg-[#1e1e1e] text-white font-medium'
                   : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
-              }`}
+                }`}
             >
               <span>Platform health</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('config')}
-              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${
-                activeTab === 'config'
+              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${activeTab === 'config'
                   ? 'bg-[#1e1e1e] text-white font-medium'
                   : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
-              }`}
+                }`}
             >
               <span>Platform config</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('operators')}
-              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${
-                activeTab === 'operators'
+              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${activeTab === 'operators'
                   ? 'bg-[#1e1e1e] text-white font-medium'
                   : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
-              }`}
+                }`}
             >
               <span>Operators</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('audit')}
-              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${
-                activeTab === 'audit'
+              className={`w-full text-left flex items-center px-2.5 py-1.5 rounded transition-colors cursor-pointer ${activeTab === 'audit'
                   ? 'bg-[#1e1e1e] text-white font-medium'
                   : 'text-[#a1a1aa] hover:bg-[#1a1a1a] hover:text-[#d4d4d4]'
-              }`}
+                }`}
             >
               <span>Audit log</span>
             </button>
